@@ -52,7 +52,7 @@ artesanias-system/
 ```
 
 ## API Docs
-Swagger disponible en: `http://localhost:3000/api/docs`
+Swagger disponible en: `http://localhost:3001/api/docs`
 
 ## Módulos implementados
 | Módulo | Endpoints |
