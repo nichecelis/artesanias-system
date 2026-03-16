@@ -1,4 +1,4 @@
-import { PrismaClient, Rol, EstadoProducto, GrupoDecoradoras, TipoCuenta } from '@prisma/client';
+import { PrismaClient, Rol, EstadoProducto, TipoGrupo, TipoCuenta } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -6,7 +6,19 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Iniciando seed...');
 
-  // ─── Usuario administrador por defecto ───────────────────
+  // 1. Crear o actualizar el Grupo (Necesario para la relación con Decoradora)
+  const grupoElite = await prisma.grupo.upsert({
+    where: { id: 'seed-grupo-elite' },
+    update: {},
+    create: {
+      id: 'seed-grupo-elite',
+      nombre: 'Grupo Élite Principal',
+      tipo: TipoGrupo.ELITE,
+    }
+  });
+  console.log('✅ Grupo Élite preparado');
+
+  // 2. Usuario administrador por defecto
   const adminPass = await bcrypt.hash('Admin123!', 12);
   const admin = await prisma.usuario.upsert({
     where: { correo: 'admin@artesanias.com' },
@@ -18,13 +30,12 @@ async function main() {
       rol: Rol.ADMINISTRADOR,
     },
   });
-  console.log(`✅ Usuario admin: ${admin.correo}`);
+  console.log(`✅ Usuario admin verificado: ${admin.correo}`);
 
-  // ─── Usuarios de prueba ───────────────────────────────────
+  // 3. Usuarios de prueba adicionales
   const users = [
     { nombre: 'María Producción', correo: 'produccion@artesanias.com', rol: Rol.PRODUCCION },
     { nombre: 'Carlos Ventas',    correo: 'ventas@artesanias.com',     rol: Rol.VENTAS },
-    { nombre: 'Ana Contabilidad', correo: 'contabilidad@artesanias.com', rol: Rol.CONTABILIDAD },
   ];
   for (const u of users) {
     await prisma.usuario.upsert({
@@ -33,24 +44,29 @@ async function main() {
       create: { ...u, passwordHash: await bcrypt.hash('Password123!', 12) },
     });
   }
-  console.log('✅ Usuarios de prueba creados');
 
-  // ─── Productos de muestra ─────────────────────────────────
-  const productos = [
-    { nombre: 'Taza cerámica 300ml', descripcion: 'Taza artesanal de cerámica', precioVenta: 25000, precioDecoracion: 3000 },
-    { nombre: 'Plato decorativo 20cm', descripcion: 'Plato de cerámica pintado', precioVenta: 35000, precioDecoracion: 5000 },
+  // 4. Productos de muestra (Corrección TS2322)
+  // Usamos findFirst + create para evitar el error de búsqueda por campo no único
+  const productosData = [
+    { nombre: 'Taza cerámica 300ml', descripcion: 'Taza artesanal', precioVenta: 25000, precioDecoracion: 3000 },
+    { nombre: 'Plato decorativo 20cm', descripcion: 'Plato pintado', precioVenta: 35000, precioDecoracion: 5000 },
     { nombre: 'Jarrón pequeño', descripcion: 'Jarrón artesanal 15cm', precioVenta: 45000, precioDecoracion: 7000 },
   ];
-  for (const p of productos) {
-    await prisma.producto.upsert({
-      where: { id: p.nombre }, // Simplificado para seed
-      update: {},
-      create: p as any,
-    });
-  }
-  console.log('✅ Productos creados');
 
-  // ─── Clientes de muestra ──────────────────────────────────
+  for (const p of productosData) {
+    const existe = await prisma.producto.findFirst({ where: { nombre: p.nombre } });
+    if (!existe) {
+      await prisma.producto.create({
+        data: {
+          ...p,
+          estado: EstadoProducto.ACTIVO
+        }
+      });
+    }
+  }
+  console.log('✅ Productos procesados');
+
+  // 5. Clientes de muestra
   await prisma.cliente.upsert({
     where: { documento: '900123456' },
     update: {},
@@ -62,9 +78,8 @@ async function main() {
       transportadora: 'Servientrega',
     },
   });
-  console.log('✅ Cliente de muestra creado');
 
-  // ─── Decoradora de muestra ────────────────────────────────
+  // 6. Decoradora de muestra (Corrección de relación)
   await prisma.decoradora.upsert({
     where: { documento: '52100200' },
     update: {},
@@ -73,20 +88,22 @@ async function main() {
       documento: '52100200',
       telefono: '3109876543',
       tipoCuenta: TipoCuenta.AHORROS,
-      grupo: GrupoDecoradoras.ELITE,
+      // Se usa connect para vincular correctamente con el objeto de grupo
+      grupo: {
+        connect: { id: grupoElite.id }
+      },
     },
   });
-  console.log('✅ Decoradora de muestra creada');
+  console.log('✅ Decoradora vinculada correctamente');
 
   console.log('\n🎉 Seed completado exitosamente');
-  console.log('─────────────────────────────────────');
-  console.log('Admin: admin@artesanias.com / Admin123!');
-  console.log('─────────────────────────────────────');
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error('❌ Error ejecutando el seed:', e);
     process.exit(1);
   })
-  .finally(() => prisma.$disconnect());
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

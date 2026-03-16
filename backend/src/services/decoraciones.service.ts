@@ -146,11 +146,18 @@ export class DecoracionesService {
     decoradoraId?: string;
     pedidoId?:     string;
     pagado?:       boolean;
+    fechaDesde?:   string;
+    fechaHasta?:   string;
   }): Promise<PaginatedResult<any>> {
     const where: any = {};
     if (params.decoradoraId) where.decoradoraId = params.decoradoraId;
     if (params.pedidoId)     where.pedidoId     = params.pedidoId;
     if (params.pagado !== undefined) where.pagado = params.pagado;
+    if (params.fechaDesde || params.fechaHasta) {
+      where.fechaEgreso = {};
+      if (params.fechaDesde) where.fechaEgreso.gte = new Date(params.fechaDesde + 'T00:00:00.000Z');
+      if (params.fechaHasta) where.fechaEgreso.lte = new Date(params.fechaHasta + 'T23:59:59.999Z');
+    }
     if (params.search) {
       where.OR = [
         { pedido:     { codigo:  { contains: params.search, mode: 'insensitive' } } },

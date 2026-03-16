@@ -167,7 +167,7 @@ export default function NominaPage() {
 
   const crearForm = useForm<CrearForm>({
     resolver: zodResolver(crearSchema),
-    defaultValues: { items: [{ empleadoId: '', diasTrabajados: 30, horasExtras: 0, abonosPrestamo: 0 }] },
+    defaultValues: { items: [] },
   });
   const { fields, append, remove } = useFieldArray({ control: crearForm.control, name: 'items' });
 
@@ -188,7 +188,14 @@ export default function NominaPage() {
     setEditModal(true);
   };
 
-  const closeModal    = () => { setModal(false); crearForm.reset({ items: [{ empleadoId: '', diasTrabajados: 30, horasExtras: 0, abonosPrestamo: 0 }] }); };
+  const openModal = () => {
+    const itemsIniciales = (empleados ?? []).map((e: any) => ({
+      empleadoId: e.id, diasTrabajados: 30, horasExtras: 0, abonosPrestamo: 0, prestamoId: '', observaciones: '',
+    }));
+    crearForm.reset({ fecha: '', items: itemsIniciales });
+    setModal(true);
+  };
+  const closeModal = () => { setModal(false); crearForm.reset({ items: [] }); };
   const closeEditModal = () => { setEditModal(false); setEditing(null); setEditEmpleado(null); editarForm.reset(); };
 
   const crear = useMutation({
@@ -243,7 +250,7 @@ export default function NominaPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h1>Nómina</h1><p className="text-gray-500 text-sm">{data?.meta?.total ?? 0} registros</p></div>
-        <button onClick={() => setModal(true)} className="btn-primary"><Plus size={16}/> Registrar nómina</button>
+        <button onClick={openModal} className="btn-primary"><Plus size={16}/> Registrar nómina</button>
       </div>
 
       <div className="flex gap-3 flex-wrap">

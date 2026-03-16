@@ -35,6 +35,8 @@ decoracionesRouter.get('/', async (req: Request, res: Response, next: NextFuncti
       decoradoraId: req.query.decoradoraId as string | undefined,
       pedidoId:     req.query.pedidoId     as string | undefined,
       pagado:       req.query.pagado !== undefined ? req.query.pagado === 'true' : undefined,
+      fechaDesde:   req.query.fechaDesde   as string | undefined,
+      fechaHasta:   req.query.fechaHasta   as string | undefined,
     };
     const result = await decoracionesService.listar(params);
     res.json({ success: true, data: result.items, meta: {

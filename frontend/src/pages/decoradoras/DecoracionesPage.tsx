@@ -106,17 +106,20 @@ export default function DecoracionesPage() {
   const [page,setPage]           = useState(1);
   const [search,setSearch]       = useState('');
   const [filtroDoc,setFiltroDoc] = useState('');
-  const [modal,setModal]         = useState<'crear'|'editar'|null>(null);
+  const [modal,setModal]         = useState<'crear'|'editar'|'masivo'|null>(null);
   const [editing,setEditing]     = useState<any>(null);
   const [selDec,setSelDec]       = useState<any>(null);
   const [itemStates,setItemStates] = useState<ItemState[]>([{pedido:null,producto:null}]);
+  const [fechaDesde,setFechaDesde] = useState('');
+  const [fechaHasta,setFechaHasta] = useState('');
+  const [seleccionadas,setSeleccionadas] = useState<Set<string>>(new Set());
 
   const { data: todasDec } = useQuery({
     queryKey:['dec-filtro'], queryFn:()=>decoradorasService.listar({page:1,limit:500}).then(r=>r.data.data)
   });
 
   const { data, isLoading } = useQuery({
-    queryKey:['decoraciones',page,search,filtroDoc],
+    queryKey:['decoraciones',page,search,filtroDoc,fechaDesde,fechaHasta],
     queryFn:()=>api.get('/decoraciones',{params:{page,limit:20,search:search||undefined,decoradoraId:filtroDoc||undefined}}).then(r=>r.data),
   });
 
@@ -199,7 +202,44 @@ export default function DecoracionesPage() {
     onSuccess:()=>qc.invalidateQueries({queryKey:['decoraciones']}),
   });
 
+  const pagarMasivo = useMutation({
+    mutationFn: async () => {
+      const ids = Array.from(seleccionadas);
+      await Promise.all(ids.map(id => api.patch(`/decoraciones/${id}/pagar`, {})));
+      return ids.length;
+    },
+    onSuccess: (n) => {
+      qc.invalidateQueries({queryKey:['decoraciones']});
+      setSeleccionadas(new Set());
+      setModal(null);
+      alert(`${n} decoraciones marcadas como pagadas`);
+    },
+  });
+
+  const toggleSeleccion = (id: string) => {
+    setSeleccionadas(prev => {
+      const s = new Set(prev);
+      s.has(id) ? s.delete(id) : s.add(id);
+      return s;
+    });
+  };
+
+  const toggleTodas = () => {
+    const pagables = (data?.data ?? []).filter((r: any) => !r.pagado && r.cantidadIngreso);
+    if (seleccionadas.size === pagables.length) {
+      setSeleccionadas(new Set());
+    } else {
+      setSeleccionadas(new Set(pagables.map((r: any) => r.id)));
+    }
+  };
+
+  const pagables = (data?.data ?? []).filter((r: any) => !r.pagado && r.cantidadIngreso);
+
   const columns=[
+    {key:'sel', header: <input type="checkbox" className="w-4 h-4" onChange={toggleTodas} checked={seleccionadas.size > 0 && seleccionadas.size === pagables.length}/>,
+     render:(r:any)=> !r.pagado && r.cantidadIngreso ? (
+      <input type="checkbox" className="w-4 h-4" checked={seleccionadas.has(r.id)} onChange={()=>toggleSeleccion(r.id)} onClick={e=>e.stopPropagation()}/>
+    ) : null},
     {key:'decoradora',header:'Decoradora',  render:(r:any)=>r.decoradora?.nombre??'—'},
     {key:'pedido',    header:'Pedido',       render:(r:any)=>r.pedido?.codigo??'—'},
     {key:'producto',  header:'Producto',     render:(r:any)=>r.producto?.nombre??'—'},
@@ -238,10 +278,23 @@ export default function DecoracionesPage() {
           <input className="input pl-9" placeholder="Buscar pedido, decoradora, producto..."
             value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}}/>
         </div>
-        <select className="input w-56" value={filtroDoc} onChange={e=>setFiltroDoc(e.target.value)}>
+        <select className="input w-48" value={filtroDoc} onChange={e=>setFiltroDoc(e.target.value)}>
           <option value="">Todas las decoradoras</option>
           {todasDec?.map((d:any)=><option key={d.id} value={d.id}>{d.nombre}</option>)}
         </select>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-500 whitespace-nowrap">Desde</label>
+          <input type="date" className="input w-36 text-sm" value={fechaDesde} onChange={e=>{setFechaDesde(e.target.value);setPage(1);}}/>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-500 whitespace-nowrap">Hasta</label>
+          <input type="date" className="input w-36 text-sm" value={fechaHasta} onChange={e=>{setFechaHasta(e.target.value);setPage(1);}}/>
+        </div>
+        {seleccionadas.size > 0 && (
+          <button onClick={()=>setModal('masivo')} className="btn-primary text-sm">
+            Pagar {seleccionadas.size} seleccionadas
+          </button>
+        )}
       </div>
 
       <div className="card p-0 overflow-hidden">
@@ -344,6 +397,20 @@ export default function DecoracionesPage() {
             <button type="button" onClick={closeModal} className="btn-secondary">Cancelar</button>
           </div>
         </form>
+      </Modal>
+
+      {/* ── Modal Pago Masivo ── */}
+      <Modal title="Confirmar pago masivo" open={modal==='masivo'} onClose={()=>setModal(null)}>
+        <div className="space-y-4">
+          <p className="text-gray-700">¿Marcar como pagadas <strong>{seleccionadas.size}</strong> decoraciones seleccionadas?</p>
+          <p className="text-sm text-gray-500">Esta acción no se puede deshacer.</p>
+          <div className="flex gap-3 pt-2">
+            <button onClick={()=>pagarMasivo.mutate()} disabled={pagarMasivo.isPending} className="btn-primary">
+              {pagarMasivo.isPending ? <Spinner size="sm"/> : 'Confirmar pago'}
+            </button>
+            <button type="button" onClick={()=>setModal(null)} className="btn-secondary">Cancelar</button>
+          </div>
+        </div>
       </Modal>
 
       {/* ── Modal Editar ── */}
