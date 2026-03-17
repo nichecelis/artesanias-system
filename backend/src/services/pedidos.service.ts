@@ -25,8 +25,8 @@ export class PedidosService {
     // Filtro por Rango de Fechas
     if (filtros.fechaDesde || filtros.fechaHasta) {
       where.createdAt = {
-        ...(filtros.fechaDesde && { gte: new Date(filtros.fechaDesde) }),
-        ...(filtros.fechaHasta && { lte: new Date(new Date(filtros.fechaHasta).setHours(23, 59, 59, 999)) }),
+        ...(filtros.fechaDesde && { gte: new Date(filtros.fechaDesde + 'T00:00:00.000') }),
+        ...(filtros.fechaHasta && { lte: new Date(filtros.fechaHasta + 'T23:59:59.999') }),
       };
     }
 
@@ -125,6 +125,13 @@ export class PedidosService {
     
     const { productos, ...resto } = data;
     
+    if (resto.fechaInicioCorte) {
+      resto.fechaInicioCorte = new Date(resto.fechaInicioCorte);
+    }
+    if (resto.fechaConteo) {
+      resto.fechaConteo = new Date(resto.fechaConteo);
+    }
+
     if (productos) {
       if (!Array.isArray(productos) || productos.length === 0) {
         throw new AppError("El pedido debe incluir al menos un producto", 400);

@@ -41,10 +41,10 @@ export const clientesService = {
 
 // ─── Pedidos ───────────────────────────────────────────────
 export const pedidosService = {
-  listar: async (params: any) => {
-    const response = await api.get('/pedidos', { params });
-    return response; // Quitar .data para ser consistente
-    },
+  listar(params: { page: number; limit: number; search: string; estado: string; fechaDesde?: string; fechaHasta?: string }) 
+  {
+    return api.get('/pedidos', { params });
+  },
   obtener:  (id: string)   => api.get<ApiResponse<any>>(`/pedidos/${id}`),
   crear:    (data: any)    => api.post<ApiResponse<any>>('/pedidos', data),
   actualizar: (id: string, data: any) => api.patch<ApiResponse<any>>(`/pedidos/${id}`, data),

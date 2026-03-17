@@ -27,14 +27,19 @@ export default function PedidosPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [estado, setEstado] = useState('');
-  const [fechaDesde] = useState('');
-  const [fechaHasta] = useState('');
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
 
   const { data: response, isLoading } = useQuery<PedidosFetchResponse>({
   queryKey: ['pedidos', page, search, estado, fechaDesde, fechaHasta],
   queryFn: () => pedidosService.listar({ 
-    page, limit: 20, search, estado, fechaDesde, fechaHasta 
-  }) as any,
+  page, 
+  limit: 20, 
+  search, 
+  estado,
+  fechaDesde: fechaDesde || undefined,
+  fechaHasta: fechaHasta || undefined
+}) as any,
 });
 
   // Extracción segura: pedidos ahora lee de response.data
@@ -95,6 +100,18 @@ export default function PedidosPage() {
           <option value="">Todos los estados</option>
           {ESTADOS.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
+        <input 
+          type="date"
+          className="border rounded px-4 py-2"
+          value={fechaDesde}
+          onChange={(e) => { setFechaDesde(e.target.value); setPage(1); }}
+        />
+        <input
+          type="date"
+          className="border rounded px-4 py-2"
+          value={fechaHasta}
+          onChange={(e) => { setFechaHasta(e.target.value); setPage(1); }}
+        />
       </div>
 
       <div className="bg-white rounded shadow-sm overflow-hidden">
