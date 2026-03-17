@@ -25,12 +25,15 @@ export class ProductosService {
 
     const [items, total] = await Promise.all([
       prisma.producto.findMany({
+        where: { estado: 'ACTIVO' }, // 👈 FILTRO CLAVE
         skip,
         take: limit,
         include: { productoCliente: true },
         orderBy: { createdAt: 'desc' }
       }),
-      prisma.producto.count()
+      prisma.producto.count({
+        where: { estado: 'ACTIVO' } // 👈 IMPORTANTE también aquí
+      })
     ]);
 
     return { items, total };

@@ -7,6 +7,9 @@ import { z } from 'zod';
 import { Plus, Trash2, ArrowLeft, Search, X } from 'lucide-react';
 import { pedidosService, clientesService, productosService } from '../../services';
 import { Spinner, LoadingScreen } from '../../components/common';
+import ProcesoProducto from '../../components/ProcesoProducto';
+import { calcularEstado } from '../../../../backend/src/utils/calcularEstado';
+import { useWatch } from 'react-hook-form';
 
 const schema = z.object({
   clienteId:        z.string().min(1, 'Selecciona un cliente'),
@@ -23,7 +26,24 @@ const schema = z.object({
   observaciones:    z.string().optional(),
   productos: z.array(z.object({
     productoId:      z.string().min(1, 'Selecciona producto'),
-    cantidadPedido:  z.coerce.number().int().positive('Requerido'),
+    cantidadPedido:  z.coerce.number().int().positive(),
+
+    // 🔥 CORTE
+    fechaInicioCorte: z.string().optional(),
+    fechaConteo:      z.string().optional(),
+    cantidadTareas:   z.coerce.number().int().optional(),
+    cortes:           z.coerce.number().int().optional(),
+
+    // 🔥 DECORACIÓN
+    fechaAsignacion:  z.string().optional(),
+    cantidadRecibida: z.coerce.number().int().optional(),
+
+    // 🔥 DESPACHO
+    fechaDespacho:    z.string().optional(),
+    cantidadDespacho: z.coerce.number().int().optional(),
+    cantidadFaltante: z.coerce.number().int().optional(),
+
+    // opcional (si lo usas)
     cantidadPlancha: z.coerce.number().int().optional(),
   })).min(1, 'Agrega al menos un producto'),
 });
@@ -140,32 +160,50 @@ export default function PedidoFormPage() {
 
   const { fields, append, remove } = useFieldArray({ control, name: 'productos' });
 
+  const productosWatch = useWatch({
+    control,
+    name: 'productos',
+  });
+
   useEffect(() => {
-    if (pedidoRes) {
+    if (pedidoRes && productosLista?.length) {
       setClienteId(pedidoRes.clienteId);
+
       reset({
-        clienteId:        pedidoRes.clienteId,
-        laser:            pedidoRes.laser ?? false,
+        clienteId: pedidoRes.clienteId,
+        laser: pedidoRes.laser ?? false,
         fechaInicioCorte: toDateStr(pedidoRes.fechaInicioCorte),
-        fechaConteo:      toDateStr(pedidoRes.fechaConteo),
-        cantidadTareas:   pedidoRes.cantidadTareas ?? undefined,
-        fechaAsignacion:  toDateStr(pedidoRes.fechaAsignacion),
+        fechaConteo: toDateStr(pedidoRes.fechaConteo),
+        cantidadTareas: pedidoRes.cantidadTareas ?? undefined,
+        fechaAsignacion: toDateStr(pedidoRes.fechaAsignacion),
         cantidadRecibida: pedidoRes.cantidadRecibida ?? undefined,
-        fechaDespacho:    toDateStr(pedidoRes.fechaDespacho),
-        cortes:           pedidoRes.cortes ?? undefined,
+        fechaDespacho: toDateStr(pedidoRes.fechaDespacho),
+        cortes: pedidoRes.cortes ?? undefined,
         cantidadDespacho: pedidoRes.cantidadDespacho ?? undefined,
         cantidadFaltante: pedidoRes.cantidadFaltante ?? undefined,
-        observaciones:    pedidoRes.observaciones ?? '',
+        observaciones: pedidoRes.observaciones ?? '',
         productos: pedidoRes.productos?.length
-          ? pedidoRes.productos.map((p: any) => ({
-              productoId:      p.productoId,
-              cantidadPedido:  p.cantidadPedido,
-              cantidadPlancha: p.cantidadPlancha ?? undefined,
-            }))
-          : [{ productoId: '', cantidadPedido: 1 }],
+        ? pedidoRes.productos.map((p: any) => ({
+            productoId: p.productoId,
+            cantidadPedido: p.cantidadPedido,
+            cantidadPlancha: p.cantidadPlancha ?? undefined,
+
+            fechaInicioCorte: toDateStr(p.fechaInicioCorte),
+            fechaConteo: toDateStr(p.fechaConteo),
+            cantidadTareas: p.cantidadTareas ?? undefined,
+            cortes: p.cortes ?? undefined,
+
+            fechaAsignacion: toDateStr(p.fechaAsignacion),
+            cantidadRecibida: p.cantidadRecibida ?? undefined,
+
+            fechaDespacho: toDateStr(p.fechaDespacho),
+            cantidadDespacho: p.cantidadDespacho ?? undefined,
+            cantidadFaltante: p.cantidadFaltante ?? undefined,
+          }))
+        : [{ productoId: '', cantidadPedido: 1 }],
       });
     }
-  }, [pedidoRes, reset]);
+  }, [pedidoRes, productosLista, reset]);
 
   const guardar = useMutation({
     mutationFn: (data: Form) =>
@@ -179,7 +217,7 @@ export default function PedidoFormPage() {
   if (isEditing && loadingPedido) return <LoadingScreen />;
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center gap-3">
         <button onClick={() => navigate('/pedidos')} className="text-gray-400 hover:text-gray-600"><ArrowLeft size={20} /></button>
         <div>
@@ -228,56 +266,145 @@ export default function PedidoFormPage() {
             <div className="col-span-1"></div>
           </div>
           <div className="space-y-2">
-            {fields.map((field, idx) => (
-              <div key={field.id} className="grid grid-cols-12 gap-2 items-start">
-                <div className="col-span-5">
-                  <select {...register(`productos.${idx}.productoId`)} className="input text-sm">
-                    <option value="">Selecciona...</option>
-                    {productosLista?.map((p: any) => (
-                      <option key={p.id} value={p.id}>{p.nombre}</option>
-                    ))}
-                  </select>
-                  {errors.productos?.[idx]?.productoId && (
-                    <p className="text-red-500 text-xs mt-0.5">{errors.productos[idx]?.productoId?.message}</p>
-                  )}
+            {fields.map((field, idx) => {
+              const productoActual = productosWatch?.[idx];
+              const estado = calcularEstado(productoActual || {});
+
+              return (
+                <div key={field.id} className="border rounded p-4 space-y-4">
+                
+                {/* 🔥 HEADER CON PROCESO */}
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-semibold text-gray-700">
+                    Producto #{idx + 1}
+                  </h3>
+                  <ProcesoProducto estado={estado} />
                 </div>
-                <div className="col-span-3">
-                  <input {...register(`productos.${idx}.cantidadPedido`)} type="number" min={1} placeholder="0" className="input text-sm" />
+
+                {/* PRODUCTO */}
+                <div className="grid grid-cols-12 gap-3 items-start">
+
+                  {/* PRODUCTO */}
+                  <div className="col-span-5">
+                    <label className="label">Producto</label>
+                    <select {...register(`productos.${idx}.productoId`)} className="input text-sm">
+                      <option value="">Selecciona...</option>
+                      {productosLista?.map((p: any) => (
+                        <option key={p.id} value={p.id}>{p.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* CANTIDAD PEDIDO */}
+                  <div className="col-span-3">
+                    <label className="label">Cant. pedido</label>
+                    <input
+                      {...register(`productos.${idx}.cantidadPedido`)}
+                      type="number"
+                      min={1}
+                      className="input text-sm"
+                    />
+                  </div>
+
+                  {/* CANTIDAD PLANCHA */}
+                  <div className="col-span-3">
+                    <label className="label">Cant. plancha</label>
+                    <input
+                      {...register(`productos.${idx}.cantidadPlancha`)}
+                      type="number"
+                      min={0}
+                      className="input text-sm"
+                    />
+                  </div>
+
+                  {/* ELIMINAR */}
+                  <div className="col-span-1 flex justify-center pt-6">
+                    <button type="button" onClick={() => fields.length > 1 && remove(idx)}>
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+
                 </div>
-                <div className="col-span-3">
-                  <input {...register(`productos.${idx}.cantidadPlancha`)} type="number" min={0} placeholder="0" className="input text-sm" />
+                
+                <br></br>
+                {/* 🔥 CORTE */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-600" style={{ color: '#27D3F5' }}>Corte</h3>
+                  <br></br>
+                  <div className="grid grid-cols-4 gap-3">
+                    
+                    <div>
+                      <label className="label">Fecha inicio</label>
+                      <input type="date" {...register(`productos.${idx}.fechaInicioCorte`)} className="input" />
+                    </div>
+
+                    <div>
+                      <label className="label">Fecha conteo</label>
+                      <input type="date" {...register(`productos.${idx}.fechaConteo`)} className="input" />
+                    </div>
+
+                    <div>
+                      <label className="label">Tareas</label>
+                      <input type="number" {...register(`productos.${idx}.cantidadTareas`)} className="input" />
+                    </div>
+
+                    <div>
+                      <label className="label">Cortes</label>
+                      <input type="number" {...register(`productos.${idx}.cortes`)} className="input" />
+                    </div>
+
+                  </div>
                 </div>
-                <div className="col-span-1 flex justify-center pt-2">
-                  <button type="button" onClick={() => fields.length > 1 && remove(idx)}
-                    className={fields.length <= 1 ? 'text-gray-200' : 'text-gray-400 hover:text-red-500'}>
-                    <Trash2 size={15} />
-                  </button>
+                
+                <br></br>
+                {/* 🔥 DECORACIÓN */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-600" style={{ color: '#27D3F5' }}>Decoración</h3>
+                  <br></br>
+                  <div className="grid grid-cols-2 gap-3">
+
+                    <div>
+                      <label className="label">Fecha asignación</label>
+                      <input type="date" {...register(`productos.${idx}.fechaAsignacion`)} className="input" />
+                    </div>
+
+                    <div>
+                      <label className="label">Cantidad recibida</label>
+                      <input type="number" {...register(`productos.${idx}.cantidadRecibida`)} className="input" />
+                    </div>
+
+                  </div>
                 </div>
+
+                <br></br>
+                {/* 🔥 DESPACHO */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-600" style={{ color: '#27D3F5' }}>Despacho</h3>
+                  <br></br>
+                  <div className="grid grid-cols-3 gap-3">
+
+                    <div>
+                      <label className="label">Fecha despacho</label>
+                      <input type="date" {...register(`productos.${idx}.fechaDespacho`)} className="input" />
+                    </div>
+
+                    <div>
+                      <label className="label">Cantidad despacho</label>
+                      <input type="number" {...register(`productos.${idx}.cantidadDespacho`)} className="input" />
+                    </div>
+
+                    <div>
+                      <label className="label">Cantidad faltante</label>
+                      <input type="number" {...register(`productos.${idx}.cantidadFaltante`)} className="input" />
+                    </div>
+
+                  </div>
+                </div>
+
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Proceso de corte ── */}
-        <div className="card space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Proceso de corte</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="label">Fecha inicio corte</label><input {...register('fechaInicioCorte')} type="date" className="input" /></div>
-            <div><label className="label">Fecha conteo</label><input {...register('fechaConteo')} type="date" className="input" /></div>
-            <div><label className="label">Cantidad tareas</label><input {...register('cantidadTareas')} type="number" min={0} className="input" /></div>
-            <div><label className="label">Cortes</label><input {...register('cortes')} type="number" min={0} className="input" /></div>
-          </div>
-        </div>
-
-        {/* ── Decoración y despacho ── */}
-        <div className="card space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Decoración y despacho</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="label">Fecha asignación decorar</label><input {...register('fechaAsignacion')} type="date" className="input" /></div>
-            <div><label className="label">Cantidad recibida</label><input {...register('cantidadRecibida')} type="number" min={0} className="input" /></div>
-            <div><label className="label">Fecha despacho</label><input {...register('fechaDespacho')} type="date" className="input" /></div>
-            <div><label className="label">Cantidad despacho</label><input {...register('cantidadDespacho')} type="number" min={0} className="input" /></div>
-            <div><label className="label">Cantidad faltante</label><input {...register('cantidadFaltante')} type="number" min={0} className="input" /></div>
+              )
+            
+            })}
           </div>
         </div>
 

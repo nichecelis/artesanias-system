@@ -1,6 +1,7 @@
 import { Prisma, EstadoPedido } from '@prisma/client';
 import { prisma } from '../config/database';
 import { AppError } from '../types';
+import { calcularEstado } from './utils/calcularEstado';
 
 export class PedidosService {
   async obtenerPorId(id: string) {
@@ -54,10 +55,19 @@ export class PedidosService {
     }
 
     if (filtros.fechaDesde || filtros.fechaHasta) {
-      where.createdAt = {
-        ...(filtros.fechaDesde && { gte: new Date(filtros.fechaDesde) }),
-        ...(filtros.fechaHasta && { lte: new Date(new Date(filtros.fechaHasta).setHours(23, 59, 59, 999)) }),
-      };
+      const rango: any = {};
+
+      if (filtros.fechaDesde) {
+        const [y, m, d] = filtros.fechaDesde.split('-').map(Number);
+        rango.gte = new Date(y, m - 1, d, 0, 0, 0, 0); // inicio del día local
+      }
+
+      if (filtros.fechaHasta) {
+        const [y, m, d] = filtros.fechaHasta.split('-').map(Number);
+        rango.lte = new Date(y, m - 1, d, 23, 59, 59, 999); // fin del día local
+      }
+
+      where.createdAt = rango;
     }
 
     const [total, pedidos] = await prisma.$transaction([
@@ -131,9 +141,26 @@ export class PedidosService {
         estado: data.estado || 'PENDIENTE',
         productos: {
           create: data.productos.map((p: any) => ({
-            productoId: p.productoId,
-            cantidadPedido: Number(p.cantidadPedido),
-            cantidadPlancha: Number(p.cantidadPlancha || 0)
+            productoId:       p.productoId,
+            cantidadPedido:   Number(p.cantidadPedido),
+            cantidadPlancha:  Number(p.cantidadPlancha || 0),
+
+            // 🔥 CORTE
+            fechaInicioCorte: p.fechaInicioCorte ? new Date(p.fechaInicioCorte) : null,
+            fechaConteo:      p.fechaConteo ? new Date(p.fechaConteo) : null,
+            cantidadTareas:   p.cantidadTareas ? Number(p.cantidadTareas) : null,
+            cortes:           p.cortes ? Number(p.cortes) : null,
+
+            // 🔥 DECORACIÓN
+            fechaAsignacion:  p.fechaAsignacion ? new Date(p.fechaAsignacion) : null,
+            cantidadRecibida: p.cantidadRecibida ? Number(p.cantidadRecibida) : null,
+
+            // 🔥 DESPACHO
+            fechaDespacho:    p.fechaDespacho ? new Date(p.fechaDespacho) : null,
+            cantidadDespacho: p.cantidadDespacho ? Number(p.cantidadDespacho) : null,
+            cantidadFaltante: p.cantidadFaltante ? Number(p.cantidadFaltante) : null,
+
+            estado: p.estado || 'PENDIENTE'
           }))
         }
       },
@@ -156,12 +183,23 @@ export class PedidosService {
           productoId:       p.productoId,
           cantidadPedido:   Number(p.cantidadPedido),
           cantidadPlancha:  Number(p.cantidadPlancha || 0),
-          estado:           p.estado || 'PENDIENTE',
+
+          estado: p.estado || 'PENDIENTE',
+
+          // 🔥 CORTE
           fechaInicioCorte: p.fechaInicioCorte ? new Date(p.fechaInicioCorte) : null,
           fechaConteo:      p.fechaConteo ? new Date(p.fechaConteo) : null,
-          cantidadRecibida: p.cantidadRecibida,
+          cantidadTareas:   p.cantidadTareas ? Number(p.cantidadTareas) : null,
+          cortes:           p.cortes ? Number(p.cortes) : null,
+
+          // 🔥 DECORACIÓN
+          fechaAsignacion:  p.fechaAsignacion ? new Date(p.fechaAsignacion) : null,
+          cantidadRecibida: p.cantidadRecibida ? Number(p.cantidadRecibida) : null,
+
+          // 🔥 DESPACHO
           fechaDespacho:    p.fechaDespacho ? new Date(p.fechaDespacho) : null,
-          // ... mapear los demás campos nuevos
+          cantidadDespacho: p.cantidadDespacho ? Number(p.cantidadDespacho) : null,
+          cantidadFaltante: p.cantidadFaltante ? Number(p.cantidadFaltante) : null,
         }))
       };
     }
@@ -179,8 +217,17 @@ export class PedidosService {
       where: { id: pedidoProductoId },
       data: {
         ...data,
+
         fechaInicioCorte: data.fechaInicioCorte ? new Date(data.fechaInicioCorte) : undefined,
+        fechaConteo:      data.fechaConteo ? new Date(data.fechaConteo) : undefined,
+        fechaAsignacion:  data.fechaAsignacion ? new Date(data.fechaAsignacion) : undefined,
         fechaDespacho:    data.fechaDespacho ? new Date(data.fechaDespacho) : undefined,
+
+        cantidadTareas:   data.cantidadTareas ? Number(data.cantidadTareas) : undefined,
+        cortes:           data.cortes ? Number(data.cortes) : undefined,
+        cantidadRecibida: data.cantidadRecibida ? Number(data.cantidadRecibida) : undefined,
+        cantidadDespacho: data.cantidadDespacho ? Number(data.cantidadDespacho) : undefined,
+        cantidadFaltante: data.cantidadFaltante ? Number(data.cantidadFaltante) : undefined,
       }
     });
   }

@@ -20,6 +20,7 @@ import productosRoutes from './routes/productos.routes';
 import clientesRoutes  from './routes/clientes.routes';
 import pedidosRoutes   from './routes/pedidos.routes';
 import reportesRoutes  from './routes/reportes.routes';
+import preciosRoutes from './routes/precios.routes';
 
 import {
   decoradorasRouter  as decoradorasRoutes,
@@ -83,6 +84,7 @@ app.use(`${API}/empleados`,    empleadosRoutes);
 app.use(`${API}/nomina`,       nominaRoutes);
 app.use(`${API}/reportes`,     reportesRoutes);
 app.use(`${API}/grupos`,      gruposRoutes);
+app.use(`${API}/precios`, preciosRoutes);
 
 // ─── Manejo de errores ────────────────────────────────────────
 app.use(notFoundHandler);

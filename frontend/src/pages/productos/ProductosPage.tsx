@@ -107,12 +107,20 @@ export default function ProductosPage() {
   });
 
   const upsertPrecio = useMutation({
-    mutationFn: () => api.put(`/precios/${selected.id}/${clienteSelec.id}`, { precioVenta: Number(nuevoPrecio) }),
-    onSuccess: () => { refetchPrecios(); setClienteSelec(null); setNuevoPrecio(''); },
+    mutationFn: () => 
+      api.put(`/precios/${clienteSelec.id}/${selected.id}`, { // 👈 orden correcto
+        precio: Number(nuevoPrecio) // 👈 nombre correcto
+      }),
+    onSuccess: () => { 
+      refetchPrecios(); 
+      setClienteSelec(null); 
+      setNuevoPrecio(''); 
+    },
   });
 
   const deletePrecio = useMutation({
-    mutationFn: (clienteId: string) => api.delete(`/precios/${selected.id}/${clienteId}`),
+    mutationFn: (clienteId: string) => 
+      api.delete(`/precios/${clienteId}/${selected.id}`),
     onSuccess: () => refetchPrecios(),
   });
 

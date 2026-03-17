@@ -53,25 +53,53 @@ export default function PedidosPage() {
   });
 
   const columns = [
-  { key: 'codigo', header: 'Código' },
-  { key: 'cliente', header: 'Cliente', render: (r: any) => r.cliente?.nombre ?? '—' },
-  { 
-    key: 'progreso', 
-    header: 'Items / Estado', 
-    render: (r: any) => (
-      <div className="flex flex-col gap-1">
-        {r.productos?.map((pp: any) => (
-          <div key={pp.id} className="text-[10px] flex items-center gap-2">
-            <span className="font-medium">{pp.producto.nombre}:</span>
-            <EstadoBadge estado={pp.estado} />
-          </div>
-        ))}
-      </div>
-    ) 
-  },
+    { key: 'codigo', header: 'Código' },
+
     { 
-      key: 'acciones', 
-      header: 'Acciones', 
+      key: 'fecha', 
+      header: 'Fecha', 
+      render: (r: any) => {
+          try {
+            const f = r.createdAt || r.fecha;
+            const date = new Date(f);
+
+            if (!f || isNaN(date.getTime())) return '—';
+
+            return format(date, 'dd/MM/yyyy HH:mm', { locale: es });
+          } catch {
+            return '—';
+          }
+        }
+    },
+
+    { key: 'cliente', header: 'Cliente', render: (r: any) => r.cliente?.nombre ?? '—' },
+
+    { 
+      key: 'progreso', 
+      header: 'Items / Estado', 
+      render: (r: any) => (
+        <div className="flex flex-col gap-1">
+          {r.productos?.map((pp: any) => (
+            <div key={pp.id} className="text-[10px] flex items-center gap-2">
+              <span className="font-medium">
+                {pp.producto.nombre}
+              </span>
+
+              {/* 👇 AGREGA ESTO */}
+              <span className="text-gray-500">
+                x{pp.cantidadPedido}
+              </span>
+
+              <EstadoBadge estado={pp.estado} />
+            </div>
+          ))}
+        </div>
+      )
+    },
+
+    {
+      key: 'acciones',
+      header: 'Acciones',
       render: (r: any) => (
         <select
           value={r.estado}
