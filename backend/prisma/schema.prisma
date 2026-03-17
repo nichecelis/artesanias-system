@@ -105,7 +105,7 @@ model Producto {
   updatedAt        DateTime       @updatedAt @map("updated_at")
 
   pedidoProductos  PedidoProducto[]
-  preciosCliente   ProductoCliente[]
+  productoCliente   ProductoCliente[]
   decoraciones     Decoracion[]
 
   @@map("productos")
@@ -149,7 +149,7 @@ model Cliente {
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
   pedidos        Pedido[]
-  preciosProducto ProductoCliente[]
+  productoCliente ProductoCliente[]
 
   @@map("clientes")
   @@index([documento])

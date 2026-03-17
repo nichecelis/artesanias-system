@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { authService } from '../../services';
 import { useAuthStore } from '../../store/auth.store';
 import { Spinner } from '../../components/common';
+import { Eye, EyeOff } from 'lucide-react';
 
 const schema = z.object({
   correo:   z.string().email('Correo inválido'),
@@ -13,26 +14,35 @@ const schema = z.object({
 });
 type Form = z.infer<typeof schema>;
 
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const setAuth  = useAuthStore((s) => s.setAuth);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Form>({
     resolver: zodResolver(schema),
   });
 
   const onSubmit = async (values: Form) => {
-    setError('');
-    try {
-      const { data } = await authService.login(values.correo, values.password);
-      const { accessToken, refreshToken, usuario } = data.data;
-      setAuth(accessToken, refreshToken, usuario);
-      navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.message ?? 'Error al iniciar sesión');
-    }
-  };
+  setError('');
+  try {
+    console.log('🔐 Intentando login...');
+    const { data } = await authService.login(values.correo, values.password);
+    
+    console.log('✅ Login exitoso, datos recibidos:', data.data);
+    
+    const { accessToken, refreshToken, usuario } = data.data;
+    setAuth(accessToken, refreshToken, usuario);
+    
+    console.log('💾 Token guardado en store');
+    navigate('/dashboard');
+  } catch (err: any) {
+    console.error('❌ Error login:', err);
+    setError(err.response?.data?.message ?? 'Error al iniciar sesión');
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-gray-100 flex items-center justify-center p-4">
@@ -65,13 +75,26 @@ export default function LoginPage() {
 
             <div>
               <label className="label">Contraseña</label>
-              <input
-                {...register('password')}
-                type="password"
-                className="input"
-                placeholder="••••••••"
-                autoComplete="current-password"
-              />
+              <div className="relative">
+                <input
+                  {...register('password')}
+                  type={showPassword ? 'text' : 'password'}
+                  className="input pr-10"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} />
+                  ) : (
+                    <Eye size={18} />
+                  )}
+                </button>
+              </div>
               {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
             </div>
 

@@ -1,7 +1,6 @@
 import { EstadoProducto } from '@prisma/client';
 import { prisma } from '../config/database';
-import { AppError, PaginationParams, PaginatedResult } from '../types';
-import { getPrismaSkip } from '../utils/response';
+import { AppError } from '../types';
 
 interface CrearProductoDto {
   nombre: string;
@@ -18,29 +17,31 @@ export class ProductosService {
     return prisma.producto.create({ data: dto });
   }
 
-  async listar(params: PaginationParams): Promise<PaginatedResult<any>> {
-    const where = {
-      ...(params.search && {
-        nombre: { contains: params.search, mode: 'insensitive' as const },
-      }),
-    };
+  async listar(params: { page?: number; limit?: number }) {
+    const page = Number(params.page) || 1;
+    const limit = Number(params.limit) || 20;
 
-    const [items, total] = await prisma.$transaction([
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await Promise.all([
       prisma.producto.findMany({
-        where,
-        skip:    getPrismaSkip(params),
-        take:    params.limit,
-        orderBy: { [params.sortBy ?? 'nombre']: params.sortOrder },
+        skip,
+        take: limit,
+        include: { productoCliente: true },
+        orderBy: { createdAt: 'desc' }
       }),
-      prisma.producto.count({ where }),
+      prisma.producto.count()
     ]);
 
     return { items, total };
   }
 
   async obtenerPorId(id: string) {
-    const producto = await prisma.producto.findUnique({ where: { id } });
-    if (!producto) throw new AppError(404, 'Producto no encontrado');
+    const producto = await prisma.producto.findUnique({ 
+      where: { id },
+      include: { productoCliente: true } 
+    });
+    if (!producto) throw new AppError('Producto no encontrado', 404);
     return producto;
   }
 
@@ -51,12 +52,11 @@ export class ProductosService {
 
   async eliminar(id: string) {
     await this.obtenerPorId(id);
-    // Verificar que no tenga decoraciones activas
     const decoracionesActivas = await prisma.decoracion.count({
       where: { productoId: id, fechaIngreso: null },
     });
     if (decoracionesActivas > 0) {
-      throw new AppError(409, 'No se puede eliminar: el producto tiene decoraciones activas');
+      throw new AppError('No se puede eliminar: el producto tiene decoraciones activas', 409);
     }
     return prisma.producto.update({
       where: { id },

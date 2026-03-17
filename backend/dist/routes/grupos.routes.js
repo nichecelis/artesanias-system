@@ -1,0 +1,67 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.gruposRouter = void 0;
+const express_1 = require("express");
+const zod_1 = require("zod");
+const auth_middleware_1 = require("../middlewares/auth.middleware");
+const grupos_service_1 = require("../services/grupos.service");
+const response_1 = require("../utils/response");
+exports.gruposRouter = (0, express_1.Router)();
+exports.gruposRouter.use(auth_middleware_1.authenticate);
+const grupoSchema = zod_1.z.object({
+    nombre: zod_1.z.string().min(2).max(200),
+    tipo: zod_1.z.enum(['GRUPO', 'ELITE']),
+    direccion: zod_1.z.string().optional(),
+    telefono: zod_1.z.string().optional(),
+    responsable: zod_1.z.string().optional(),
+});
+// Listar
+exports.gruposRouter.get('/', async (req, res, next) => {
+    try {
+        const params = (0, response_1.parsePagination)(req.query);
+        const result = await grupos_service_1.gruposService.listar(params);
+        res.json({ success: true, data: result.data, meta: result.meta });
+    }
+    catch (e) {
+        next(e);
+    }
+});
+// Obtener por ID
+exports.gruposRouter.get('/:id', async (req, res, next) => {
+    try {
+        (0, response_1.sendSuccess)(res, await grupos_service_1.gruposService.obtener(req.params.id));
+    }
+    catch (e) {
+        next(e);
+    }
+});
+// Crear
+exports.gruposRouter.post('/', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'PRODUCCION'), async (req, res, next) => {
+    try {
+        const data = await grupos_service_1.gruposService.crear(grupoSchema.parse(req.body));
+        res.status(201).json({ success: true, data });
+    }
+    catch (e) {
+        next(e);
+    }
+});
+// Actualizar
+exports.gruposRouter.patch('/:id', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'PRODUCCION'), async (req, res, next) => {
+    try {
+        (0, response_1.sendSuccess)(res, await grupos_service_1.gruposService.actualizar(req.params.id, grupoSchema.partial().parse(req.body)), 'Grupo actualizado');
+    }
+    catch (e) {
+        next(e);
+    }
+});
+// Eliminar
+exports.gruposRouter.delete('/:id', (0, auth_middleware_1.authorize)('ADMINISTRADOR'), async (req, res, next) => {
+    try {
+        await grupos_service_1.gruposService.eliminar(req.params.id);
+        (0, response_1.sendSuccess)(res, null, 'Grupo eliminado');
+    }
+    catch (e) {
+        next(e);
+    }
+});
+//# sourceMappingURL=grupos.routes.js.map

@@ -53,14 +53,22 @@ export default function PedidosPage() {
   });
 
   const columns = [
-    { key: 'codigo', header: 'Código' },
-    { key: 'cliente', header: 'Cliente', render: (r: any) => r.cliente?.nombre ?? '—' },
-    { key: 'estado', header: 'Estado', render: (r: any) => <EstadoBadge estado={r.estado} /> },
-    { 
-      key: 'createdAt', 
-      header: 'Fecha', 
-      render: (r: any) => r.createdAt ? format(new Date(r.createdAt), 'dd/MM/yyyy', { locale: es }) : '—' 
-    },
+  { key: 'codigo', header: 'Código' },
+  { key: 'cliente', header: 'Cliente', render: (r: any) => r.cliente?.nombre ?? '—' },
+  { 
+    key: 'progreso', 
+    header: 'Items / Estado', 
+    render: (r: any) => (
+      <div className="flex flex-col gap-1">
+        {r.productos?.map((pp: any) => (
+          <div key={pp.id} className="text-[10px] flex items-center gap-2">
+            <span className="font-medium">{pp.producto.nombre}:</span>
+            <EstadoBadge estado={pp.estado} />
+          </div>
+        ))}
+      </div>
+    ) 
+  },
     { 
       key: 'acciones', 
       header: 'Acciones', 

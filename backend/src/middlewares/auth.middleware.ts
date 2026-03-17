@@ -1,39 +1,34 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { Rol } from '@prisma/client';
 import { env } from '../config/env';
-import { redis, redisKeys } from '../config/redis';
 import { AppError, AuthPayload, AuthRequest } from '../types';
 
-export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function authenticate(req: Request, res: Response, next: NextFunction) {
   try {
     const authHeader = req.headers.authorization;
+    
+    console.log('🔐 Verificando autenticación...');
+    console.log('📋 Header:', authHeader ? '✅ Presente' : '❌ No presente');
+    
     if (!authHeader?.startsWith('Bearer ')) {
-      // CORRECCIÓN: Primero el mensaje, luego el código
-      throw new AppError('Token de autenticación requerido', 401);
+      return next(new AppError('Token de autenticación requerido', 401));
     }
 
-    const token = authHeader.slice(7);
-    let payload: AuthPayload;
-    try {
-      payload = jwt.verify(token, env.JWT_SECRET) as AuthPayload;
-    } catch {
-      throw new AppError('Token inválido o expirado', 401);
-    }
-
-    const isBlacklisted = await redis.get(redisKeys.blacklistToken(payload.jti));
-    if (isBlacklisted) {
-      throw new AppError('Token inválido', 401);
-    }
-
-    (req as AuthRequest).user = payload;
+    const token = authHeader.substring(7);
+    console.log('🔑 JWT_SECRET usando:', env.JWT_SECRET.substring(0, 10) + '...');
+    
+    const decoded = jwt.verify(token, env.JWT_SECRET) as AuthPayload;
+    
+    console.log('✅ Token válido para usuario:', decoded.correo);
+    (req as AuthRequest).user = decoded;
     next();
   } catch (error) {
-    next(error);
+    console.error('❌ Error de autenticación:', error);
+    next(new AppError('Su sesión ha expirado o el token es inválido', 401));
   }
 }
 
-export function authorize(...roles: Rol[]) {
+export function authorize(...allowedRoles: string[]) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     const user = (req as AuthRequest).user;
 
@@ -41,10 +36,9 @@ export function authorize(...roles: Rol[]) {
       return next(new AppError('No autenticado', 401));
     }
 
-    if (roles.length > 0 && !roles.includes(user.rol)) {
+    if (allowedRoles.length > 0 && !allowedRoles.includes(user.rol)) {
       return next(
-        // CORRECCIÓN: El string va primero
-        new AppError(`Acceso denegado. Roles permitidos: ${roles.join(', ')}`, 403)
+        new AppError(`Acceso denegado. Roles permitidos: ${allowedRoles.join(', ')}`, 403)
       );
     }
 

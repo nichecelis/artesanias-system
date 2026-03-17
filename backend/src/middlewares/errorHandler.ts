@@ -5,6 +5,7 @@ import { ApiResponse } from '../types';
 import { logger } from '../utils/logger';
 import { env } from '../config/env';
 
+
 export const errorHandler = (
   err: any,
   req: Request,
@@ -60,9 +61,7 @@ export const errorHandler = (
 
   return res.status(statusCode).json({
     success: false,
-    message: env.NODE_ENV === 'production' && statusCode === 500 
-      ? 'Error interno del servidor' 
-      : message,
-    ...(env.NODE_ENV !== 'production' && { stack: err.stack }),
+    message: message, // <--- Aquí llegará el texto del error al Frontend
+    ...(env.NODE_ENV === 'development' && { stack: err.stack })
   } satisfies ApiResponse);
 };

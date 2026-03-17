@@ -10,7 +10,7 @@ const loginSchema = z.object({
 });
 
 const refreshSchema = z.object({
-  refreshToken: z.string().min(1),
+  refreshToken: z.string().min(1, 'Refresh token requerido'),
 });
 
 export class AuthController {
@@ -19,7 +19,7 @@ export class AuthController {
     try {
       const dto = loginSchema.parse(req.body);
       const result = await authService.login(dto);
-      sendSuccess(res, result, 'Autenticación exitosa');
+      sendSuccess(res, result, 'Autenticación exitosa', 200);
     } catch (error) {
       next(error);
     }
@@ -29,7 +29,7 @@ export class AuthController {
     try {
       const { refreshToken } = refreshSchema.parse(req.body);
       const tokens = await authService.refresh(refreshToken);
-      sendSuccess(res, tokens, 'Token renovado');
+      sendSuccess(res, tokens, 'Token renovado', 200);
     } catch (error) {
       next(error);
     }
@@ -38,8 +38,8 @@ export class AuthController {
   async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const user = (req as AuthRequest).user;
-      await authService.logout(user.sub, user.jti, user.exp);
-      sendSuccess(res, null, 'Sesión cerrada exitosamente');
+      await authService.logout(user.sub, user.jti, user.exp ?? 0);
+      sendSuccess(res, null, 'Sesión cerrada exitosamente', 200);
     } catch (error) {
       next(error);
     }
@@ -48,7 +48,7 @@ export class AuthController {
   async me(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const user = (req as AuthRequest).user;
-      sendSuccess(res, { id: user.sub, correo: user.correo, rol: user.rol });
+      sendSuccess(res, { id: user.sub, correo: user.correo, rol: user.rol }, 'Usuario obtenido', 200);
     } catch (error) {
       next(error);
     }

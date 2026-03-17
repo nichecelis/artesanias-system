@@ -3,17 +3,30 @@ import { ApiResponse, PaginatedResult, PaginationMeta, PaginationParams } from '
 
 // ─── Respuestas HTTP estandarizadas ──────────────────────────
 
-export function sendSuccess<T>(
-  res: Response,
-  data: T,
-  message = 'OK',
-  statusCode = 200,
-): Response {
+export const sendSuccess = <T>(
+  res: Response, 
+  data: T, 
+  message: string = 'Operación exitosa', // <--- Añade un valor por defecto
+  statusCode: number = 200
+): Response => {
   return res.status(statusCode).json({
     success: true,
     message,
-    data,
-  } satisfies ApiResponse<T>);
+    data
+  });
+};
+
+export function sendError(
+  res: Response,
+  statusCode: number,
+  message: string,
+  errors?: any
+): Response {
+  return res.status(statusCode).json({
+    success: false,
+    message,
+    errors,
+  });
 }
 
 export function sendCreated<T>(res: Response, data: T, message = 'Creado exitosamente'): Response {

@@ -68,7 +68,7 @@ export async function handleObtener(
   try {
     const { id } = idParamSchema.parse(req.params);
     const data = await serviceFn(id);
-    sendSuccess(res, data);
+    sendSuccess(res, data, 'Obtenido exitosamente', 200);
   } catch (error) {
     next(error);
   }
@@ -84,7 +84,7 @@ export async function handleCrear(
   try {
     const dto = schema ? schema.parse(req.body) : req.body;
     const data = await serviceFn(dto);
-    sendCreated(res, data);
+    sendCreated(res, data, 'Creado exitosamente');
   } catch (error) {
     next(error);
   }
@@ -101,7 +101,7 @@ export async function handleActualizar(
     const { id } = idParamSchema.parse(req.params);
     const dto = schema ? schema.parse(req.body) : req.body;
     const data = await serviceFn(id, dto);
-    sendSuccess(res, data, 'Actualizado exitosamente');
+    sendSuccess(res, data, 'Actualizado exitosamente', 200);
   } catch (error) {
     next(error);
   }
@@ -117,7 +117,7 @@ export async function handleEliminar(
   try {
     const { id } = idParamSchema.parse(req.params);
     await serviceFn(id, ...extraArgs);
-    sendSuccess(res, null, 'Eliminado exitosamente');
+    sendSuccess(res, null, 'Eliminado exitosamente', 200);
   } catch (error) {
     next(error);
   }

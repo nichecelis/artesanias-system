@@ -1,31 +1,67 @@
-import { Request, Response } from 'express';
-import { PedidosService } from '../services/pedidos.service';
+import { Request, Response, NextFunction } from 'express';
+import { pedidosService } from '../services/pedidos.service';
+import { sendSuccess } from '../utils/response';
 
 export class PedidosController {
-  private pedidosService: PedidosService;
 
-  constructor() {
-    this.pedidosService = new PedidosService();
-  }
-  async listar(req: Request, res: Response) {
+  async obtenerPorId(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-        const { fechaDesde, fechaHasta, busqueda, page, limit, estado } = req.query;
-        
-        const pedidos = await this.pedidosService.listar({
-            page: page ? Number(page) : 1,
-            limit: limit ? Number(limit) : 20,
-            search: busqueda ? String(busqueda) : undefined,
-            estado: estado ? String(estado) : undefined,
-            fechaDesde: fechaDesde ? String(fechaDesde) : undefined,
-            fechaHasta: fechaHasta ? String(fechaHasta) : undefined,
-        });
-        
-        return res.json({
-            success: true,
-            data: pedidos // Retorna el objeto { data, meta } del servicio
-            });
-        } catch (error: any) {
-            return res.status(500).json({ success: false, message: error.message });
-        }
+      const { id } = req.params;
+      console.log('📨 GET /pedidos/:id -', id);
+      
+      const pedido = await pedidosService.obtenerPorId(id);
+      sendSuccess(res, pedido, 'Pedido obtenido correctamente', 200);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async listar(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      console.log('📨 GET /pedidos - Query:', req.query);
+      
+      const result = await pedidosService.listar(req.query);
+      sendSuccess(res, result, 'Pedidos obtenidos correctamente', 200);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async crear(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      console.log('📨 POST /pedidos - Body:', req.body);
+      
+      const pedido = await pedidosService.crear(req.body);
+      sendSuccess(res, pedido, 'Pedido creado correctamente', 201);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async actualizar(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      console.log('📨 PUT /pedidos/:id -', id);
+      
+      const pedido = await pedidosService.actualizar(id, req.body);
+      sendSuccess(res, pedido, 'Pedido actualizado correctamente', 200);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async cambiarEstado(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { estado } = req.body;
+      console.log('📨 PATCH /pedidos/:id/estado -', id, estado);
+      
+      const pedido = await pedidosService.cambiarEstado(id, estado);
+      sendSuccess(res, pedido, 'Estado del pedido actualizado', 200);
+    } catch (error) {
+      next(error);
+    }
   }
 }
+
+export const pedidosController = new PedidosController();

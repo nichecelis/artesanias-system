@@ -11,19 +11,32 @@ const precioSchema = z.object({ precioVenta: z.number().positive() });
 
 // Precios de un producto
 productoClientesRouter.get('/producto/:productoId', async (req: Request, res: Response, next: NextFunction) => {
-  try { sendSuccess(res, await productoClientesService.listarPorProducto(req.params.productoId)); } catch (e) { next(e); }
+  try { 
+    const data = await productoClientesService.listarPorProducto(req.params.productoId);
+    // Agregamos el mensaje "Precios del producto" como tercer argumento
+    sendSuccess(res, data, 'Precios del producto'); 
+  } catch (e) { next(e); }
 });
 
 // Precios de un cliente
 productoClientesRouter.get('/cliente/:clienteId', async (req: Request, res: Response, next: NextFunction) => {
-  try { sendSuccess(res, await productoClientesService.listarPorCliente(req.params.clienteId)); } catch (e) { next(e); }
+  try { 
+    const data = await productoClientesService.listarPorCliente(req.params.clienteId);
+    // Agregamos el mensaje "Precios del cliente"
+    sendSuccess(res, data, 'Precios del cliente'); 
+  } catch (e) { next(e); }
 });
 
 // Crear/actualizar precio
-productoClientesRouter.put('/:productoId/:clienteId', authorize('ADMINISTRADOR', 'VENTAS'), async (req: Request, res: Response, next: NextFunction) => {
+productoClientesRouter.put('/:clienteId/:productoId', authorize('ADMINISTRADOR', 'VENTAS'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { precioVenta } = precioSchema.parse(req.body);
-    const data = await productoClientesService.upsert(req.params.productoId, req.params.clienteId, precioVenta);
+    // Usar el nombre exacto del modelo: productoCliente (camelCase)
+    const data = await productoClientesService.upsert(
+      req.params.productoId, 
+      req.params.clienteId, 
+      precioVenta
+    );
     res.status(200).json({ success: true, data });
   } catch (e) { next(e); }
 });

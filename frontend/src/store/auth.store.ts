@@ -15,19 +15,38 @@ interface AuthState {
   setAuth: (token: string, refreshToken: string, usuario: Usuario) => void;
   setToken: (token: string) => void;
   logout: () => void;
+  isAuthenticated: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       token: null,
       refreshToken: null,
       usuario: null,
-      setAuth: (token, refreshToken, usuario) =>
-        set({ token, refreshToken, usuario }),
-      setToken: (token) => set({ token }),
-      logout: () => set({ token: null, refreshToken: null, usuario: null }),
+
+      setAuth: (token, refreshToken, usuario) => {
+        console.log('✅ Auth guardado:', usuario.correo);
+        set({ token, refreshToken, usuario });
+      },
+
+      setToken: (token) => {
+        console.log('🔄 Token actualizado');
+        set({ token });
+      },
+
+      logout: () => {
+        console.log('🚪 Logout realizado');
+        set({ token: null, refreshToken: null, usuario: null });
+      },
+
+      isAuthenticated: () => {
+        const { token } = get();
+        return !!token;
+      },
     }),
-    { name: 'artesanias-auth' },
-  ),
+    {
+      name: 'artesanias-auth', // Nombre en localStorage
+    }
+  )
 );
