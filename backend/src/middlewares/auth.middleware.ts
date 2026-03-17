@@ -1,37 +1,29 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Rol } from '@prisma/client';
-
 import { env } from '../config/env';
 import { redis, redisKeys } from '../config/redis';
 import { AppError, AuthPayload, AuthRequest } from '../types';
 
-// ─── Verificar JWT ────────────────────────────────────────────
-
-export async function authenticate(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
+export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
-      throw new AppError(401, 'Token de autenticación requerido');
+      // CORRECCIÓN: Primero el mensaje, luego el código
+      throw new AppError('Token de autenticación requerido', 401);
     }
 
     const token = authHeader.slice(7);
-
     let payload: AuthPayload;
     try {
       payload = jwt.verify(token, env.JWT_SECRET) as AuthPayload;
     } catch {
-      throw new AppError(401, 'Token inválido o expirado');
+      throw new AppError('Token inválido o expirado', 401);
     }
 
-    // Verificar si el token fue invalidado (logout)
     const isBlacklisted = await redis.get(redisKeys.blacklistToken(payload.jti));
     if (isBlacklisted) {
-      throw new AppError(401, 'Token inválido');
+      throw new AppError('Token inválido', 401);
     }
 
     (req as AuthRequest).user = payload;
@@ -41,25 +33,21 @@ export async function authenticate(
   }
 }
 
-// ─── Autorización por roles ───────────────────────────────────
-
 export function authorize(...roles: Rol[]) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     const user = (req as AuthRequest).user;
 
     if (!user) {
-      return next(new AppError(401, 'No autenticado'));
+      return next(new AppError('No autenticado', 401));
     }
 
     if (roles.length > 0 && !roles.includes(user.rol)) {
       return next(
-        new AppError(403, `Acceso denegado. Roles permitidos: ${roles.join(', ')}`),
+        // CORRECCIÓN: El string va primero
+        new AppError(`Acceso denegado. Roles permitidos: ${roles.join(', ')}`, 403)
       );
     }
 
     next();
   };
 }
-
-// Alias conveniente: solo administrador
-export const soloAdmin = authorize(Rol.ADMINISTRADOR);

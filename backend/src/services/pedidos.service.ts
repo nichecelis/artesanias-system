@@ -1,153 +1,162 @@
-import { EstadoPedido } from '@prisma/client';
+import { Prisma, EstadoPedido } from '@prisma/client';
 import { prisma } from '../config/database';
-import { AppError, PaginationParams, PaginatedResult } from '../types';
-import { getPrismaSkip, generarCodigoPedido } from '../utils/response';
-
-interface ProductoPedidoDto {
-  productoId:      string;
-  cantidadPedido:  number;
-  cantidadPlancha?: number;
-}
-
-interface CrearPedidoDto {
-  clienteId:        string;
-  laser?:           boolean;
-  fechaInicioCorte?: string;
-  observaciones?:   string;
-  productos:        ProductoPedidoDto[];
-}
-
-interface ActualizarPedidoDto {
-  laser?:            boolean;
-  fechaInicioCorte?: string;
-  fechaConteo?:      string;
-  cantidadTareas?:   number;
-  fechaAsignacion?:  string;
-  cantidadRecibida?: number;
-  fechaDespacho?:    string;
-  cortes?:           number;
-  cantidadDespacho?: number;
-  cantidadFaltante?: number;
-  estado?:           EstadoPedido;
-  observaciones?:    string;
-  productos?:        ProductoPedidoDto[];
-}
-
-const INCLUDE_COMPLETO = {
-  cliente:   { select: { id: true, nombre: true, documento: true, telefono: true } },
-  productos: { include: { producto: { select: { id: true, nombre: true, precioVenta: true, precioDecoracion: true } } } },
-  decoraciones: {
-    include: {
-      decoradora: { select: { id: true, nombre: true } },
-      producto:   { select: { id: true, nombre: true } },
-    },
-  },
-} as const;
+import { AppError } from '../types';
 
 export class PedidosService {
+    async listar(filtros: any) {
+    const page = Number(filtros.page) || 1;
+    const limit = Number(filtros.limit) || 20;
+    
+    const where: Prisma.PedidoWhereInput = {};
 
-  async crear(dto: CrearPedidoDto) {
-    const cliente = await prisma.cliente.findUnique({ where: { id: dto.clienteId } });
-    if (!cliente || !cliente.activo) throw new AppError(404, 'Cliente no encontrado');
-    if (!dto.productos?.length) throw new AppError(400, 'El pedido debe tener al menos un producto');
-
-    const count  = await prisma.pedido.count();
-    const codigo = generarCodigoPedido(count + 1);
-    const { productos, ...pedidoData } = dto;
-    const fechas = ['fechaInicioCorte','fechaConteo','fechaAsignacion','fechaDespacho'];
-    const data: any = { ...pedidoData, codigo };
-    fechas.forEach(f => { if (data[f]) data[f] = new Date(data[f] + 'T00:00:00.000Z'); });
-
-    return prisma.pedido.create({
-      data: {
-        ...data,
-        productos: {
-          create: productos.map(p => ({
-            productoId:     p.productoId,
-            cantidadPedido: p.cantidadPedido,
-            cantidadPlancha: p.cantidadPlancha,
-          })),
-        },
-      },
-      include: INCLUDE_COMPLETO,
-    });
-  }
-
-  async listar(params: PaginationParams & { estado?: EstadoPedido; clienteId?: string }): Promise<PaginatedResult<any>> {
-    const where: any = {};
-    if (params.estado)    where.estado    = params.estado;
-    if (params.clienteId) where.clienteId = params.clienteId;
-    if (params.search) {
+    // Filtro por texto (Código o Cliente)
+    if (filtros.search) {
       where.OR = [
-        { codigo:  { contains: params.search, mode: 'insensitive' } },
-        { cliente: { nombre: { contains: params.search, mode: 'insensitive' } } },
+        { codigo: { contains: filtros.search, mode: 'insensitive' } },
+        { cliente: { nombre: { contains: filtros.search, mode: 'insensitive' } } }
       ];
     }
 
-    const [items, total] = await prisma.$transaction([
-      prisma.pedido.findMany({
-        where,
-        skip:    getPrismaSkip(params),
-        take:    params.limit,
-        orderBy: { [params.sortBy ?? 'createdAt']: params.sortOrder },
-        include: {
-          cliente:   { select: { id: true, nombre: true } },
-          productos: { include: { producto: { select: { id: true, nombre: true } } } },
-          _count:    { select: { decoraciones: true } },
-        },
-      }),
-      prisma.pedido.count({ where }),
-    ]);
-
-    return { items, total };
-  }
-
-  async obtenerPorId(id: string) {
-    const pedido = await prisma.pedido.findUnique({ where: { id }, include: INCLUDE_COMPLETO });
-    if (!pedido) throw new AppError(404, 'Pedido no encontrado');
-    return pedido;
-  }
-
-  async actualizar(id: string, dto: ActualizarPedidoDto) {
-    await this.obtenerPorId(id);
-    const { productos, ...pedidoData } = dto;
-
-    if (productos !== undefined) {
-      await prisma.pedidoProducto.deleteMany({ where: { pedidoId: id } });
-      if (productos.length > 0) {
-        await prisma.pedidoProducto.createMany({
-          data: productos.map(p => ({
-            pedidoId:       id,
-            productoId:     p.productoId,
-            cantidadPedido: p.cantidadPedido,
-            cantidadPlancha: p.cantidadPlancha,
-          })),
-        });
-      }
+    // Filtro por Estado
+    if (filtros.estado) {
+      where.estado = filtros.estado as EstadoPedido;
     }
 
-    const fechas = ['fechaInicioCorte','fechaConteo','fechaAsignacion','fechaDespacho'];
-    const dataFinal: any = { ...pedidoData };
-    fechas.forEach(f => { if (dataFinal[f]) dataFinal[f] = new Date(dataFinal[f] + 'T00:00:00.000Z'); });
-    return prisma.pedido.update({ where: { id }, data: dataFinal, include: INCLUDE_COMPLETO });
-  }
+    // Filtro por Rango de Fechas
+    if (filtros.fechaDesde || filtros.fechaHasta) {
+      where.createdAt = {
+        ...(filtros.fechaDesde && { gte: new Date(filtros.fechaDesde) }),
+        ...(filtros.fechaHasta && { lte: new Date(new Date(filtros.fechaHasta).setHours(23, 59, 59, 999)) }),
+      };
+    }
 
-  async cambiarEstado(id: string, estado: EstadoPedido) {
-    await this.obtenerPorId(id);
-    return prisma.pedido.update({
-      where: { id }, data: { estado },
-      include: { cliente: { select: { id: true, nombre: true } } },
-    });
+    const [total, pedidos] = await prisma.$transaction([
+      prisma.pedido.count({ where }),
+      prisma.pedido.findMany({
+        where,
+        include: { 
+          cliente: true, 
+          productos: { include: { producto: true } } 
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' }
+      })
+    ]);
+
+    return { 
+      success: true,
+      data: pedidos,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   }
 
   async estadisticas() {
     const [porEstado, totalMes] = await prisma.$transaction([
-      prisma.pedido.groupBy({ by: ['estado'], _count: { id: true } }),
-      prisma.pedido.count({
-        where: { createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } },
+      prisma.pedido.groupBy({
+        by: ['estado'],
+        _count: { id: true },
+        orderBy: undefined
       }),
+      prisma.pedido.count({
+        where: {
+          createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
+        }
+      })
     ]);
-    return { porEstado, totalMes };
+
+    return { 
+      success: true,
+      porEstado: porEstado.map((e: any) => ({ 
+        estado: e.estado, 
+        cantidad: e._count?.id || 0 
+      })), 
+      totalMes 
+    };
+  }
+
+  async obtenerPorId(id: string) {
+    const pedido = await prisma.pedido.findUnique({
+      where: { id },
+      include: { cliente: true, productos: { include: { producto: true } } }
+    });
+    if (!pedido) throw new AppError("Pedido no encontrado", 404);
+    return pedido;
+  }
+
+  async crear(data: any) {
+    // Validar que productos es un array
+    if (!data.productos || !Array.isArray(data.productos) || data.productos.length === 0) {
+      throw new AppError("El pedido debe incluir al menos un producto", 400);
+    }
+
+    // Validar que clienteId existe
+    if (!data.clienteId) {
+      throw new AppError("El cliente es requerido", 400);
+    }
+
+    const count = await prisma.pedido.count();
+    const codigo = `PED-${(count + 1).toString().padStart(3, '0')}`;
+
+    return prisma.pedido.create({
+      data: {
+        codigo,
+        clienteId: data.clienteId,
+        estado: data.estado || 'PENDIENTE',
+        productos: {
+          create: data.productos.map((p: any) => ({
+            productoId: p.productoId,
+            cantidadPedido: Number(p.cantidadPedido),
+            cantidadPlancha: Number(p.cantidadPlancha || 0)
+          }))
+        }
+      },
+      include: { cliente: true, productos: { include: { producto: true } } }
+    });
+  }
+
+  async actualizar(id: string, data: any) {
+    const pedido = await this.obtenerPorId(id);
+    
+    const { productos, ...resto } = data;
+    
+    if (productos) {
+      if (!Array.isArray(productos) || productos.length === 0) {
+        throw new AppError("El pedido debe incluir al menos un producto", 400);
+      }
+      
+      await prisma.pedidoProducto.deleteMany({ where: { pedidoId: id } });
+      (resto as any).productos = {
+        create: productos.map((p: any) => ({
+          productoId: p.productoId,
+          cantidadPedido: Number(p.cantidadPedido),
+          cantidadPlancha: Number(p.cantidadPlancha || 0)
+        }))
+      };
+    }
+
+    return prisma.pedido.update({
+      where: { id },
+      data: resto,
+      include: { cliente: true, productos: { include: { producto: true } } }
+    });
+  }
+
+  async cambiarEstado(id: string, estado: string) {
+    const estadosValidos = Object.values(EstadoPedido);
+    if (!estadosValidos.includes(estado as EstadoPedido)) {
+      throw new AppError(`Estado inválido. Permitidos: ${estadosValidos.join(', ')}`, 400);
+    }
+
+    return prisma.pedido.update({
+      where: { id },
+      data: { estado: estado as EstadoPedido }
+    });
   }
 }
 

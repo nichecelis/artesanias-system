@@ -27,9 +27,7 @@ import {
   nominaRouter       as nominaRoutes,
 } from './routes/decoradoras.routes';
 import { gruposRouter as gruposRoutes } from './routes/grupos.routes';
-import usuariosRoutes from './routes/usuarios.routes';
 import { decoracionesRouter as decoracionesRoutes } from './routes/decoraciones.routes';
-import { productoClientesRouter as preciosRoutes } from './routes/producto-clientes.routes';
 import { prestamosRouter as prestamosRoutes } from './routes/prestamos.routes';
 
 const app = express();

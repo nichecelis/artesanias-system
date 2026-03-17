@@ -45,14 +45,20 @@ pedidosRouter.get('/', async (req: Request, res: Response, next: NextFunction) =
   try {
     const params = {
       ...parsePagination(req.query as any),
-      estado:    req.query.estado    as EstadoPedido | undefined,
-      clienteId: req.query.clienteId as string       | undefined,
+      estado: req.query.estado as EstadoPedido,
+      search: req.query.search as string,
+      fechaDesde: req.query.fechaDesde as string, // Asegúrate de pasar esto
+      fechaHasta: req.query.fechaHasta as string, // Asegúrate de pasar esto
     };
+    
     const result = await pedidosService.listar(params);
-    res.json({ success: true, data: result.items, meta: {
-      total: result.total, page: params.page, limit: params.limit,
-      totalPages: Math.ceil(result.total / params.limit),
-    }});
+    
+    // Sincronizado con la respuesta del servicio anterior
+    res.json({
+      success: true,
+      data: result.data,  // ✓ Correct
+      meta: result.meta   // ✓ Correct
+      });
   } catch (e) { next(e); }
 });
 

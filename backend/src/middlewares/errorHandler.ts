@@ -1,28 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import { Prisma } from '@prisma/client';
 import { ZodError } from 'zod';
-
-import { AppError, ApiResponse } from '../types';
+import { ApiResponse } from '../types';
 import { logger } from '../utils/logger';
 import { env } from '../config/env';
 
-export function errorHandler(
-  err: unknown,
+export const errorHandler = (
+  err: any,
   req: Request,
   res: Response,
-  _next: NextFunction,
-): void {
-  // ─── AppError (errores de negocio controlados) ────────────
-  if (err instanceof AppError) {
-    res.status(err.statusCode).json({
-      success: false,
-      message: err.message,
-      errors: err.errors,
-    } satisfies ApiResponse);
-    return;
-  }
-
-  // ─── Errores de validación de Zod ────────────────────────
+  next: NextFunction
+) => {
+  // 1. Manejo de Errores de Validación (Zod)
   if (err instanceof ZodError) {
     const errors: Record<string, string[]> = {};
     err.errors.forEach((e) => {
@@ -31,57 +20,49 @@ export function errorHandler(
       errors[key].push(e.message);
     });
 
-    res.status(400).json({
+    return res.status(400).json({
       success: false,
       message: 'Datos de entrada inválidos',
       errors,
     } satisfies ApiResponse);
-    return;
   }
 
-  // ─── Errores de Prisma ────────────────────────────────────
+  // 2. Manejo de Errores de Prisma (Base de Datos)
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === 'P2002') {
-      // Unique constraint
       const field = (err.meta?.target as string[])?.join(', ') ?? 'campo';
-      res.status(409).json({
+      return res.status(409).json({
         success: false,
         message: `Ya existe un registro con ese ${field}`,
       } satisfies ApiResponse);
-      return;
     }
-
     if (err.code === 'P2025') {
-      // Record not found
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         message: 'Registro no encontrado',
       } satisfies ApiResponse);
-      return;
     }
-
-    logger.error('Prisma known error:', { code: err.code, meta: err.meta });
-    res.status(500).json({
-      success: false,
-      message: 'Error de base de datos',
-    } satisfies ApiResponse);
-    return;
   }
 
-  // ─── Error genérico ───────────────────────────────────────
-  const error = err as Error;
-  logger.error('Error no controlado:', {
-    message: error.message,
-    stack: error.stack,
-    url: req.url,
-    method: req.method,
-  });
+  // 3. Manejo de códigos de estado y logs
+  let statusCode = typeof err.statusCode === 'number' ? err.statusCode : 500;
+  const message = err.message || 'Error interno del servidor';
 
-  res.status(500).json({
+  if (statusCode < 100 || statusCode > 599) statusCode = 500;
+
+  if (statusCode === 500) {
+    logger.error('Error no controlado:', {
+      message: message,
+      stack: err.stack,
+      url: req.url,
+    });
+  }
+
+  return res.status(statusCode).json({
     success: false,
-    message: env.NODE_ENV === 'production'
-      ? 'Error interno del servidor'
-      : error.message,
-    ...(env.NODE_ENV !== 'production' && { stack: error.stack }),
+    message: env.NODE_ENV === 'production' && statusCode === 500 
+      ? 'Error interno del servidor' 
+      : message,
+    ...(env.NODE_ENV !== 'production' && { stack: err.stack }),
   } satisfies ApiResponse);
-}
+};

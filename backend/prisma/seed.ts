@@ -45,26 +45,29 @@ async function main() {
     });
   }
 
-  // 4. Productos de muestra (Corrección TS2322)
-  // Usamos findFirst + create para evitar el error de búsqueda por campo no único
-  const productosData = [
-    { nombre: 'Taza cerámica 300ml', descripcion: 'Taza artesanal', precioVenta: 25000, precioDecoracion: 3000 },
-    { nombre: 'Plato decorativo 20cm', descripcion: 'Plato pintado', precioVenta: 35000, precioDecoracion: 5000 },
-    { nombre: 'Jarrón pequeño', descripcion: 'Jarrón artesanal 15cm', precioVenta: 45000, precioDecoracion: 7000 },
-  ];
+  // 4. Productos de muestra
+	const listaProductos = [
+		{ nombre: 'Taza cerámica 300ml', descripcion: 'Taza artesanal', precioVenta: 25000, precioDecoracion: 3000 },
+		{ nombre: 'Plato decorativo 20cm', descripcion: 'Plato pintado', precioVenta: 35000, precioDecoracion: 5000 },
+		{ nombre: 'Jarrón pequeño', descripcion: 'Jarrón artesanal 15cm', precioVenta: 45000, precioDecoracion: 7000 },
+	  ];
 
-  for (const p of productosData) {
-    const existe = await prisma.producto.findFirst({ where: { nombre: p.nombre } });
-    if (!existe) {
-      await prisma.producto.create({
-        data: {
-          ...p,
-          estado: EstadoProducto.ACTIVO
-        }
-      });
-    }
-  }
-  console.log('✅ Productos procesados');
+	  for (const p of listaProductos) {
+		// Usamos findFirst porque 'nombre' no es un campo @unique en tu esquema
+		const existe = await prisma.producto.findFirst({ 
+		  where: { nombre: p.nombre } 
+		});
+
+		if (!existe) {
+		  await prisma.producto.create({
+			data: {
+			  ...p,
+			  estado: EstadoProducto.ACTIVO
+			}
+		  });
+		}
+	  }
+	  console.log('✅ Productos procesados sin duplicados');
 
   // 5. Clientes de muestra
   await prisma.cliente.upsert({

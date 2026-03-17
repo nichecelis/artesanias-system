@@ -49,13 +49,11 @@ export interface PaginatedResult<T> {
 
 // ─── Error de la app ─────────────────────────────────────────
 export class AppError extends Error {
-  constructor(
-    public readonly statusCode: number,
-    public readonly message: string,
-    public readonly errors?: Record<string, string[]>,
-  ) {
+  public readonly statusCode: number; // Debe ser tipo number
+
+  constructor(message: string, statusCode: number) {
     super(message);
-    this.name = 'AppError';
-    Error.captureStackTrace(this, this.constructor);
+    this.statusCode = statusCode;
+    Object.setPrototypeOf(this, AppError.prototype);
   }
 }

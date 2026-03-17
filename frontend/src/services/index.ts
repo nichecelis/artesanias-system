@@ -41,7 +41,10 @@ export const clientesService = {
 
 // ─── Pedidos ───────────────────────────────────────────────
 export const pedidosService = {
-  listar:   (params?: any) => api.get<PaginatedResponse<any>>('/pedidos', { params }),
+  listar: async (params: any) => {
+    const response = await api.get('/pedidos', { params });
+    return response; // Quitar .data para ser consistente
+    },
   obtener:  (id: string)   => api.get<ApiResponse<any>>(`/pedidos/${id}`),
   crear:    (data: any)    => api.post<ApiResponse<any>>('/pedidos', data),
   actualizar: (id: string, data: any) => api.patch<ApiResponse<any>>(`/pedidos/${id}`, data),

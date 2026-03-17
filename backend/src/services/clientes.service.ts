@@ -52,16 +52,24 @@ export class ClientesService {
       where: { id },
       include: {
         pedidos: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: {
+            createdAt: "desc"
+          },
           take: 10,
           select: {
-            id: true, codigo: true, estado: true,
-            cantidadPedido: true, createdAt: true,
-          },
-        },
-      },
+            id: true,
+            codigo: true,
+            estado: true,
+            // cantidadPedido: true, // ❌ ELIMINA ESTA LÍNEA, el campo no existe
+            createdAt: true,
+            // Si necesitas mostrar cantidades, usualmente están en la relación productos:
+            _count: {
+              select: { productos: true }
+            }
+          }
+        }
+      }
     });
-    if (!cliente) throw new AppError(404, 'Cliente no encontrado');
     return cliente;
   }
 
