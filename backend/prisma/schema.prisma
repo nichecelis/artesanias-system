@@ -166,7 +166,7 @@ model Pedido {
   clienteId     String       @map("cliente_id")
   cliente       Cliente      @relation(fields: [clienteId], references: [id])
 
-  laser         Boolean      @default(false)
+  laser         String?      
 
   estado        EstadoPedido @default(PENDIENTE)
   observaciones String?
@@ -226,7 +226,9 @@ model PedidoProducto {
   fechaInicioCorte DateTime? @map("fecha_inicio_corte") @db.Date
   fechaConteo      DateTime? @map("fecha_conteo") @db.Date
   cantidadTareas   Int?
-  cortes           Int?
+  corte1 Int?
+  corte2 Int?
+  corte3 Int?
 
   // 🔥 DECORACIÓN
   fechaAsignacion  DateTime? @map("fecha_asignacion") @db.Date

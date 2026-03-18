@@ -24,14 +24,14 @@ const productoItemSchema = z.object({
 
 const crearPedidoSchema = z.object({
   clienteId:        z.string().uuid(),
-  laser:            z.boolean().optional(),
+  laser:            z.enum(['TALLER', 'EXTERNO']).optional(),
   fechaInicioCorte: fechaOpcional,
   observaciones:    z.string().optional().transform(v => v === '' ? undefined : v),
   productos:        z.array(productoItemSchema).min(1, 'Al menos un producto'),
 });
 
 const actualizarPedidoSchema = z.object({
-  laser:            z.boolean().optional(),
+  laser:            z.enum(['TALLER', 'EXTERNO']).optional(),
   fechaInicioCorte: fechaOpcional,
   fechaConteo:      fechaOpcional,
   cantidadTareas:   numOpcional,

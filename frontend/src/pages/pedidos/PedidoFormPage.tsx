@@ -8,19 +8,20 @@ import { Plus, Trash2, ArrowLeft, Search, X } from 'lucide-react';
 import { pedidosService, clientesService, productosService } from '../../services';
 import { Spinner, LoadingScreen } from '../../components/common';
 import ProcesoProducto from '../../components/ProcesoProducto';
-import { calcularEstado } from '../../../../backend/src/utils/calcularEstado';
 import { useWatch } from 'react-hook-form';
 
 const schema = z.object({
   clienteId:        z.string().min(1, 'Selecciona un cliente'),
-  laser:            z.boolean().optional(),
+  laser:            z.enum(['TALLER', 'EXTERNO']).optional(),
   fechaInicioCorte: z.string().optional(),
   fechaConteo:      z.string().optional(),
   cantidadTareas:   z.coerce.number().int().optional(),
   fechaAsignacion:  z.string().optional(),
   cantidadRecibida: z.coerce.number().int().optional(),
   fechaDespacho:    z.string().optional(),
-  cortes:           z.coerce.number().int().optional(),
+  corte1: z.coerce.number().int().optional(),
+  corte2: z.coerce.number().int().optional(),
+  corte3: z.coerce.number().int().optional(),
   cantidadDespacho: z.coerce.number().int().optional(),
   cantidadFaltante: z.coerce.number().int().optional(),
   observaciones:    z.string().optional(),
@@ -32,7 +33,9 @@ const schema = z.object({
     fechaInicioCorte: z.string().optional(),
     fechaConteo:      z.string().optional(),
     cantidadTareas:   z.coerce.number().int().optional(),
-    cortes:           z.coerce.number().int().optional(),
+    corte1:           z.coerce.number().int().optional(),
+    corte2:           z.coerce.number().int().optional(),
+    corte3:           z.coerce.number().int().optional(),
 
     // 🔥 DECORACIÓN
     fechaAsignacion:  z.string().optional(),
@@ -155,7 +158,7 @@ export default function PedidoFormPage() {
 
   const { register, handleSubmit, control, reset, setValue, formState: { errors, isSubmitting } } = useForm<Form>({
     resolver: zodResolver(schema),
-    defaultValues: { laser: false, productos: [{ productoId: '', cantidadPedido: 1 }] },
+    defaultValues: { laser: undefined, productos: [{ productoId: '', cantidadPedido: 1 }] },
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'productos' });
@@ -171,14 +174,16 @@ export default function PedidoFormPage() {
 
       reset({
         clienteId: pedidoRes.clienteId,
-        laser: pedidoRes.laser ?? false,
+        laser: pedidoRes.laser ?? undefined,
         fechaInicioCorte: toDateStr(pedidoRes.fechaInicioCorte),
         fechaConteo: toDateStr(pedidoRes.fechaConteo),
         cantidadTareas: pedidoRes.cantidadTareas ?? undefined,
         fechaAsignacion: toDateStr(pedidoRes.fechaAsignacion),
         cantidadRecibida: pedidoRes.cantidadRecibida ?? undefined,
         fechaDespacho: toDateStr(pedidoRes.fechaDespacho),
-        cortes: pedidoRes.cortes ?? undefined,
+        corte1: pedidoRes.corte1 ?? undefined,
+        corte2: pedidoRes.corte2 ?? undefined,
+        corte3: pedidoRes.corte3 ?? undefined,
         cantidadDespacho: pedidoRes.cantidadDespacho ?? undefined,
         cantidadFaltante: pedidoRes.cantidadFaltante ?? undefined,
         observaciones: pedidoRes.observaciones ?? '',
@@ -191,7 +196,9 @@ export default function PedidoFormPage() {
             fechaInicioCorte: toDateStr(p.fechaInicioCorte),
             fechaConteo: toDateStr(p.fechaConteo),
             cantidadTareas: p.cantidadTareas ?? undefined,
-            cortes: p.cortes ?? undefined,
+            corte1: p.corte1 ?? undefined,
+            corte2: p.corte2 ?? undefined,
+            corte3: p.corte3 ?? undefined,
 
             fechaAsignacion: toDateStr(p.fechaAsignacion),
             cantidadRecibida: p.cantidadRecibida ?? undefined,
@@ -241,8 +248,14 @@ export default function PedidoFormPage() {
               />
             </div>
             <div className="flex items-center gap-3 col-span-2">
-              <input {...register('laser')} type="checkbox" id="laser" className="w-4 h-4 text-primary-600" />
-              <label htmlFor="laser" className="text-sm text-gray-700">¿Requiere láser?</label>
+              <div className="col-span-2">
+                <label className="label">Láser</label>
+                <select {...register('laser')} className="input">
+                  <option value="">Selecciona...</option>
+                  <option value="TALLER">En taller</option>
+                  <option value="EXTERNO">Externo</option>
+                </select>
+              </div>
             </div>
             <div className="col-span-2">
               <label className="label">Observaciones</label>
@@ -254,31 +267,29 @@ export default function PedidoFormPage() {
         {/* ── Productos ── */}
         <div className="card space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Productos *</h2>
+            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Productos</h2>
             <button type="button" onClick={() => append({ productoId: '', cantidadPedido: 1 })}
               className="btn-secondary text-xs py-1.5 px-3"><Plus size={14} /> Agregar</button>
           </div>
           {errors.productos?.root && <p className="text-red-500 text-xs">{errors.productos.root.message}</p>}
           <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-500 uppercase px-1">
-            <div className="col-span-5">Producto</div>
-            <div className="col-span-3">Cant. pedido</div>
-            <div className="col-span-3">Cant. plancha</div>
-            <div className="col-span-1"></div>
           </div>
           <div className="space-y-2">
             {fields.map((field, idx) => {
               const productoActual = productosWatch?.[idx];
-              const estado = calcularEstado(productoActual || {});
+              const cantidadPedido = productoActual.cantidadPedido || 0;
+              const cantidadDespacho = productoActual.cantidadDespacho || 0;
+              const cantidadFaltante = (cantidadPedido || 0) - (cantidadDespacho || 0);
 
               return (
                 <div key={field.id} className="border rounded p-4 space-y-4">
                 
                 {/* 🔥 HEADER CON PROCESO */}
                 <div className="flex justify-between items-center">
-                  <h3 className="text-sm font-semibold text-gray-700">
+                  <h3 className="text-sm font-semibold text-gray-700" style={{ color: '#e72a09' }}>
                     Producto #{idx + 1}
                   </h3>
-                  <ProcesoProducto estado={estado} />
+                  <ProcesoProducto estado="" />
                 </div>
 
                 {/* PRODUCTO */}
@@ -340,17 +351,52 @@ export default function PedidoFormPage() {
 
                     <div>
                       <label className="label">Fecha conteo</label>
-                      <input type="date" {...register(`productos.${idx}.fechaConteo`)} className="input" />
+                      <input
+                        type="date"
+                        {...register(`productos.${idx}.fechaConteo`)}
+                        className="input text-sm"
+                        placeholder="Fecha conteo"
+                      />
                     </div>
 
                     <div>
                       <label className="label">Tareas</label>
-                      <input type="number" {...register(`productos.${idx}.cantidadTareas`)} className="input" />
+                        <input
+                          type="number"
+                          {...register(`productos.${idx}.cantidadTareas`)}
+                          className="input text-sm"
+                          placeholder="Tareas"
+                        />
                     </div>
 
                     <div>
-                      <label className="label">Cortes</label>
-                      <input type="number" {...register(`productos.${idx}.cortes`)} className="input" />
+                      <label className="label">Corte 1</label>
+                        <input
+                          type="number"
+                          {...register(`productos.${idx}.corte1`)}
+                          className="input text-sm"
+                          placeholder="Corte 1"
+                        />
+                    </div>
+
+                    <div>
+                      <label className="label">Corte 2</label>
+                        <input
+                          type="number"
+                          {...register(`productos.${idx}.corte2`)}
+                          className="input text-sm"
+                          placeholder="Corte 2"
+                        />
+                    </div>
+
+                    <div>
+                      <label className="label">Corte 3</label>
+                        <input
+                          type="number"
+                          {...register(`productos.${idx}.corte3`)}
+                          className="input text-sm"
+                          placeholder="Corte 3"
+                        />
                     </div>
 
                   </div>
@@ -395,7 +441,11 @@ export default function PedidoFormPage() {
 
                     <div>
                       <label className="label">Cantidad faltante</label>
-                      <input type="number" {...register(`productos.${idx}.cantidadFaltante`)} className="input" />
+                      <input
+                        value={cantidadFaltante}
+                        readOnly
+                        className="input bg-gray-100"
+                      />
                     </div>
 
                   </div>

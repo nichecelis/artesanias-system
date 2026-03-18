@@ -10,14 +10,16 @@ import { Spinner, LoadingScreen } from '../../components/common';
 
 const schema = z.object({
   clienteId:        z.string().min(1, 'Selecciona un cliente'),
-  laser:            z.boolean().optional(),
+  laser:            z.enum(['TALLER', 'EXTERNO']).optional(),
   fechaInicioCorte: z.string().optional(),
   fechaConteo:      z.string().optional(),
   cantidadTareas:   z.coerce.number().int().optional(),
   fechaAsignacion:  z.string().optional(),
   cantidadRecibida: z.coerce.number().int().optional(),
   fechaDespacho:    z.string().optional(),
-  cortes:           z.coerce.number().int().optional(),
+  corte1:           z.coerce.number().int().optional(),
+  corte2:           z.coerce.number().int().optional(),
+  corte3:           z.coerce.number().int().optional(),
   cantidadDespacho: z.coerce.number().int().optional(),
   cantidadFaltante: z.coerce.number().int().optional(),
   observaciones:    z.string().optional(),
@@ -135,7 +137,7 @@ export default function PedidoFormPage() {
 
   const { register, handleSubmit, control, reset, setValue, formState: { errors, isSubmitting } } = useForm<Form>({
     resolver: zodResolver(schema),
-    defaultValues: { laser: false, productos: [{ productoId: '', cantidadPedido: 1 }] },
+    defaultValues: { laser: undefined, productos: [{ productoId: '', cantidadPedido: 1 }] },
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'productos' });
@@ -145,14 +147,16 @@ export default function PedidoFormPage() {
       setClienteId(pedidoRes.clienteId);
       reset({
         clienteId:        pedidoRes.clienteId,
-        laser:            pedidoRes.laser ?? false,
+        laser:            pedidoRes.laser ?? '',
         fechaInicioCorte: toDateStr(pedidoRes.fechaInicioCorte),
         fechaConteo:      toDateStr(pedidoRes.fechaConteo),
         cantidadTareas:   pedidoRes.cantidadTareas ?? undefined,
         fechaAsignacion:  toDateStr(pedidoRes.fechaAsignacion),
         cantidadRecibida: pedidoRes.cantidadRecibida ?? undefined,
         fechaDespacho:    toDateStr(pedidoRes.fechaDespacho),
-        cortes:           pedidoRes.cortes ?? undefined,
+        corte1:           pedidoRes.corte1 ?? undefined,
+        corte2:           pedidoRes.corte2 ?? undefined,
+        corte3:           pedidoRes.corte3 ?? undefined,
         cantidadDespacho: pedidoRes.cantidadDespacho ?? undefined,
         cantidadFaltante: pedidoRes.cantidadFaltante ?? undefined,
         observaciones:    pedidoRes.observaciones ?? '',
@@ -203,8 +207,14 @@ export default function PedidoFormPage() {
               />
             </div>
             <div className="flex items-center gap-3 col-span-2">
-              <input {...register('laser')} type="checkbox" id="laser" className="w-4 h-4 text-primary-600" />
-              <label htmlFor="laser" className="text-sm text-gray-700">¿Requiere láser?</label>
+              <div className="col-span-2">
+                <label className="label">Láser</label>
+                <select {...register('laser')} className="input">
+                  <option value="">Selecciona...</option>
+                  <option value="TALLER">En taller</option>
+                  <option value="EXTERNO">Externo</option>
+                </select>
+              </div>
             </div>
             <div className="col-span-2">
               <label className="label">Observaciones</label>
@@ -265,7 +275,9 @@ export default function PedidoFormPage() {
             <div><label className="label">Fecha inicio corte</label><input {...register('fechaInicioCorte')} type="date" className="input" /></div>
             <div><label className="label">Fecha conteo</label><input {...register('fechaConteo')} type="date" className="input" /></div>
             <div><label className="label">Cantidad tareas</label><input {...register('cantidadTareas')} type="number" min={0} className="input" /></div>
-            <div><label className="label">Cortes</label><input {...register('cortes')} type="number" min={0} className="input" /></div>
+            <input type="number" {...register('corte1')} />
+            <input type="number" {...register('corte2')} />
+            <input type="number" {...register('corte3')} />
           </div>
         </div>
 
