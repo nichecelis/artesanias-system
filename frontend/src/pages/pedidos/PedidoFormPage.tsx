@@ -280,6 +280,7 @@ export default function PedidoFormPage() {
               const cantidadPedido = productoActual.cantidadPedido || 0;
               const cantidadDespacho = productoActual.cantidadDespacho || 0;
               const cantidadFaltante = (cantidadPedido || 0) - (cantidadDespacho || 0);
+              const estadoProducto = pedidoRes?.productos?.[idx]?.estadoCalculado || 'PENDIENTE';
 
               return (
                 <div key={field.id} className="border rounded p-4 space-y-4">
@@ -289,7 +290,7 @@ export default function PedidoFormPage() {
                   <h3 className="text-sm font-semibold text-gray-700" style={{ color: '#e72a09' }}>
                     Producto #{idx + 1}
                   </h3>
-                  <ProcesoProducto estado="" />
+                  <ProcesoProducto estado={estadoProducto} />
                 </div>
 
                 {/* PRODUCTO */}
