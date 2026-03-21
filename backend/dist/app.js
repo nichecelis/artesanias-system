@@ -23,6 +23,7 @@ const productos_routes_1 = __importDefault(require("./routes/productos.routes"))
 const clientes_routes_1 = __importDefault(require("./routes/clientes.routes"));
 const pedidos_routes_1 = __importDefault(require("./routes/pedidos.routes"));
 const reportes_routes_1 = __importDefault(require("./routes/reportes.routes"));
+const precios_routes_1 = __importDefault(require("./routes/precios.routes"));
 const decoradoras_routes_1 = require("./routes/decoradoras.routes");
 const grupos_routes_1 = require("./routes/grupos.routes");
 const decoraciones_routes_1 = require("./routes/decoraciones.routes");
@@ -73,6 +74,7 @@ app.use(`${API}/empleados`, decoradoras_routes_1.empleadosRouter);
 app.use(`${API}/nomina`, decoradoras_routes_1.nominaRouter);
 app.use(`${API}/reportes`, reportes_routes_1.default);
 app.use(`${API}/grupos`, grupos_routes_1.gruposRouter);
+app.use(`${API}/precios`, precios_routes_1.default);
 // ─── Manejo de errores ────────────────────────────────────────
 app.use(notFoundHandler_1.notFoundHandler);
 app.use(errorHandler_1.errorHandler);

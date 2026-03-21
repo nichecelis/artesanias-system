@@ -43,7 +43,11 @@ export default function EmpleadosPage() {
   const save = useMutation({
     mutationFn: (data: Form) =>
       editing ? empleadosService.actualizar(editing.id, data) : empleadosService.crear(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['empleados'] }); closeModal(); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['empleados'] });
+      closeModal();
+      alert(editing ? '✅ Empleado actualizado exitosamente' : '✅ Empleado creado exitosamente');
+    },
   });
 
   const columns = [

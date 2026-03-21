@@ -14,14 +14,35 @@ import { handleObtener } from '../controllers/base.controller';
 export const decoradorasRouter = Router();
 decoradorasRouter.use(authenticate);
 
+const grupoIdSchema = z.union([
+  z.string().uuid(),
+  z.string().min(1),
+  z.literal(''),
+]).transform(v => v === '' ? null : v).optional();
+
 const decoradoraSchema = z.object({
   nombre:     z.string().min(2).max(200),
   documento:  z.string().min(3).max(20),
   telefono:   z.string().optional(),
-  grupoId:    z.string().uuid().nullable().optional(),
+  grupoId:    grupoIdSchema,
   banco:      z.string().optional(),
   numCuenta:  z.string().optional(),
   tipoCuenta: z.nativeEnum(TipoCuenta).optional(),
+});
+
+const decoradoraUpdateSchema = z.object({
+  nombre:     z.string().min(2).max(200).optional(),
+  documento:  z.string().min(3).max(20).optional(),
+  telefono:   z.string().optional().nullable(),
+  grupoId:    z.union([
+    z.string().uuid(),
+    z.string().min(1),
+    z.literal(''),
+    z.null(),
+  ]).transform(v => v === '' ? null : v).optional().nullable(),
+  banco:      z.string().optional().nullable(),
+  numCuenta:  z.string().optional().nullable(),
+  tipoCuenta: z.nativeEnum(TipoCuenta).optional().nullable(),
 });
 
 decoradorasRouter.get('/', async (req: Request, res: Response, next: NextFunction) => {
@@ -45,7 +66,7 @@ decoradorasRouter.post('/', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req
 decoradorasRouter.get('/:id',        (req, res, next) => handleObtener(req, res, next, (id) => decoradorasService.obtenerPorId(id)));
 decoradorasRouter.patch('/:id', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await decoradorasService.actualizar(req.params.id, decoradoraSchema.partial().parse(req.body));
+    const data = await decoradorasService.actualizar(req.params.id, decoradoraUpdateSchema.parse(req.body));
     sendSuccess(res, data, 'Actualizada');
   } catch (error) { next(error); }
 });
@@ -186,12 +207,14 @@ empleadosRouter.patch('/:id', async (req: Request, res: Response, next: NextFunc
 export const nominaRouter = Router();
 nominaRouter.use(authenticate, authorize('ADMINISTRADOR', 'CONTABILIDAD'));
 
+const uuidOpcional = z.union([z.string().uuid(), z.literal(''), z.null()]).transform(v => v === '' ? null : v).optional();
+
 const nominaSchema = z.object({
   empleadoId:     z.string().uuid(),
   fecha:          z.string(),
   diasTrabajados: z.coerce.number().int().min(0).max(31),
   horasExtras:    z.coerce.number().min(0).optional(),
-  prestamoId:     z.string().uuid().nullable().optional(),
+  prestamoId:     uuidOpcional,
   abonosPrestamo: z.coerce.number().min(0).optional(),
   observaciones:  z.string().optional(),
 });
@@ -200,7 +223,7 @@ const actualizarNominaSchema = z.object({
   fecha:          z.string().optional(),
   diasTrabajados: z.coerce.number().int().min(0).max(31).optional(),
   horasExtras:    z.coerce.number().min(0).optional(),
-  prestamoId:     z.string().uuid().nullable().optional(),
+  prestamoId:     uuidOpcional,
   abonosPrestamo: z.coerce.number().min(0).optional(),
   observaciones:  z.string().optional(),
 });

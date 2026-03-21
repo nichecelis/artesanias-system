@@ -117,12 +117,21 @@ export default function PrestamosPage() {
 
   const crear = useMutation({
     mutationFn: (d: CrearForm) => api.post('/prestamos', d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['prestamos'] }); closeModal(); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['prestamos'] });
+      closeModal();
+      alert('✅ Préstamo creado exitosamente');
+    },
   });
 
   const abonar = useMutation({
     mutationFn: (d: AbonoForm) => api.post(`/prestamos/${selected.id}/abonos`, d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['prestamos'] }); refetchDetalle(); abonoForm.reset(); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['prestamos'] });
+      refetchDetalle();
+      abonoForm.reset();
+      alert('✅ Abono registrado exitosamente');
+    },
   });
 
   const eliminarAbono = useMutation({

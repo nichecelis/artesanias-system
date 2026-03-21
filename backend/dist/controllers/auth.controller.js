@@ -16,7 +16,7 @@ class AuthController {
         try {
             const dto = loginSchema.parse(req.body);
             const result = await auth_service_1.authService.login(dto);
-            (0, response_1.sendSuccess)(res, result, 'Autenticación exitosa');
+            (0, response_1.sendSuccess)(res, result, 'Autenticación exitosa', 200);
         }
         catch (error) {
             next(error);
@@ -26,7 +26,7 @@ class AuthController {
         try {
             const { refreshToken } = refreshSchema.parse(req.body);
             const tokens = await auth_service_1.authService.refresh(refreshToken);
-            (0, response_1.sendSuccess)(res, tokens, 'Token renovado');
+            (0, response_1.sendSuccess)(res, tokens, 'Token renovado', 200);
         }
         catch (error) {
             next(error);
@@ -36,7 +36,7 @@ class AuthController {
         try {
             const user = req.user;
             await auth_service_1.authService.logout(user.sub, user.jti, user.exp ?? 0);
-            (0, response_1.sendSuccess)(res, null, 'Sesión cerrada exitosamente');
+            (0, response_1.sendSuccess)(res, null, 'Sesión cerrada exitosamente', 200);
         }
         catch (error) {
             next(error);
@@ -45,7 +45,7 @@ class AuthController {
     async me(req, res, next) {
         try {
             const user = req.user;
-            (0, response_1.sendSuccess)(res, { id: user.sub, correo: user.correo, rol: user.rol });
+            (0, response_1.sendSuccess)(res, { id: user.sub, correo: user.correo, rol: user.rol }, 'Usuario obtenido', 200);
         }
         catch (error) {
             next(error);

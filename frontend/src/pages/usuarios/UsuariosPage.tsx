@@ -66,12 +66,20 @@ export default function UsuariosPage() {
 
   const crear = useMutation({
     mutationFn: (d: CrearForm) => api.post('/usuarios', d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['usuarios'] }); closeModal(); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['usuarios'] });
+      closeModal();
+      alert('✅ Usuario creado exitosamente');
+    },
   });
 
   const editar = useMutation({
     mutationFn: (d: EditarForm) => api.patch(`/usuarios/${selected.id}`, d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['usuarios'] }); closeModal(); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['usuarios'] });
+      closeModal();
+      alert('✅ Usuario actualizado exitosamente');
+    },
   });
 
   const cambiarPass = useMutation({

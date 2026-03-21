@@ -77,7 +77,11 @@ export default function DecoradorasPage() {
       const payload={...data,grupoId:data.grupoId||null};
       return editing ? decoradorasService.actualizar(editing.id,payload) : decoradorasService.crear(payload);
     },
-    onSuccess:()=>{qc.invalidateQueries({queryKey:['decoradoras']});closeModal();},
+    onSuccess:()=>{
+      qc.invalidateQueries({queryKey:['decoradoras']});
+      closeModal();
+      alert(editing ? '✅ Decoradora actualizada exitosamente' : '✅ Decoradora creada exitosamente');
+    },
   });
 
   const columns=[

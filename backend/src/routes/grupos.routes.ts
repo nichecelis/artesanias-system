@@ -12,7 +12,8 @@ const grupoSchema = z.object({
   tipo:        z.enum(['GRUPO', 'ELITE']),
   direccion:   z.string().optional(),
   telefono:    z.string().optional(),
-  responsable: z.string().optional(),
+  responsable: z.string().transform(v => v === '' ? null : v).nullable().optional(),
+  porcentajeResponsable: z.coerce.number().min(0).max(100).optional(),
 });
 
 // Listar

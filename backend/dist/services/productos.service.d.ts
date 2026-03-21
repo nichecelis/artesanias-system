@@ -19,7 +19,10 @@ export declare class ProductosService {
         precioDecoracion: import("@prisma/client/runtime/library").Decimal;
         estado: import(".prisma/client").$Enums.EstadoProducto;
     }>;
-    listar(page?: number, limit?: number): Promise<{
+    listar(params: {
+        page?: number;
+        limit?: number;
+    }): Promise<{
         items: ({
             productoCliente: {
                 id: string;
@@ -39,12 +42,7 @@ export declare class ProductosService {
             precioDecoracion: import("@prisma/client/runtime/library").Decimal;
             estado: import(".prisma/client").$Enums.EstadoProducto;
         })[];
-        meta: {
-            total: number;
-            page: number;
-            limit: number;
-            totalPages: number;
-        };
+        total: number;
     }>;
     obtenerPorId(id: string): Promise<{
         productoCliente: {

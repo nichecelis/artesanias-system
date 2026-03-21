@@ -97,7 +97,11 @@ export default function ProductosPage() {
 
   const save = useMutation({
     mutationFn: (d: Form) => editing ? productosService.actualizar(editing.id, d) : productosService.crear(d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['productos'] }); closeModal(); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['productos'] });
+      closeModal();
+      alert(editing ? '✅ Producto actualizado exitosamente' : '✅ Producto creado exitosamente');
+    },
   });
 
   const remove = useMutation({

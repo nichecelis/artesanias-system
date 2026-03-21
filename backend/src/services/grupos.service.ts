@@ -39,6 +39,7 @@ export const gruposService = {
     direccion?: string;
     telefono?: string;
     responsable?: string;
+    porcentajeResponsable?: number;
   }) => {
     return prisma.grupo.create({ data });
   },
@@ -49,6 +50,7 @@ export const gruposService = {
     direccion?: string;
     telefono?: string;
     responsable?: string;
+    porcentajeResponsable?: number;
   }) => {
     await gruposService.obtener(id);
     return prisma.grupo.update({ where: { id }, data });

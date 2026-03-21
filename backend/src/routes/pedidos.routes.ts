@@ -18,8 +18,16 @@ const productoItemSchema = z.object({
   cantidadPlancha:  z.coerce.number().int().optional(),
   estado:           z.nativeEnum(EstadoPedido).optional(),
   fechaInicioCorte: fechaOpcional,
+  fechaConteo:      fechaOpcional,
+  cantidadTareas:   numOpcional,
+  corte1:           numOpcional,
+  corte2:           numOpcional,
+  corte3:           numOpcional,
+  fechaAsignacion:  fechaOpcional,
   fechaDespacho:    fechaOpcional,
   cantidadRecibida: numOpcional,
+  cantidadDespacho: numOpcional,
+  cantidadFaltante: numOpcional,
 });
 
 const crearPedidoSchema = z.object({
@@ -33,15 +41,6 @@ const crearPedidoSchema = z.object({
 const actualizarPedidoSchema = z.object({
   laser:            z.enum(['TALLER', 'EXTERNO']).optional(),
   fechaInicioCorte: fechaOpcional,
-  fechaConteo:      fechaOpcional,
-  cantidadTareas:   numOpcional,
-  fechaAsignacion:  fechaOpcional,
-  cantidadRecibida: numOpcional,
-  fechaDespacho:    fechaOpcional,
-  cortes:           numOpcional,
-  cantidadDespacho: numOpcional,
-  cantidadFaltante: numOpcional,
-  estado:           z.nativeEnum(EstadoPedido).optional(),
   observaciones:    z.string().optional().transform(v => v === '' ? undefined : v),
   productos:        z.array(productoItemSchema).optional(),
 });

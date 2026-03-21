@@ -28,12 +28,14 @@ function calcularEstadoPedido(productos: any[]): EstadoPedido {
 }
 
 /**
- * 🔥 MAPEO CORRECTO
+ * 🔥 MAPEO CORRECTO - Calcula estado automáticamente
  */
 function mapProducto(p: any) {
 
   const cantidadPedido = Number(p.cantidadPedido || 0);
   const cantidadDespacho = Number(p.cantidadDespacho || 0);
+
+  const estadoCalculado = calcularEstado(p);
 
   return {
     productoId: p.productoId,
@@ -56,9 +58,9 @@ function mapProducto(p: any) {
     // 🔥 DESPACHO
     fechaDespacho: p.fechaDespacho ? new Date(p.fechaDespacho) : null,
     cantidadDespacho,
-    cantidadFaltante: cantidadPedido - cantidadDespacho,
+    cantidadFaltante: cantidadDespacho - cantidadPedido,
 
-    estado: (p.estado as EstadoPedido) || EstadoPedido.PENDIENTE
+    estado: estadoCalculado
   };
 }
 
@@ -104,6 +106,29 @@ export class PedidosService {
 
     if (filtros.estado) {
       where.estado = filtros.estado;
+    }
+
+    if (filtros.proceso) {
+      switch (filtros.proceso) {
+        case 'sin_corte':
+          where.productos = { some: { fechaInicioCorte: null } };
+          break;
+        case 'en_corte':
+          where.productos = { some: { fechaInicioCorte: { not: null }, fechaAsignacion: null } };
+          break;
+        case 'sin_decoracion':
+          where.productos = { some: { fechaAsignacion: null } };
+          break;
+        case 'en_decoracion':
+          where.productos = { some: { fechaAsignacion: { not: null }, fechaDespacho: null } };
+          break;
+        case 'sin_despacho':
+          where.productos = { some: { fechaDespacho: null } };
+          break;
+        case 'despachados':
+          where.productos = { some: { fechaDespacho: { not: null } } };
+          break;
+      }
     }
 
     const [total, pedidos] = await prisma.$transaction([
@@ -241,7 +266,7 @@ export class PedidosService {
         cantidadRecibida: data.cantidadRecibida ? Number(data.cantidadRecibida) : undefined,
 
         cantidadDespacho,
-        cantidadFaltante: cantidadPedido - cantidadDespacho
+        cantidadFaltante: cantidadDespacho - cantidadPedido
       }
     });
 

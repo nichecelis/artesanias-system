@@ -25,11 +25,11 @@ import preciosRoutes from './routes/precios.routes';
 import {
   decoradorasRouter  as decoradorasRoutes,
   empleadosRouter    as empleadosRoutes,
-  nominaRouter       as nominaRoutes,
 } from './routes/decoradoras.routes';
 import { gruposRouter as gruposRoutes } from './routes/grupos.routes';
 import { decoracionesRouter as decoracionesRoutes } from './routes/decoraciones.routes';
 import { prestamosRouter as prestamosRoutes } from './routes/prestamos.routes';
+import { nominaRouter as nominaRoutes } from './routes/nomina.routes';
 
 const app = express();
 

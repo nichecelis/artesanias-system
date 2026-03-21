@@ -1,18 +1,82 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Pencil, Trash2, Users } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, Search, X } from 'lucide-react';
 import { api } from '../../services/api';
+import { decoradorasService } from '../../services';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
+
+function BuscadorDecoradora({ value, onSelect, onClear }: {
+  value: any;
+  onSelect: (d: any) => void;
+  onClear: () => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const { data: results } = useQuery({
+    queryKey: ['decoradoras-buscar', query],
+    queryFn: () => decoradorasService.listar({ page: 1, limit: 50, search: query || undefined }).then(r => r.data.data),
+    enabled: query.length >= 2,
+  });
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
+  if (value) return (
+    <div className="input flex items-center justify-between bg-primary-50 border-primary-300">
+      <div className="flex flex-col">
+        <span className="text-sm font-medium">{value.nombre}</span>
+        <span className="text-xs text-gray-500">{value.documento}</span>
+      </div>
+      <button type="button" onClick={onClear}><X size={14} className="text-gray-400 hover:text-red-500" /></button>
+    </div>
+  );
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="relative">
+        <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
+        <input
+          className="input pl-9 pr-3"
+          placeholder="Buscar por nombre o documento..."
+          value={query}
+          onChange={e => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+        />
+      </div>
+      {open && results?.length > 0 && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          {results.map((d: any) => (
+            <button
+              key={d.id}
+              type="button"
+              onClick={() => { onSelect(d); setQuery(''); setOpen(false); }}
+              className="w-full text-left px-3 py-2.5 hover:bg-primary-50 text-sm border-b border-gray-100 last:border-0"
+            >
+              <span className="font-medium">{d.nombre}</span>
+              <span className="text-gray-400 text-xs ml-2">{d.documento}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const schema = z.object({
   nombre:      z.string().min(2, 'Mínimo 2 caracteres'),
   tipo:        z.enum(['GRUPO', 'ELITE']),
   direccion:   z.string().optional(),
   telefono:    z.string().optional(),
-  responsable: z.string().optional(),
+  responsable: z.string().nullable().optional(),
+  porcentajeResponsable: z.coerce.number().min(0).max(100).optional(),
 });
 type Form = z.infer<typeof schema>;
 
@@ -22,6 +86,7 @@ export default function GruposPage() {
   const [modal, setModal]     = useState(false);
   const [detalle, setDetalle] = useState<any>(null);
   const [editing, setEditing] = useState<any>(null);
+  const [responsable, setResponsable] = useState<any>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['grupos', page],
@@ -34,19 +99,46 @@ export default function GruposPage() {
     enabled: Boolean(detalle?.id),
   });
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<Form>({
+  const { data: decoradoras } = useQuery({
+    queryKey: ['decoradoras-select'],
+    queryFn: () => decoradorasService.listar({ page: 1, limit: 500 }).then(r => r.data.data),
+  });
+
+  const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm<Form>({
     resolver: zodResolver(schema),
     defaultValues: { tipo: 'GRUPO' },
   });
 
-  const openNew  = () => { setEditing(null); reset({ tipo: 'GRUPO' }); setModal(true); };
-  const openEdit = (row: any) => { setEditing(row); reset(row); setModal(true); };
-  const closeModal = () => { setModal(false); setEditing(null); };
+  const openNew  = () => {
+    setEditing(null);
+    setResponsable(null);
+    reset({ tipo: 'GRUPO' });
+    setModal(true);
+  };
+
+  const openEdit = (row: any) => {
+    setEditing(row);
+    const dec = decoradoras?.find((d: any) => d.documento === row.responsable);
+    setResponsable(dec || null);
+    reset({ ...row });
+    setModal(true);
+  };
+
+  const closeModal = () => { setModal(false); setEditing(null); setResponsable(null); };
 
   const save = useMutation({
-    mutationFn: (data: Form) =>
-      editing ? api.patch(`/grupos/${editing.id}`, data) : api.post('/grupos', data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['grupos'] }); closeModal(); },
+    mutationFn: (formData: Form) => {
+      const payload = {
+        ...formData,
+        responsable: responsable?.documento || null,
+      };
+      return editing ? api.patch(`/grupos/${editing.id}`, payload) : api.post('/grupos', payload);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['grupos'] });
+      closeModal();
+      alert(editing ? '✅ Grupo actualizado exitosamente' : '✅ Grupo creado exitosamente');
+    },
   });
 
   const remove = useMutation({
@@ -61,7 +153,15 @@ export default function GruposPage() {
       </span>
     )},
     { key: 'nombre',      header: 'Nombre' },
-    { key: 'responsable', header: 'Responsable', render: (r: any) => r.responsable ?? '—' },
+    { key: 'responsable', header: 'Responsable', render: (r: any) => {
+      const dec = decoradoras?.find((d: any) => d.documento === r.responsable);
+      return dec ? (
+        <span className="text-sm">{dec.nombre} <span className="text-gray-400 text-xs">({r.responsable})</span></span>
+      ) : r.responsable ? <span className="text-sm">{r.responsable}</span> : '—';
+    }},
+    { key: 'porcentaje', header: '% Adicional', render: (r: any) => (
+      r.porcentajeResponsable > 0 ? <span className="text-green-600 font-medium">{r.porcentajeResponsable}%</span> : '—'
+    )},
     { key: 'telefono',    header: 'Teléfono',    render: (r: any) => r.telefono ?? '—' },
     { key: 'direccion',   header: 'Dirección',   render: (r: any) => r.direccion ?? '—' },
     { key: 'miembros',    header: 'Decoradoras', render: (r: any) => (
@@ -185,7 +285,16 @@ export default function GruposPage() {
             </div>
             <div className="col-span-2">
               <label className="label">Responsable / Líder</label>
-              <input {...register('responsable')} className="input" placeholder="Nombre del líder del grupo" />
+              <BuscadorDecoradora
+                value={responsable}
+                onSelect={(d) => setResponsable(d)}
+                onClear={() => setResponsable(null)}
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="label">% Pago adicional al responsable</label>
+              <input {...register('porcentajeResponsable')} type="number" min={0} max={100} step={0.1} className="input" placeholder="0" />
+              <p className="text-xs text-gray-400 mt-1">Porcentaje sobre el total a pagar al resto de decoradoras</p>
             </div>
             <div className="col-span-2">
               <label className="label">Dirección</label>

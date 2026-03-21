@@ -1,23 +1,23 @@
 import { Scissors, Palette, Truck } from 'lucide-react';
 
 const steps = [
-  { key: 'CORTE', label: 'Corte', icon: Scissors },
-  { key: 'DECORACION', label: 'Decoración', icon: Palette },
-  { key: 'DESPACHO', label: 'Despacho', icon: Truck },
+  { key: 'EN_CORTE', label: 'Corte', icon: Scissors },
+  { key: 'EN_DECORACION', label: 'Decoración', icon: Palette },
+  { key: 'DESPACHADO', label: 'Despacho', icon: Truck },
 ];
 
+const ESTADO_ORDER = ['PENDIENTE', 'EN_CORTE', 'EN_DECORACION', 'LISTO', 'DESPACHADO'];
+
 export default function ProcesoProducto({ estado }: { estado: string }) {
+  const currentIndex = ESTADO_ORDER.indexOf(estado);
+  const isDespachado = estado === 'DESPACHADO' || estado === 'LISTO';
+
   const getColor = (step: string) => {
-    if (estado === 'FINALIZADO') return 'bg-green-500 text-white';
-
-    if (step === 'CORTE' && estado !== 'PENDIENTE')
-      return 'bg-blue-500 text-white';
-
-    if (step === 'DECORACION' && (estado === 'DECORACION' || estado === 'DESPACHO'))
-      return 'bg-purple-500 text-white';
-
-    if (step === 'DESPACHO' && estado === 'DESPACHO')
-      return 'bg-yellow-500 text-white';
+    if (isDespachado && step === 'DESPACHADO') return 'bg-green-500 text-white';
+    
+    if (step === 'EN_CORTE' && currentIndex >= 1) return 'bg-blue-500 text-white';
+    if (step === 'EN_DECORACION' && currentIndex >= 2) return 'bg-purple-500 text-white';
+    if (step === 'DESPACHADO' && currentIndex >= 4) return 'bg-yellow-500 text-white';
 
     return 'bg-gray-200 text-gray-500';
   };

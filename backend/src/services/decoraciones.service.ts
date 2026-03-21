@@ -78,6 +78,7 @@ export class DecoracionesService {
     }
 
     const cantidadEgreso  = dto.cantidadEgreso  ?? dec.cantidadEgreso;
+    const cantidadIngreso = dto.cantidadIngreso ?? dec.cantidadIngreso;
     const compras         = dto.compras         ?? Number(dec.compras);
     const abonoAnterior   = Number(dec.abonosPrestamo);
     const abonoNuevo      = dto.abonosPrestamo  ?? abonoAnterior;
@@ -93,6 +94,8 @@ export class DecoracionesService {
     if (dto.fechaEgreso) data.fechaEgreso = new Date(dto.fechaEgreso + 'T00:00:00.000Z');
     if (dto.fechaIngreso) data.fechaIngreso = new Date(dto.fechaIngreso + 'T00:00:00.000Z');
     else if (dto.fechaIngreso === '') data.fechaIngreso = null;
+
+    // No marcar automáticamente como pagado - se hace manualmente
 
     // Si cambió el abono de préstamo, actualizar el saldo del préstamo
     const prestamoIdActual  = dec.prestamoId;
@@ -189,6 +192,120 @@ export class DecoracionesService {
     if (!dec) throw new AppError(404, 'Decoración no encontrada');
     if (!dec.cantidadIngreso) throw new AppError(400, 'Registra el ingreso antes de pagar');
     return prisma.decoracion.update({ where: { id }, data: { pagado: true } });
+  }
+
+  async pagarDecoraciones(ids: string[]) {
+    const decoraciones = await prisma.decoracion.findMany({
+      where: { id: { in: ids } },
+      include: {
+        decoradora: true,
+      },
+    });
+
+    if (decoraciones.length === 0) throw new AppError(404, 'No se encontraron decoraciones');
+
+    const decoracionesSinPagar = decoraciones.filter(d => !d.pagado);
+    if (decoracionesSinPagar.length === 0) throw new AppError(400, 'Todas las decoraciones ya están pagadas');
+
+    for (const dec of decoracionesSinPagar) {
+      if (!dec.cantidadIngreso) throw new AppError(400, `La decoración ${dec.id} no tiene cantidad de ingreso`);
+    }
+
+    await prisma.$transaction(
+      decoracionesSinPagar.map(d => 
+        prisma.decoracion.update({
+          where: { id: d.id },
+          data: { pagado: true },
+        })
+      )
+    );
+
+    return {
+      decoracionesPagadas: decoracionesSinPagar.map(d => d.id),
+    };
+  }
+
+  async listarAgrupado(params: PaginationParams & {
+    decoradoraId?: string;
+    pedidoId?:     string;
+    pagado?:       boolean;
+    fechaDesde?:   string;
+    fechaHasta?:   string;
+  }) {
+    const where: any = {};
+    if (params.decoradoraId) where.decoradoraId = params.decoradoraId;
+    if (params.pedidoId)     where.pedidoId     = params.pedidoId;
+    if (params.pagado !== undefined) where.pagado = params.pagado;
+    if (params.fechaDesde || params.fechaHasta) {
+      where.fechaEgreso = {};
+      if (params.fechaDesde) where.fechaEgreso.gte = new Date(params.fechaDesde + 'T00:00:00.000Z');
+      if (params.fechaHasta) where.fechaEgreso.lte = new Date(params.fechaHasta + 'T23:59:59.999Z');
+    }
+
+    const decoraciones = await prisma.decoracion.findMany({
+      where,
+      orderBy: { createdAt: 'asc' },
+      include: {
+        pedido: { select: { id: true, codigo: true, cliente: { select: { nombre: true } } } },
+        decoradora: { select: { id: true, nombre: true, documento: true } },
+        producto: { select: { id: true, nombre: true, precioDecoracion: true } },
+        prestamo: { select: { id: true, monto: true, saldo: true } },
+      },
+    });
+
+    const grupos: Record<string, any> = {};
+
+    for (const dec of decoraciones) {
+      const key = `${dec.pedidoId}-${dec.decoradoraId}`;
+      if (!grupos[key]) {
+        grupos[key] = {
+          pedidoId: dec.pedidoId,
+          pedidoCodigo: dec.pedido.codigo,
+          clienteNombre: dec.pedido.cliente?.nombre,
+          decoradoraId: dec.decoradoraId,
+          decoradoraNombre: dec.decoradora.nombre,
+          decoradoraDocumento: dec.decoradora.documento,
+          productos: [],
+          totalCantidadEgreso: 0,
+          totalCantidadIngreso: 0,
+          totalCompras: 0,
+          totalAPagar: 0,
+          todosPagados: true,
+          decorationIds: [],
+        };
+      }
+
+      grupos[key].productos.push({
+        id: dec.id,
+        productoId: dec.productoId,
+        productoNombre: dec.producto.nombre,
+        precioDecoracion: dec.precioDecoracion,
+        cantidadEgreso: dec.cantidadEgreso,
+        cantidadIngreso: dec.cantidadIngreso,
+        arreglos: dec.arreglos,
+        perdidas: dec.perdidas,
+        compras: dec.compras,
+        total: dec.total,
+        totalPagar: dec.totalPagar,
+        fechaEgreso: dec.fechaEgreso,
+        fechaIngreso: dec.fechaIngreso,
+        pagado: dec.pagado,
+        prestamoId: dec.prestamoId,
+        abonosPrestamo: dec.abonosPrestamo,
+        createdAt: dec.createdAt,
+        prestamo: dec.prestamo,
+      });
+
+      grupos[key].totalCantidadEgreso += dec.cantidadEgreso;
+      grupos[key].totalCantidadIngreso += dec.cantidadIngreso || 0;
+      grupos[key].totalCompras += Number(dec.compras) || 0;
+      grupos[key].totalAPagar += Number(dec.totalPagar) || 0;
+      grupos[key].todosPagados = grupos[key].todosPagados && dec.pagado;
+      grupos[key].decorationIds.push(dec.id);
+    }
+
+    const items = Object.values(grupos);
+    return { items, total: items.length };
   }
 }
 

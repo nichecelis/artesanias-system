@@ -52,17 +52,18 @@ enum TipoGrupo {
 // =============================================================
 
 model Grupo {
-  id           String      @id @default(uuid())
-  nombre       String
-  tipo         TipoGrupo   @default(GRUPO)
-  direccion    String?
-  telefono     String?
-  responsable  String?
-  activo       Boolean     @default(true)
-  createdAt    DateTime    @default(now()) @map("created_at")
-  updatedAt    DateTime    @updatedAt @map("updated_at")
+  id                     String      @id @default(uuid())
+  nombre                 String
+  tipo                   TipoGrupo   @default(GRUPO)
+  direccion              String?
+  telefono               String?
+  responsable            String?
+  porcentajeResponsable   Float       @default(0)
+  activo                Boolean     @default(true)
+  createdAt              DateTime    @default(now()) @map("created_at")
+  updatedAt              DateTime    @updatedAt @map("updated_at")
 
-  decoradoras  Decoradora[]
+  decoradoras            Decoradora[]
 
   @@map("grupos")
   @@index([tipo])

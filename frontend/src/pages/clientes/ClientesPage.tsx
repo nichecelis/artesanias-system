@@ -55,7 +55,11 @@ export default function ClientesPage() {
   const save = useMutation({
     mutationFn: (data: Form) =>
       editing ? clientesService.actualizar(editing.id, data) : clientesService.crear(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['clientes'] }); closeModal(); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['clientes'] });
+      closeModal();
+      alert(editing ? '✅ Cliente actualizado exitosamente' : '✅ Cliente creado exitosamente');
+    },
   });
 
   const remove = useMutation({

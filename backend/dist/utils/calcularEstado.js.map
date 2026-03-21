@@ -1,0 +1,1 @@
+{"version":3,"file":"calcularEstado.js","sourceRoot":"","sources":["../../src/utils/calcularEstado.ts"],"names":[],"mappings":";;AAEA,wCAKC;AALD,SAAgB,cAAc,CAAC,CAAM;IACnC,IAAI,CAAC,CAAC,aAAa;QAAE,OAAO,YAAY,CAAC;IACzC,IAAI,CAAC,CAAC,eAAe;QAAE,OAAO,eAAe,CAAC;IAC9C,IAAI,CAAC,CAAC,gBAAgB;QAAE,OAAO,UAAU,CAAC;IAC1C,OAAO,WAAW,CAAC;AACrB,CAAC"}

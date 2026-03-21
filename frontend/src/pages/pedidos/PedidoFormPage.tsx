@@ -11,20 +11,9 @@ import ProcesoProducto from '../../components/ProcesoProducto';
 import { useWatch } from 'react-hook-form';
 
 const schema = z.object({
-  clienteId:        z.string().min(1, 'Selecciona un cliente'),
-  laser:            z.enum(['TALLER', 'EXTERNO']).optional(),
-  fechaInicioCorte: z.string().optional(),
-  fechaConteo:      z.string().optional(),
-  cantidadTareas:   z.coerce.number().int().optional(),
-  fechaAsignacion:  z.string().optional(),
-  cantidadRecibida: z.coerce.number().int().optional(),
-  fechaDespacho:    z.string().optional(),
-  corte1: z.coerce.number().int().optional(),
-  corte2: z.coerce.number().int().optional(),
-  corte3: z.coerce.number().int().optional(),
-  cantidadDespacho: z.coerce.number().int().optional(),
-  cantidadFaltante: z.coerce.number().int().optional(),
-  observaciones:    z.string().optional(),
+  clienteId:     z.string().min(1, 'Selecciona un cliente'),
+  laser:        z.enum(['TALLER', 'EXTERNO']).optional(),
+  observaciones: z.string().optional(),
   productos: z.array(z.object({
     productoId:      z.string().min(1, 'Selecciona producto'),
     cantidadPedido:  z.coerce.number().int().positive(),
@@ -44,9 +33,7 @@ const schema = z.object({
     // 🔥 DESPACHO
     fechaDespacho:    z.string().optional(),
     cantidadDespacho: z.coerce.number().int().optional(),
-    cantidadFaltante: z.coerce.number().int().optional(),
 
-    // opcional (si lo usas)
     cantidadPlancha: z.coerce.number().int().optional(),
   })).min(1, 'Agrega al menos un producto'),
 });
@@ -175,17 +162,6 @@ export default function PedidoFormPage() {
       reset({
         clienteId: pedidoRes.clienteId,
         laser: pedidoRes.laser ?? undefined,
-        fechaInicioCorte: toDateStr(pedidoRes.fechaInicioCorte),
-        fechaConteo: toDateStr(pedidoRes.fechaConteo),
-        cantidadTareas: pedidoRes.cantidadTareas ?? undefined,
-        fechaAsignacion: toDateStr(pedidoRes.fechaAsignacion),
-        cantidadRecibida: pedidoRes.cantidadRecibida ?? undefined,
-        fechaDespacho: toDateStr(pedidoRes.fechaDespacho),
-        corte1: pedidoRes.corte1 ?? undefined,
-        corte2: pedidoRes.corte2 ?? undefined,
-        corte3: pedidoRes.corte3 ?? undefined,
-        cantidadDespacho: pedidoRes.cantidadDespacho ?? undefined,
-        cantidadFaltante: pedidoRes.cantidadFaltante ?? undefined,
         observaciones: pedidoRes.observaciones ?? '',
         productos: pedidoRes.productos?.length
         ? pedidoRes.productos.map((p: any) => ({
@@ -205,7 +181,6 @@ export default function PedidoFormPage() {
 
             fechaDespacho: toDateStr(p.fechaDespacho),
             cantidadDespacho: p.cantidadDespacho ?? undefined,
-            cantidadFaltante: p.cantidadFaltante ?? undefined,
           }))
         : [{ productoId: '', cantidadPedido: 1 }],
       });
@@ -217,6 +192,7 @@ export default function PedidoFormPage() {
       isEditing ? pedidosService.actualizar(id!, data) : pedidosService.crear(data),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['pedidos'] });
+      alert(isEditing ? '✅ Pedido actualizado exitosamente' : '✅ Pedido creado exitosamente');
       navigate(`/pedidos/${res.data.data.id}`);
     },
   });
@@ -279,8 +255,16 @@ export default function PedidoFormPage() {
               const productoActual = productosWatch?.[idx];
               const cantidadPedido = productoActual.cantidadPedido || 0;
               const cantidadDespacho = productoActual.cantidadDespacho || 0;
-              const cantidadFaltante = (cantidadPedido || 0) - (cantidadDespacho || 0);
-              const estadoProducto = pedidoRes?.productos?.[idx]?.estadoCalculado || 'PENDIENTE';
+              const cantidadFaltante = (cantidadDespacho || 0) - (cantidadPedido || 0);
+              const faltanteColor = cantidadFaltante < 0 ? 'text-red-600 font-bold' : 'text-green-600 font-bold';
+
+              const calcularEstadoLocal = (p: any) => {
+                if (p.fechaDespacho) return 'DESPACHADO';
+                if (p.fechaAsignacion) return 'EN_DECORACION';
+                if (p.fechaInicioCorte) return 'EN_CORTE';
+                return 'PENDIENTE';
+              };
+              const estadoProducto = calcularEstadoLocal(productoActual);
 
               return (
                 <div key={field.id} className="border rounded p-4 space-y-4">
@@ -445,7 +429,7 @@ export default function PedidoFormPage() {
                       <input
                         value={cantidadFaltante}
                         readOnly
-                        className="input bg-gray-100"
+                        className={`input bg-gray-100 ${faltanteColor}`}
                       />
                     </div>
 

@@ -21,7 +21,6 @@ const schema = z.object({
   corte2:           z.coerce.number().int().optional(),
   corte3:           z.coerce.number().int().optional(),
   cantidadDespacho: z.coerce.number().int().optional(),
-  cantidadFaltante: z.coerce.number().int().optional(),
   observaciones:    z.string().optional(),
   productos: z.array(z.object({
     productoId:      z.string().min(1, 'Selecciona producto'),
@@ -158,7 +157,6 @@ export default function PedidoFormPage() {
         corte2:           pedidoRes.corte2 ?? undefined,
         corte3:           pedidoRes.corte3 ?? undefined,
         cantidadDespacho: pedidoRes.cantidadDespacho ?? undefined,
-        cantidadFaltante: pedidoRes.cantidadFaltante ?? undefined,
         observaciones:    pedidoRes.observaciones ?? '',
         productos: pedidoRes.productos?.length
           ? pedidoRes.productos.map((p: any) => ({
@@ -176,6 +174,7 @@ export default function PedidoFormPage() {
       isEditing ? pedidosService.actualizar(id!, data) : pedidosService.crear(data),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['pedidos'] });
+      alert(isEditing ? '✅ Pedido actualizado exitosamente' : '✅ Pedido creado exitosamente');
       navigate(`/pedidos/${res.data.data.id}`);
     },
   });
@@ -289,7 +288,6 @@ export default function PedidoFormPage() {
             <div><label className="label">Cantidad recibida</label><input {...register('cantidadRecibida')} type="number" min={0} className="input" /></div>
             <div><label className="label">Fecha despacho</label><input {...register('fechaDespacho')} type="date" className="input" /></div>
             <div><label className="label">Cantidad despacho</label><input {...register('cantidadDespacho')} type="number" min={0} className="input" /></div>
-            <div><label className="label">Cantidad faltante</label><input {...register('cantidadFaltante')} type="number" min={0} className="input" /></div>
           </div>
         </div>
 

@@ -1,6 +1,38 @@
 import { Prisma } from '@prisma/client';
 export declare class PedidosService {
     obtenerPorId(id: string): Promise<{
+        estadoCalculado: import(".prisma/client").$Enums.EstadoPedido;
+        productos: {
+            estadoCalculado: import(".prisma/client").$Enums.EstadoPedido;
+            producto: {
+                id: string;
+                nombre: string;
+                createdAt: Date;
+                updatedAt: Date;
+                descripcion: string | null;
+                precioVenta: Prisma.Decimal;
+                precioDecoracion: Prisma.Decimal;
+                estado: import(".prisma/client").$Enums.EstadoProducto;
+            };
+            id: string;
+            createdAt: Date;
+            estado: import(".prisma/client").$Enums.EstadoPedido;
+            productoId: string;
+            pedidoId: string;
+            cantidadPedido: number;
+            cantidadPlancha: number | null;
+            fechaInicioCorte: Date | null;
+            fechaConteo: Date | null;
+            cantidadTareas: number | null;
+            corte1: number | null;
+            corte2: number | null;
+            corte3: number | null;
+            fechaAsignacion: Date | null;
+            cantidadRecibida: number | null;
+            fechaDespacho: Date | null;
+            cantidadDespacho: number | null;
+            cantidadFaltante: number | null;
+        }[];
         cliente: {
             id: string;
             nombre: string;
@@ -12,47 +44,50 @@ export declare class PedidosService {
             telefono: string | null;
             transportadora: string | null;
         };
-        productos: ({
-            producto: {
-                id: string;
-                nombre: string;
-                createdAt: Date;
-                updatedAt: Date;
-                descripcion: string | null;
-                precioVenta: Prisma.Decimal;
-                precioDecoracion: Prisma.Decimal;
-                estado: import(".prisma/client").$Enums.EstadoProducto;
-            };
-        } & {
-            id: string;
-            createdAt: Date;
-            productoId: string;
-            cantidadPedido: number;
-            cantidadPlancha: number | null;
-            pedidoId: string;
-        })[];
-    } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
         estado: import(".prisma/client").$Enums.EstadoPedido;
         clienteId: string;
         codigo: string;
-        laser: boolean;
-        fechaInicioCorte: Date | null;
-        fechaConteo: Date | null;
-        cantidadTareas: number | null;
-        fechaAsignacion: Date | null;
-        cantidadRecibida: number | null;
-        fechaDespacho: Date | null;
-        cortes: number | null;
-        cantidadDespacho: number | null;
-        cantidadFaltante: number | null;
+        laser: string | null;
         observaciones: string | null;
     }>;
     listar(filtros: any): Promise<{
         success: boolean;
-        data: ({
+        data: {
+            estadoCalculado: import(".prisma/client").$Enums.EstadoPedido;
+            productos: {
+                estadoCalculado: import(".prisma/client").$Enums.EstadoPedido;
+                producto: {
+                    id: string;
+                    nombre: string;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    descripcion: string | null;
+                    precioVenta: Prisma.Decimal;
+                    precioDecoracion: Prisma.Decimal;
+                    estado: import(".prisma/client").$Enums.EstadoProducto;
+                };
+                id: string;
+                createdAt: Date;
+                estado: import(".prisma/client").$Enums.EstadoPedido;
+                productoId: string;
+                pedidoId: string;
+                cantidadPedido: number;
+                cantidadPlancha: number | null;
+                fechaInicioCorte: Date | null;
+                fechaConteo: Date | null;
+                cantidadTareas: number | null;
+                corte1: number | null;
+                corte2: number | null;
+                corte3: number | null;
+                fechaAsignacion: Date | null;
+                cantidadRecibida: number | null;
+                fechaDespacho: Date | null;
+                cantidadDespacho: number | null;
+                cantidadFaltante: number | null;
+            }[];
             cliente: {
                 id: string;
                 nombre: string;
@@ -64,44 +99,15 @@ export declare class PedidosService {
                 telefono: string | null;
                 transportadora: string | null;
             };
-            productos: ({
-                producto: {
-                    id: string;
-                    nombre: string;
-                    createdAt: Date;
-                    updatedAt: Date;
-                    descripcion: string | null;
-                    precioVenta: Prisma.Decimal;
-                    precioDecoracion: Prisma.Decimal;
-                    estado: import(".prisma/client").$Enums.EstadoProducto;
-                };
-            } & {
-                id: string;
-                createdAt: Date;
-                productoId: string;
-                cantidadPedido: number;
-                cantidadPlancha: number | null;
-                pedidoId: string;
-            })[];
-        } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
             estado: import(".prisma/client").$Enums.EstadoPedido;
             clienteId: string;
             codigo: string;
-            laser: boolean;
-            fechaInicioCorte: Date | null;
-            fechaConteo: Date | null;
-            cantidadTareas: number | null;
-            fechaAsignacion: Date | null;
-            cantidadRecibida: number | null;
-            fechaDespacho: Date | null;
-            cortes: number | null;
-            cantidadDespacho: number | null;
-            cantidadFaltante: number | null;
+            laser: string | null;
             observaciones: string | null;
-        })[];
+        }[];
         meta: {
             total: number;
             page: number;
@@ -109,45 +115,27 @@ export declare class PedidosService {
             totalPages: number;
         };
     }>;
-    estadisticas(): Promise<{
-        success: boolean;
-        porEstado: {
-            estado: any;
-            cantidad: any;
-        }[];
-        totalMes: number;
-    }>;
     crear(data: any): Promise<{
-        cliente: {
-            id: string;
-            nombre: string;
-            activo: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            documento: string;
-            direccion: string | null;
-            telefono: string | null;
-            transportadora: string | null;
-        };
-        productos: ({
-            producto: {
-                id: string;
-                nombre: string;
-                createdAt: Date;
-                updatedAt: Date;
-                descripcion: string | null;
-                precioVenta: Prisma.Decimal;
-                precioDecoracion: Prisma.Decimal;
-                estado: import(".prisma/client").$Enums.EstadoProducto;
-            };
-        } & {
+        productos: {
             id: string;
             createdAt: Date;
+            estado: import(".prisma/client").$Enums.EstadoPedido;
             productoId: string;
+            pedidoId: string;
             cantidadPedido: number;
             cantidadPlancha: number | null;
-            pedidoId: string;
-        })[];
+            fechaInicioCorte: Date | null;
+            fechaConteo: Date | null;
+            cantidadTareas: number | null;
+            corte1: number | null;
+            corte2: number | null;
+            corte3: number | null;
+            fechaAsignacion: Date | null;
+            cantidadRecibida: number | null;
+            fechaDespacho: Date | null;
+            cantidadDespacho: number | null;
+            cantidadFaltante: number | null;
+        }[];
     } & {
         id: string;
         createdAt: Date;
@@ -155,49 +143,30 @@ export declare class PedidosService {
         estado: import(".prisma/client").$Enums.EstadoPedido;
         clienteId: string;
         codigo: string;
-        laser: boolean;
-        fechaInicioCorte: Date | null;
-        fechaConteo: Date | null;
-        cantidadTareas: number | null;
-        fechaAsignacion: Date | null;
-        cantidadRecibida: number | null;
-        fechaDespacho: Date | null;
-        cortes: number | null;
-        cantidadDespacho: number | null;
-        cantidadFaltante: number | null;
+        laser: string | null;
         observaciones: string | null;
     }>;
     actualizar(id: string, data: any): Promise<{
-        cliente: {
-            id: string;
-            nombre: string;
-            activo: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            documento: string;
-            direccion: string | null;
-            telefono: string | null;
-            transportadora: string | null;
-        };
-        productos: ({
-            producto: {
-                id: string;
-                nombre: string;
-                createdAt: Date;
-                updatedAt: Date;
-                descripcion: string | null;
-                precioVenta: Prisma.Decimal;
-                precioDecoracion: Prisma.Decimal;
-                estado: import(".prisma/client").$Enums.EstadoProducto;
-            };
-        } & {
+        productos: {
             id: string;
             createdAt: Date;
+            estado: import(".prisma/client").$Enums.EstadoPedido;
             productoId: string;
+            pedidoId: string;
             cantidadPedido: number;
             cantidadPlancha: number | null;
-            pedidoId: string;
-        })[];
+            fechaInicioCorte: Date | null;
+            fechaConteo: Date | null;
+            cantidadTareas: number | null;
+            corte1: number | null;
+            corte2: number | null;
+            corte3: number | null;
+            fechaAsignacion: Date | null;
+            cantidadRecibida: number | null;
+            fechaDespacho: Date | null;
+            cantidadDespacho: number | null;
+            cantidadFaltante: number | null;
+        }[];
     } & {
         id: string;
         createdAt: Date;
@@ -205,25 +174,28 @@ export declare class PedidosService {
         estado: import(".prisma/client").$Enums.EstadoPedido;
         clienteId: string;
         codigo: string;
-        laser: boolean;
+        laser: string | null;
+        observaciones: string | null;
+    }>;
+    actualizarSeguimientoProducto(id: string, data: any): Promise<{
+        id: string;
+        createdAt: Date;
+        estado: import(".prisma/client").$Enums.EstadoPedido;
+        productoId: string;
+        pedidoId: string;
+        cantidadPedido: number;
+        cantidadPlancha: number | null;
         fechaInicioCorte: Date | null;
         fechaConteo: Date | null;
         cantidadTareas: number | null;
+        corte1: number | null;
+        corte2: number | null;
+        corte3: number | null;
         fechaAsignacion: Date | null;
         cantidadRecibida: number | null;
         fechaDespacho: Date | null;
-        cortes: number | null;
         cantidadDespacho: number | null;
         cantidadFaltante: number | null;
-        observaciones: string | null;
-    }>;
-    actualizarSeguimientoProducto(pedidoProductoId: string, data: any): Promise<{
-        id: string;
-        createdAt: Date;
-        productoId: string;
-        cantidadPedido: number;
-        cantidadPlancha: number | null;
-        pedidoId: string;
     }>;
     cambiarEstado(id: string, estado: string): Promise<{
         id: string;
@@ -232,17 +204,22 @@ export declare class PedidosService {
         estado: import(".prisma/client").$Enums.EstadoPedido;
         clienteId: string;
         codigo: string;
-        laser: boolean;
-        fechaInicioCorte: Date | null;
-        fechaConteo: Date | null;
-        cantidadTareas: number | null;
-        fechaAsignacion: Date | null;
-        cantidadRecibida: number | null;
-        fechaDespacho: Date | null;
-        cortes: number | null;
-        cantidadDespacho: number | null;
-        cantidadFaltante: number | null;
+        laser: string | null;
         observaciones: string | null;
+    }>;
+    /**
+     * 🔥 ESTADÍSTICAS (FIX TYPE SAFE)
+     */
+    estadisticas(): Promise<{
+        success: boolean;
+        resumen: {
+            total: number;
+            totalMes: number;
+        };
+        porEstado: {
+            estado: import(".prisma/client").$Enums.EstadoPedido;
+            cantidad: number;
+        }[];
     }>;
 }
 export declare const pedidosService: PedidosService;

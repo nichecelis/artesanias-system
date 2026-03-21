@@ -15,12 +15,12 @@ class PrestamosService {
         if (dto.tipo === 'DECORADORA') {
             const d = await database_1.prisma.decoradora.findUnique({ where: { id: dto.beneficiarioId } });
             if (!d || !d.activa)
-                throw new types_1.AppError(404, 'Decoradora no encontrada');
+                throw new types_1.AppError('Decoradora no encontrada', 404);
         }
         else {
             const e = await database_1.prisma.empleado.findUnique({ where: { id: dto.beneficiarioId } });
             if (!e || !e.activo)
-                throw new types_1.AppError(404, 'Empleado no encontrado');
+                throw new types_1.AppError('Empleado no encontrado', 404);
         }
         return database_1.prisma.prestamo.create({
             data: {
@@ -71,15 +71,15 @@ class PrestamosService {
     async obtenerPorId(id) {
         const p = await database_1.prisma.prestamo.findUnique({ where: { id }, include: INCLUDE });
         if (!p)
-            throw new types_1.AppError(404, 'Préstamo no encontrado');
+            throw new types_1.AppError('Préstamo no encontrado', 404);
         return p;
     }
     async abonar(id, monto, fecha) {
         const prestamo = await this.obtenerPorId(id);
         if (Number(prestamo.saldo) <= 0)
-            throw new types_1.AppError(400, 'El préstamo ya está saldado');
+            throw new types_1.AppError('El préstamo ya está saldado', 400);
         if (monto > Number(prestamo.saldo))
-            throw new types_1.AppError(400, `El abono supera el saldo (${prestamo.saldo})`);
+            throw new types_1.AppError(`El abono supera el saldo (${prestamo.saldo})`, 400);
         const nuevoSaldo = Number(prestamo.saldo) - monto;
         const [abono] = await database_1.prisma.$transaction([
             database_1.prisma.abono.create({
@@ -92,7 +92,7 @@ class PrestamosService {
     async eliminarAbono(abonoId) {
         const abono = await database_1.prisma.abono.findUnique({ where: { id: abonoId }, include: { prestamo: true } });
         if (!abono)
-            throw new types_1.AppError(404, 'Abono no encontrado');
+            throw new types_1.AppError('Abono no encontrado', 404);
         const nuevoSaldo = Number(abono.prestamo.saldo) + Number(abono.monto);
         await database_1.prisma.$transaction([
             database_1.prisma.abono.delete({ where: { id: abonoId } }),
@@ -103,7 +103,7 @@ class PrestamosService {
     async eliminar(id) {
         const prestamo = await this.obtenerPorId(id);
         if (Number(prestamo.saldo) < Number(prestamo.monto))
-            throw new types_1.AppError(400, 'No se puede eliminar: tiene abonos registrados');
+            throw new types_1.AppError('No se puede eliminar: tiene abonos registrados', 400);
         return database_1.prisma.prestamo.delete({ where: { id } });
     }
 }

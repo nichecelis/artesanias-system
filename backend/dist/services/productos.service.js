@@ -8,35 +8,23 @@ class ProductosService {
     async crear(dto) {
         return database_1.prisma.producto.create({ data: dto });
     }
-    async listar(page = 1, limit = 20) {
-        // 1. Sanitizar valores
-        const pageNum = Number.isNaN(Number(page)) ? 1 : Math.max(1, Number(page));
-        const limitNum = Number.isNaN(Number(limit)) ? 20 : Math.max(1, Number(limit));
-        const skip = (pageNum - 1) * limitNum;
-        // 2. Ejecutar consultas en paralelo
-        const [productos, total] = await Promise.all([
+    async listar(params) {
+        const page = Number(params.page) || 1;
+        const limit = Number(params.limit) || 20;
+        const skip = (page - 1) * limit;
+        const [items, total] = await Promise.all([
             database_1.prisma.producto.findMany({
+                where: { estado: 'ACTIVO' }, // 👈 FILTRO CLAVE
                 skip,
-                take: limitNum,
-                include: {
-                    productoCliente: true
-                },
-                orderBy: {
-                    createdAt: "desc"
-                }
+                take: limit,
+                include: { productoCliente: true },
+                orderBy: { createdAt: 'desc' }
             }),
-            database_1.prisma.producto.count()
+            database_1.prisma.producto.count({
+                where: { estado: 'ACTIVO' } // 👈 IMPORTANTE también aquí
+            })
         ]);
-        // 3. Retornar con metadata completa (mejor para frontend)
-        return {
-            items: productos,
-            meta: {
-                total,
-                page: pageNum,
-                limit: limitNum,
-                totalPages: Math.ceil(total / limitNum)
-            }
-        };
+        return { items, total };
     }
     async obtenerPorId(id) {
         const producto = await database_1.prisma.producto.findUnique({

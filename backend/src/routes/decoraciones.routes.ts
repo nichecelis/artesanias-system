@@ -7,6 +7,8 @@ import { sendSuccess, parsePagination } from '../utils/response';
 export const decoracionesRouter = Router();
 decoracionesRouter.use(authenticate);
 
+const uuidOpcional = z.union([z.string().uuid(), z.literal(''), z.null()]).transform(v => v === '' ? null : v).optional();
+
 const crearSchema = z.object({
   pedidoId:      z.string().uuid(),
   decoradoraId:  z.string().uuid(),
@@ -24,7 +26,7 @@ const actualizarSchema = z.object({
   perdidas:        z.coerce.number().int().optional(),
   compras:         z.coerce.number().optional(),
   abonosPrestamo:  z.coerce.number().optional(),
-  prestamoId:      z.string().uuid().nullable().optional(),
+  prestamoId:      uuidOpcional,
   pagado:          z.boolean().optional(),
 });
 
@@ -38,11 +40,17 @@ decoracionesRouter.get('/', async (req: Request, res: Response, next: NextFuncti
       fechaDesde:   req.query.fechaDesde   as string | undefined,
       fechaHasta:   req.query.fechaHasta   as string | undefined,
     };
-    const result = await decoracionesService.listar(params);
-    res.json({ success: true, data: result.items, meta: {
-      total: result.total, page: params.page, limit: params.limit,
-      totalPages: Math.ceil(result.total / params.limit),
-    }});
+
+    if (req.query.agrupado === 'true') {
+      const result = await decoracionesService.listarAgrupado(params);
+      res.json({ success: true, data: result.items, meta: { total: result.total, page: 1, limit: 1000, totalPages: 1 }});
+    } else {
+      const result = await decoracionesService.listar(params);
+      res.json({ success: true, data: result.items, meta: {
+        total: result.total, page: params.page, limit: params.limit,
+        totalPages: Math.ceil(result.total / params.limit),
+      }});
+    }
   } catch (e) { next(e); }
 });
 
@@ -72,5 +80,17 @@ decoracionesRouter.delete('/:id', authorize('ADMINISTRADOR', 'PRODUCCION'), asyn
 decoracionesRouter.patch('/:id/pagar', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     sendSuccess(res, await decoracionesService.marcarPagado(req.params.id), 'Marcada como pagada');
+  } catch (e) { next(e); }
+});
+
+const pagarMasivoSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1, 'Selecciona al menos una decoración'),
+});
+
+decoracionesRouter.post('/pagar-masivo', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { ids } = pagarMasivoSchema.parse(req.body);
+    const result = await decoracionesService.pagarDecoraciones(ids);
+    sendSuccess(res, result, `${result.decoracionesPagadas.length} decoración(es) marcada(s) como pagada(s)`);
   } catch (e) { next(e); }
 });
