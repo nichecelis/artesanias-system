@@ -151,6 +151,7 @@ model Cliente {
 
   pedidos        Pedido[]
   productoCliente ProductoCliente[]
+  facturas       Factura[]
 
   @@map("clientes")
   @@index([documento])
@@ -241,6 +242,8 @@ model PedidoProducto {
   cantidadFaltante Int?
 
   createdAt        DateTime @default(now()) @map("created_at")
+
+  facturaItems     FacturaItem[]
 
   @@map("pedido_productos")
   @@index([pedidoId])
@@ -383,6 +386,51 @@ model Nomina {
   @@index([empleadoId])
   @@index([prestamoId])
   @@index([fecha])
+}
+
+// =============================================================
+// MÓDULO 10 — FACTURACIÓN
+// =============================================================
+
+model Factura {
+  id              String    @id @default(uuid())
+  numero          String    @unique
+  clienteId       String    @map("cliente_id")
+  cliente         Cliente   @relation(fields: [clienteId], references: [id])
+  fecha           DateTime  @db.Date
+  subtotal        Decimal   @default(0) @map("subtotal") @db.Decimal(12, 2)
+  descuento        Decimal   @default(0) @map("descuento") @db.Decimal(12, 2)
+  total           Decimal   @default(0) @map("total") @db.Decimal(12, 2)
+  saldoAnterior   Decimal   @default(0) @map("saldo_anterior") @db.Decimal(12, 2)
+  montoPagado     Decimal   @default(0) @map("monto_pagado") @db.Decimal(12, 2)
+  saldo           Decimal   @default(0) @map("saldo") @db.Decimal(12, 2)
+  totalPagar      Decimal   @default(0) @map("total_pagar") @db.Decimal(12, 2)
+  observaciones   String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  items           FacturaItem[]
+
+  @@map("facturas")
+  @@index([clienteId])
+  @@index([fecha])
+}
+
+model FacturaItem {
+  id               String   @id @default(uuid())
+  facturaId        String   @map("factura_id")
+  factura          Factura  @relation(fields: [facturaId], references: [id], onDelete: Cascade)
+  pedidoProductoId  String   @map("pedido_producto_id")
+  pedidoProducto   PedidoProducto @relation(fields: [pedidoProductoId], references: [id])
+  cantidad         Int      @map("cantidad")
+  precioUnitario   Decimal  @map("precio_unitario") @db.Decimal(12, 2)
+  total            Decimal  @map("total") @db.Decimal(12, 2)
+  descuento        Decimal  @default(0) @map("descuento") @db.Decimal(12, 2)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("factura_items")
+  @@index([facturaId])
+  @@index([pedidoProductoId])
 }
 
 // =============================================================

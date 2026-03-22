@@ -7,6 +7,7 @@ import { Plus, Pencil, Trash2, Users, Search, X } from 'lucide-react';
 import { api } from '../../services/api';
 import { decoradorasService } from '../../services';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
+import { useToastStore } from '../../store/toast.store';
 
 function BuscadorDecoradora({ value, onSelect, onClear }: {
   value: any;
@@ -82,6 +83,7 @@ type Form = z.infer<typeof schema>;
 
 export default function GruposPage() {
   const qc = useQueryClient();
+  const toast = useToastStore();
   const [page, setPage]       = useState(1);
   const [modal, setModal]     = useState(false);
   const [detalle, setDetalle] = useState<any>(null);
@@ -90,7 +92,7 @@ export default function GruposPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['grupos', page],
-    queryFn: () => api.get('/grupos', { params: { page, limit: 20 } }).then(r => r.data),
+    queryFn: () => api.get('/grupos', { params: { page, limit: 10 } }).then(r => r.data),
   });
 
   const { data: grupoDetalle } = useQuery({
@@ -137,7 +139,7 @@ export default function GruposPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['grupos'] });
       closeModal();
-      alert(editing ? '✅ Grupo actualizado exitosamente' : '✅ Grupo creado exitosamente');
+      toast.addToast(editing ? 'Grupo actualizado exitosamente' : 'Grupo creado exitosamente', 'success');
     },
   });
 

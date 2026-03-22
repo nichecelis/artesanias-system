@@ -7,6 +7,7 @@ import { Plus, Search, Pencil, Eye } from 'lucide-react';
 import { decoradorasService } from '../../services';
 import { api } from '../../services/api';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
+import { useToastStore } from '../../store/toast.store';
 
 const BANCOS_COLOMBIA = [
   'Bancolombia','Banco de Bogotá','Davivienda','BBVA Colombia',
@@ -34,6 +35,7 @@ const fmt = (n: any) => `$${Number(n??0).toLocaleString('es-CO')}`;
 
 export default function DecoradorasPage() {
   const qc = useQueryClient();
+  const toast = useToastStore();
   const [page,setPage]               = useState(1);
   const [search,setSearch]           = useState('');
   const [modal,setModal]             = useState(false);
@@ -43,7 +45,7 @@ export default function DecoradorasPage() {
 
   const {data,isLoading} = useQuery({
     queryKey:['decoradoras',page,search],
-    queryFn:()=>decoradorasService.listar({page,limit:20,search:search||undefined}).then(r=>r.data),
+    queryFn:()=>decoradorasService.listar({page,limit:10,search:search||undefined}).then(r=>r.data),
   });
 
   const {data:grupos} = useQuery({
@@ -80,7 +82,7 @@ export default function DecoradorasPage() {
     onSuccess:()=>{
       qc.invalidateQueries({queryKey:['decoradoras']});
       closeModal();
-      alert(editing ? '✅ Decoradora actualizada exitosamente' : '✅ Decoradora creada exitosamente');
+      toast.addToast(editing ? 'Decoradora actualizada exitosamente' : 'Decoradora creada exitosamente', 'success');
     },
   });
 

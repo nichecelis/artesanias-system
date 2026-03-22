@@ -2,7 +2,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingBag, Users, Package, UserCog,
   Palette, ClipboardList, UserCheck, FileText, Banknote,
-  LogOut, Menu, X, ChevronRight,
+  LogOut, Menu, X, ChevronRight, Truck,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '../../store/auth.store';
@@ -11,15 +11,17 @@ import { authService } from '../../services';
 const NAV = [
   { to: '/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
   { to: '/pedidos',      label: 'Pedidos',       icon: ShoppingBag },
+  { to: '/despachos',    label: 'Despachos',     icon: Truck },
   { to: '/clientes',     label: 'Clientes',      icon: Users },
   { to: '/productos',    label: 'Productos',     icon: Package },
   { to: '/decoradoras',  label: 'Decoradoras',   icon: Palette },
   { to: '/decoraciones', label: 'Decoraciones',  icon: ClipboardList },
   { to: '/prestamos',    label: 'Préstamos',      icon: Banknote },
   { to: '/grupos',       label: 'Grupos/Elites',  icon: Users },
+  { to: '/facturas',     label: 'Facturas',       icon: FileText },
+  { to: '/nomina',       label: 'Nómina',        icon: FileText },
   { to: '/usuarios',     label: 'Usuarios',       icon: UserCog },
   { to: '/empleados',    label: 'Empleados',     icon: UserCheck },
-  { to: '/nomina',       label: 'Nómina',        icon: FileText },
   { to: '/reportes',     label: 'Reportes',      icon: FileText },
 ];
 

@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { Plus, Trash2, ArrowLeft, Search, X } from 'lucide-react';
 import { pedidosService, clientesService, productosService } from '../../services';
 import { Spinner, LoadingScreen } from '../../components/common';
+import { useToastStore } from '../../store/toast.store';
 import ProcesoProducto from '../../components/ProcesoProducto';
 import { useWatch } from 'react-hook-form';
 
@@ -129,6 +130,7 @@ export default function PedidoFormPage() {
   const { id }    = useParams();
   const navigate  = useNavigate();
   const qc        = useQueryClient();
+  const toast      = useToastStore();
   const isEditing = Boolean(id);
   const [clienteId, setClienteId] = useState('');
 
@@ -192,7 +194,7 @@ export default function PedidoFormPage() {
       isEditing ? pedidosService.actualizar(id!, data) : pedidosService.crear(data),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['pedidos'] });
-      alert(isEditing ? '✅ Pedido actualizado exitosamente' : '✅ Pedido creado exitosamente');
+      toast.addToast(isEditing ? 'Pedido actualizado exitosamente' : 'Pedido creado exitosamente', 'success');
       navigate(`/pedidos/${res.data.data.id}`);
     },
   });
@@ -252,9 +254,9 @@ export default function PedidoFormPage() {
           </div>
           <div className="space-y-2">
             {fields.map((field, idx) => {
-              const productoActual = productosWatch?.[idx];
-              const cantidadPedido = productoActual.cantidadPedido || 0;
-              const cantidadDespacho = productoActual.cantidadDespacho || 0;
+              const productoActual = productosWatch?.[idx] ?? {};
+              const cantidadPedido = productoActual?.cantidadPedido || 0;
+              const cantidadDespacho = productoActual?.cantidadDespacho || 0;
               const cantidadFaltante = (cantidadDespacho || 0) - (cantidadPedido || 0);
               const faltanteColor = cantidadFaltante < 0 ? 'text-red-600 font-bold' : 'text-green-600 font-bold';
 

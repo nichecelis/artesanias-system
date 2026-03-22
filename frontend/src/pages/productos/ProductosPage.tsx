@@ -7,6 +7,7 @@ import { Plus, Search, Pencil, Trash2, DollarSign, X } from 'lucide-react';
 import { productosService, clientesService } from '../../services';
 import { api } from '../../services/api';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
+import { useToastStore } from '../../store/toast.store';
 
 const schema = z.object({
   nombre:           z.string().min(2),
@@ -60,6 +61,7 @@ function ClienteSearch({ onSelect }: { onSelect: (c: any) => void }) {
 
 export default function ProductosPage() {
   const qc = useQueryClient();
+  const toast = useToastStore();
   const [page, setPage]         = useState(1);
   const [search, setSearch]     = useState('');
   const [modal, setModal]       = useState(false);
@@ -71,7 +73,7 @@ export default function ProductosPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['productos', page, search],
-    queryFn: () => productosService.listar({ page, limit: 20, search: search || undefined }).then(r => r.data),
+    queryFn: () => productosService.listar({ page, limit: 10, search: search || undefined }).then(r => r.data),
   });
 
   const { data: precios, refetch: refetchPrecios } = useQuery({
@@ -100,14 +102,14 @@ export default function ProductosPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['productos'] });
       closeModal();
-      alert(editing ? '✅ Producto actualizado exitosamente' : '✅ Producto creado exitosamente');
+      toast.addToast(editing ? 'Producto actualizado exitosamente' : 'Producto creado exitosamente', 'success');
     },
   });
 
   const remove = useMutation({
     mutationFn: (id: string) => productosService.eliminar(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['productos'] }),
-    onError: () => alert('No se puede eliminar: el producto tiene registros asociados'),
+    onError: () => toast.addToast('No se puede eliminar: el producto tiene registros asociados', 'error'),
   });
 
   const upsertPrecio = useMutation({

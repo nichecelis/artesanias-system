@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { Plus, Search, Pencil, Trash2 } from 'lucide-react';
 import { clientesService } from '../../services';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
+import { useToastStore } from '../../store/toast.store';
 
 const TRANSPORTADORAS = [
   'Servientrega','Coordinadora','Deprisa','Envia','TCC',
@@ -24,6 +25,7 @@ type Form = z.infer<typeof schema>;
 
 export default function ClientesPage() {
   const qc = useQueryClient();
+  const toast = useToastStore();
   const [page, setPage]       = useState(1);
   const [search, setSearch]   = useState('');
   const [modal, setModal]     = useState(false);
@@ -31,7 +33,7 @@ export default function ClientesPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['clientes', page, search],
-    queryFn: () => clientesService.listar({ page, limit: 20, search: search || undefined }).then(r => r.data),
+    queryFn: () => clientesService.listar({ page, limit: 10, search: search || undefined }).then(r => r.data),
   });
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<Form>({
@@ -58,14 +60,14 @@ export default function ClientesPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['clientes'] });
       closeModal();
-      alert(editing ? '✅ Cliente actualizado exitosamente' : '✅ Cliente creado exitosamente');
+      toast.addToast(editing ? 'Cliente actualizado exitosamente' : 'Cliente creado exitosamente', 'success');
     },
   });
 
   const remove = useMutation({
     mutationFn: (id: string) => clientesService.eliminar(id),
     onSuccess:  () => qc.invalidateQueries({ queryKey: ['clientes'] }),
-    onError:    () => alert('No se puede eliminar: el cliente tiene pedidos asociados'),
+    onError:    () => toast.addToast('No se puede eliminar: el cliente tiene pedidos asociados', 'error'),
   });
 
   const columns = [

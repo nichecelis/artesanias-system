@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { ShoppingBag, Users, Package, TrendingUp, Clock, CheckCircle } from 'lucide-react';
+import { ShoppingBag, Users, Package, TrendingUp, Clock, CheckCircle, DollarSign, Archive } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { pedidosService, reportesService } from '../../services';
+import { api } from '../../services/api';
+import { reportesService, nominaService } from '../../services';
 import { StatCard, LoadingScreen } from '../../components/common';
 
 const COLORES = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#6b7280'];
@@ -9,7 +10,7 @@ const COLORES = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#6b7280
 export default function DashboardPage() {
   const { data: stats, isLoading: loadingStats } = useQuery({
     queryKey: ['pedidos-estadisticas'],
-    queryFn: () => pedidosService.estadisticas().then((r) => r.data.data),
+    queryFn: () => api.get('/pedidos/estadisticas').then((r) => r.data.data),
   });
 
   const { data: pagos, isLoading: loadingPagos } = useQuery({
@@ -17,16 +18,25 @@ export default function DashboardPage() {
     queryFn: () => reportesService.pagosDecoradores().then((r) => r.data.data),
   });
 
+  const { data: nominaStats } = useQuery({
+    queryKey: ['nomina-stats'],
+    queryFn: () => {
+      const hoy = new Date();
+      const mes = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+      return nominaService.totalMes(mes).then((r) => r.data.data);
+    },
+  });
+
   if (loadingStats || loadingPagos) return <LoadingScreen />;
 
   const porEstado = stats?.porEstado ?? [];
-  const totalPedidos = porEstado.reduce((a: number, e: any) => a + e._count.id, 0);
+  const totalPedidos = porEstado.reduce((a: number, e: any) => a + e.cantidad, 0);
   const activos = porEstado
     .filter((e: any) => !['DESPACHADO', 'CANCELADO'].includes(e.estado))
-    .reduce((a: number, e: any) => a + e._count.id, 0);
+    .reduce((a: number, e: any) => a + e.cantidad, 0);
 
   const pieData = porEstado.map((e: any) => ({
-    name: e.estado, value: e._count.id,
+    name: e.estado, value: e.cantidad,
   }));
 
   return (
@@ -40,8 +50,24 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total pedidos"    value={totalPedidos}              icon={<ShoppingBag size={20} />} color="blue" />
         <StatCard label="Pedidos activos"  value={activos}                   icon={<Clock size={20} />}       color="yellow" />
-        <StatCard label="Este mes"         value={stats?.totalMes ?? 0}      icon={<TrendingUp size={20} />}  color="green" />
+        <StatCard label="Pedidos mes"      value={stats?.resumen?.totalMes ?? 0} icon={<TrendingUp size={20} />}  color="green" />
         <StatCard label="Pagos pendientes" value={pagos?.decoraciones?.length ?? 0} icon={<CheckCircle size={20} />} color="purple" />
+      </div>
+
+      {/* Stats financieras */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard 
+          label="Total nómina mes" 
+          value={`$${(nominaStats?.totalNomina ?? 0).toLocaleString('es-CO')}`} 
+          icon={<DollarSign size={20} />} 
+          color="emerald" 
+        />
+        <StatCard 
+          label="Pendiente decoradoras" 
+          value={`$${Number(pagos?.totalPendiente ?? 0).toLocaleString('es-CO')}`} 
+          icon={<Users size={20} />} 
+          color="orange" 
+        />
       </div>
 
       {/* Gráficas */}
@@ -49,30 +75,50 @@ export default function DashboardPage() {
         {/* Barras por estado */}
         <div className="card">
           <h2 className="mb-4">Pedidos por estado</h2>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={porEstado.map((e: any) => ({ estado: e.estado, cantidad: e._count.id }))}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="estado" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Bar dataKey="cantidad" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {porEstado.length > 0 ? (
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={porEstado}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="estado" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="cantidad" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-60 flex items-center justify-center text-gray-400">
+              Sin datos disponibles
+            </div>
+          )}
         </div>
 
         {/* Pie distribución */}
         <div className="card">
           <h2 className="mb-4">Distribución</h2>
-          <ResponsiveContainer width="100%" height={240}>
-            <PieChart>
-              <Pie data={pieData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine={false}>
-                {pieData.map((_: any, i: number) => (
-                  <Cell key={i} fill={COLORES[i % COLORES.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          {pieData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie 
+                  data={pieData} 
+                  cx="50%" 
+                  cy="50%" 
+                  outerRadius={90} 
+                  dataKey="value" 
+                  label={({ name, value }) => `${name}: ${value}`} 
+                  labelLine={false}
+                >
+                  {pieData.map((_: any, i: number) => (
+                    <Cell key={i} fill={COLORES[i % COLORES.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-60 flex items-center justify-center text-gray-400">
+              Sin datos disponibles
+            </div>
+          )}
         </div>
       </div>
 

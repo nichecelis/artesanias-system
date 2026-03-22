@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { Plus, Search, Pencil, KeyRound, UserX, UserCheck } from 'lucide-react';
 import { api } from '../../services/api';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
+import { useToastStore } from '../../store/toast.store';
 
 const ROLES = ['ADMINISTRADOR','PRODUCCION','VENTAS','CONTABILIDAD'];
 
@@ -40,6 +41,7 @@ type PassForm   = z.infer<typeof passSchema>;
 
 export default function UsuariosPage() {
   const qc = useQueryClient();
+  const toast = useToastStore();
   const [page, setPage]         = useState(1);
   const [search, setSearch]     = useState('');
   const [modal, setModal]       = useState<'crear'|'editar'|'password'|null>(null);
@@ -47,7 +49,7 @@ export default function UsuariosPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['usuarios', page, search],
-    queryFn: () => api.get('/usuarios', { params: { page, limit: 20, search: search || undefined } }).then(r => r.data),
+    queryFn: () => api.get('/usuarios', { params: { page, limit: 10, search: search || undefined } }).then(r => r.data),
   });
 
   const crearForm = useForm<CrearForm>({ resolver: zodResolver(crearSchema), defaultValues: { rol: 'VENTAS' } });
@@ -69,7 +71,7 @@ export default function UsuariosPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['usuarios'] });
       closeModal();
-      alert('✅ Usuario creado exitosamente');
+      toast.addToast('Usuario creado exitosamente', 'success');
     },
   });
 
@@ -78,13 +80,13 @@ export default function UsuariosPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['usuarios'] });
       closeModal();
-      alert('✅ Usuario actualizado exitosamente');
+      toast.addToast('Usuario actualizado exitosamente', 'success');
     },
   });
 
   const cambiarPass = useMutation({
     mutationFn: (d: PassForm) => api.patch(`/usuarios/${selected.id}/password`, { password: d.password }),
-    onSuccess: () => { closeModal(); alert('Contraseña actualizada'); },
+    onSuccess: () => { closeModal(); toast.addToast('Contraseña actualizada', 'success'); },
   });
 
   const toggleActivo = useMutation({

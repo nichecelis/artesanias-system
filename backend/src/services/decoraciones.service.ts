@@ -51,18 +51,40 @@ export class DecoracionesService {
     const precioDecoracion = Number(producto.precioDecoracion);
     const { total, subtotal, totalPagar } = calcular(dto.cantidadEgreso, precioDecoracion);
 
-    return prisma.decoracion.create({
-      data: {
-        pedidoId:        dto.pedidoId,
-        decoradoraId:    dto.decoradoraId,
-        productoId:      dto.productoId,
-        fechaEgreso:     new Date(dto.fechaEgreso + 'T00:00:00.000Z'),
-        cantidadEgreso:  dto.cantidadEgreso,
-        precioDecoracion,
-        total, subtotal, totalPagar,
-        compras: 0, arreglos: 0, perdidas: 0, abonosPrestamo: 0,
-      },
-      include: INCLUDE,
+    const pedidoProducto = await prisma.pedidoProducto.findFirst({
+      where: { pedidoId: dto.pedidoId, productoId: dto.productoId }
+    });
+    if (!pedidoProducto) throw new AppError(404, 'Producto del pedido no encontrado');
+
+    const [y, m, day] = dto.fechaEgreso.split('-');
+    const fechaAsignacion = new Date(Number(y), Number(m) - 1, Number(day), 12, 0, 0);
+
+    const cantidadActual = Number(pedidoProducto.cantidadRecibida) || 0;
+    const nuevaCantidad = cantidadActual + dto.cantidadEgreso;
+
+    return prisma.$transaction(async (tx) => {
+      await tx.pedidoProducto.update({
+        where: { id: pedidoProducto.id },
+        data: {
+          fechaAsignacion,
+          cantidadRecibida: nuevaCantidad,
+          estado: 'EN_DECORACION',
+        },
+      });
+
+      return tx.decoracion.create({
+        data: {
+          pedidoId:        dto.pedidoId,
+          decoradoraId:    dto.decoradoraId,
+          productoId:      dto.productoId,
+          fechaEgreso:     new Date(dto.fechaEgreso + 'T00:00:00.000Z'),
+          cantidadEgreso:  dto.cantidadEgreso,
+          precioDecoracion,
+          total, subtotal, totalPagar,
+          compras: 0, arreglos: 0, perdidas: 0, abonosPrestamo: 0,
+        },
+        include: INCLUDE,
+      });
     });
   }
 

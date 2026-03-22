@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { Plus, Search, Pencil, Trash2, X, Edit3 } from 'lucide-react';
 import { api } from '../../services/api';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
+import { useToastStore } from '../../store/toast.store';
 
 const fmt = (n: any) => `$${Number(n ?? 0).toLocaleString('es-CO')}`;
 const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -159,6 +160,7 @@ function FilaEmpleadoMass({ idx, empleados, prestamosPorEmpleado, register, watc
 
 export default function NominaPage() {
   const qc = useQueryClient();
+  const toast = useToastStore();
   const [page, setPage]             = useState(1);
   const [search, setSearch]         = useState('');
   const [mes, setMes]               = useState('');
@@ -168,7 +170,7 @@ export default function NominaPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['nomina', page, search, mes],
-    queryFn: () => api.get('/nomina', { params: { page, limit: 20, search: search || undefined, mes: mes || undefined } }).then(r => r.data),
+    queryFn: () => api.get('/nomina', { params: { page, limit: 10, search: search || undefined, mes: mes || undefined } }).then(r => r.data),
   });
 
   const { data: empleados } = useQuery({
@@ -260,7 +262,7 @@ export default function NominaPage() {
       qc.invalidateQueries({ queryKey: ['nomina'] });
       qc.invalidateQueries({ queryKey: ['prestamos'] });
       closeModal();
-      alert('✅ Nómina registrada exitosamente');
+      toast.addToast('Nómina registrada exitosamente', 'success');
     },
   });
 
@@ -279,7 +281,7 @@ export default function NominaPage() {
       qc.invalidateQueries({ queryKey: ['nomina'] });
       qc.invalidateQueries({ queryKey: ['prestamos'] });
       closeEditMassModal();
-      alert('✅ Nómina actualizada exitosamente');
+      toast.addToast('Nómina actualizada exitosamente', 'success');
     },
   });
 

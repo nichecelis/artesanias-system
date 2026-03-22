@@ -154,3 +154,34 @@ nominaRouter.delete('/:id', authorize('ADMINISTRADOR'), async (req: Request, res
     sendSuccess(res, null, 'Registro eliminado');
   } catch (e) { next(e); }
 });
+
+nominaRouter.get('/total-mes', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { mes } = req.query as { mes?: string };
+    let startDate: Date, endDate: Date;
+
+    if (mes) {
+      const [year, month] = mes.split('-').map(Number);
+      startDate = new Date(year, month - 1, 1, 0, 0, 0);
+      endDate = new Date(year, month, 0, 23, 59, 59);
+    } else {
+      const now = new Date();
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    }
+
+    const [nominas, totalNomina] = await Promise.all([
+      prisma.nomina.findMany({
+        where: { fecha: { gte: startDate, lte: endDate } },
+        include: { empleado: { select: { nombre: true } } },
+        orderBy: { fecha: 'desc' },
+      }),
+      prisma.nomina.aggregate({
+        where: { fecha: { gte: startDate, lte: endDate } },
+        _sum: { totalPagar: true },
+      }),
+    ]);
+
+    sendSuccess(res, { nominas, totalNomina: totalNomina._sum.totalPagar ?? 0 });
+  } catch (e) { next(e); }
+});

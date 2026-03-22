@@ -7,6 +7,7 @@ import { Plus, Search, Pencil, Trash2, CheckCircle, X, List, ChevronDown, Chevro
 import { api } from '../../services/api';
 import { decoradorasService } from '../../services';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
+import { useToastStore } from '../../store/toast.store';
 
 const fmt    = (n: any) => `$${Number(n ?? 0).toLocaleString('es-CO')}`;
 const toDate = (d: any) => d ? new Date(d).toISOString().slice(0,10) : '';
@@ -112,6 +113,7 @@ type ItemState = { pedido: any; producto: any; };
 
 export default function DecoracionesPage() {
   const qc = useQueryClient();
+  const toast = useToastStore();
   const [search,setSearch]       = useState('');
   const [filtroDoc,setFiltroDoc] = useState<any>(null);
   const [modal,setModal]         = useState<'crear'|'editar'|'masivo'|'editarGrupo'|null>(null);
@@ -218,7 +220,7 @@ export default function DecoracionesPage() {
     onSuccess: () => {
       qc.invalidateQueries({queryKey:['decoraciones']});
       closeModal();
-      alert('✅ Decoración creada exitosamente');
+      toast.addToast('Decoración creada exitosamente', 'success');
     },
   });
 
@@ -232,7 +234,7 @@ export default function DecoracionesPage() {
     onSuccess:()=>{
       qc.invalidateQueries({queryKey:['decoraciones']});
       closeModal();
-      alert('✅ Decoración actualizada exitosamente');
+      toast.addToast('Decoración actualizada exitosamente', 'success');
     },
   });
 
@@ -255,21 +257,21 @@ export default function DecoracionesPage() {
       qc.invalidateQueries({queryKey:['decoraciones']});
       setModal(null);
       setGrupoEditando(null);
-      alert('✅ Decoraciones actualizadas exitosamente');
+      toast.addToast('Decoraciones actualizadas exitosamente', 'success');
     },
   });
 
   const eliminar = useMutation({
     mutationFn:(id:string)=>api.delete(`/decoraciones/${id}`),
     onSuccess:()=>qc.invalidateQueries({queryKey:['decoraciones']}),
-    onError:()=>alert('No se puede eliminar una decoración pagada'),
+    onError:()=>toast.addToast('No se puede eliminar una decoración pagada', 'error'),
   });
 
   const pagar = useMutation({
     mutationFn:(id:string)=>api.patch(`/decoraciones/${id}/pagar`,{}),
     onSuccess:()=>{
       qc.invalidateQueries({queryKey:['decoraciones']});
-      alert('✅ Decoración marcada como pagada');
+      toast.addToast('Decoración marcada como pagada', 'success');
     },
   });
 
@@ -283,10 +285,10 @@ export default function DecoracionesPage() {
       qc.invalidateQueries({queryKey:['decoraciones']});
       setSeleccionadas(new Set());
       setModal(null);
-      alert(`${result.data.decoracionesPagadas.length} decoración(es) marcada(s) como pagada(s)`);
+      toast.addToast(`${result.data.decoracionesPagadas.length} decoración(es) marcada(s) como pagada(s)`, 'success');
     },
     onError: (error: any) => {
-      alert(error.response?.data?.message || 'Error al pagar decoraciones');
+      toast.addToast(error.response?.data?.message || 'Error al pagar decoraciones', 'error');
     },
   });
 
@@ -596,9 +598,19 @@ export default function DecoracionesPage() {
                   />
 
                   {st.producto && (
-                    <div className="bg-blue-50 rounded p-2 text-xs text-blue-700 flex justify-between">
-                      <span>Precio decoración:</span>
-                      <strong>{fmt(st.producto.producto?.precioDecoracion)}</strong>
+                    <div className="bg-blue-50 rounded p-2 text-xs text-blue-700 space-y-1">
+                      <div className="flex justify-between">
+                        <span>Precio decoración:</span>
+                        <strong>{fmt(st.producto.producto?.precioDecoracion)}</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Tareas:</span>
+                        <strong>{st.producto.cantidadTareas ?? '—'}</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Recibido:</span>
+                        <strong>{st.producto.cantidadRecibida ?? 0} / {st.producto.cantidadTareas ?? '?'}</strong>
+                      </div>
                     </div>
                   )}
 
@@ -872,9 +884,9 @@ export default function DecoracionesPage() {
                     qc.invalidateQueries({ queryKey: ['decoraciones'] });
                     setModal(null);
                     setGrupoEditando(null);
-                    alert('✅ Decoraciones actualizadas exitosamente');
+                    toast.addToast('Decoraciones actualizadas exitosamente', 'success');
                   }).catch(() => {
-                    alert('Error al guardar');
+                    toast.addToast('Error al guardar', 'error');
                   });
                 }}
                 disabled={editarGrupo.isPending}
@@ -902,7 +914,12 @@ function ProductoDelPedido({pedidoId, selected, onSelect, onClear, error}: any) 
   if (!pedidoId) return <div className="input bg-gray-50 text-gray-400 text-sm">Selecciona un pedido primero</div>;
   if (selected) return (
     <div className="input flex items-center justify-between bg-primary-50 border-primary-300">
-      <span className="text-sm font-medium">{selected.producto?.nombre}</span>
+      <div className="flex flex-col">
+        <span className="text-sm font-medium">{selected.producto?.nombre}</span>
+        <span className="text-xs text-gray-500">
+          Tareas: {selected.cantidadTareas ?? '—'} | Recibido: {selected.cantidadRecibida ?? 0}/{selected.cantidadTareas ?? '?'}
+        </span>
+      </div>
       <button type="button" onClick={onClear}><X size={13} className="text-gray-400 hover:text-red-500"/></button>
     </div>
   );
@@ -915,7 +932,9 @@ function ProductoDelPedido({pedidoId, selected, onSelect, onClear, error}: any) 
       }}>
         <option value="">Selecciona producto del pedido...</option>
         {data?.map((pp:any)=>(
-          <option key={pp.productoId} value={pp.productoId}>{pp.producto?.nombre} — Cant: {pp.cantidadPedido}</option>
+          <option key={pp.productoId} value={pp.productoId}>
+            {pp.producto?.nombre} — Cant: {pp.cantidadPedido} | Tareas: {pp.cantidadTareas ?? '—'} | Recibido: {pp.cantidadRecibida ?? 0}
+          </option>
         ))}
       </select>
       {error&&<p className="text-red-500 text-xs mt-1">{error}</p>}

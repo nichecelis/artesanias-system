@@ -30,6 +30,8 @@ import { gruposRouter as gruposRoutes } from './routes/grupos.routes';
 import { decoracionesRouter as decoracionesRoutes } from './routes/decoraciones.routes';
 import { prestamosRouter as prestamosRoutes } from './routes/prestamos.routes';
 import { nominaRouter as nominaRoutes } from './routes/nomina.routes';
+import { facturasRouter as facturasRoutes } from './routes/facturas.routes';
+import despachosRouter from './routes/despachos.routes';
 
 const app = express();
 
@@ -85,6 +87,8 @@ app.use(`${API}/nomina`,       nominaRoutes);
 app.use(`${API}/reportes`,     reportesRoutes);
 app.use(`${API}/grupos`,      gruposRoutes);
 app.use(`${API}/precios`, preciosRoutes);
+app.use(`${API}/facturas`, facturasRoutes);
+app.use(`${API}/despachos`, despachosRouter);
 
 // ─── Manejo de errores ────────────────────────────────────────
 app.use(notFoundHandler);

@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { Plus, Trash2, ArrowLeft, Search, X } from 'lucide-react';
 import { pedidosService, clientesService, productosService } from '../../services';
 import { Spinner, LoadingScreen } from '../../components/common';
+import { useToastStore } from '../../store/toast.store';
 
 const schema = z.object({
   clienteId:        z.string().min(1, 'Selecciona un cliente'),
@@ -120,6 +121,7 @@ export default function PedidoFormPage() {
   const { id }    = useParams();
   const navigate  = useNavigate();
   const qc        = useQueryClient();
+  const toast      = useToastStore();
   const isEditing = Boolean(id);
   const [clienteId, setClienteId] = useState('');
 
@@ -174,7 +176,7 @@ export default function PedidoFormPage() {
       isEditing ? pedidosService.actualizar(id!, data) : pedidosService.crear(data),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['pedidos'] });
-      alert(isEditing ? '✅ Pedido actualizado exitosamente' : '✅ Pedido creado exitosamente');
+      toast.addToast(isEditing ? 'Pedido actualizado exitosamente' : 'Pedido creado exitosamente', 'success');
       navigate(`/pedidos/${res.data.data.id}`);
     },
   });

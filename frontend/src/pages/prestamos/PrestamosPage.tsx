@@ -7,6 +7,7 @@ import { Plus, Search, Trash2, PlusCircle, X, List } from 'lucide-react';
 import { api } from '../../services/api';
 import { decoradorasService } from '../../services';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
+import { useToastStore } from '../../store/toast.store';
 
 const fmt  = (n: any) => `$${Number(n ?? 0).toLocaleString('es-CO')}`;
 const toDate = (d: any) => d ? new Date(d).toISOString().slice(0,10) : '';
@@ -85,6 +86,7 @@ type AbonoForm = z.infer<typeof abonoSchema>;
 
 export default function PrestamosPage() {
   const qc = useQueryClient();
+  const toast = useToastStore();
   const [page, setPage]     = useState(1);
   const [search, setSearch] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('');
@@ -96,7 +98,7 @@ export default function PrestamosPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['prestamos', page, search, filtroTipo, soloSaldo],
     queryFn: () => api.get('/prestamos', { params: {
-      page, limit: 20,
+      page, limit: 10,
       search:      search    || undefined,
       tipo:        filtroTipo || undefined,
       soloConSaldo: soloSaldo || undefined,
@@ -120,7 +122,7 @@ export default function PrestamosPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['prestamos'] });
       closeModal();
-      alert('✅ Préstamo creado exitosamente');
+      toast.addToast('Préstamo creado exitosamente', 'success');
     },
   });
 
@@ -130,7 +132,7 @@ export default function PrestamosPage() {
       qc.invalidateQueries({ queryKey: ['prestamos'] });
       refetchDetalle();
       abonoForm.reset();
-      alert('✅ Abono registrado exitosamente');
+      toast.addToast('Abono registrado exitosamente', 'success');
     },
   });
 
@@ -142,7 +144,7 @@ export default function PrestamosPage() {
   const eliminar = useMutation({
     mutationFn: (id: string) => api.delete(`/prestamos/${id}`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['prestamos'] }); closeModal(); },
-    onError: () => alert('No se puede eliminar: tiene abonos registrados'),
+    onError: () => toast.addToast('No se puede eliminar: tiene abonos registrados', 'error'),
   });
 
   const columns = [

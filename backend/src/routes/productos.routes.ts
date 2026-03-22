@@ -110,13 +110,6 @@ pedidosRouter.post('/', authorize('ADMINISTRADOR', 'VENTAS'), async (req: Reques
   } catch (error) { next(error); }
 });
 
-pedidosRouter.get('/estadisticas', authorize('ADMINISTRADOR', 'PRODUCCION'), async (_req, res, next) => {
-  try {
-    const data = await pedidosService.estadisticas();
-    sendSuccess(res, data);
-  } catch (error) { next(error); }
-});
-
 pedidosRouter.get('/:id',   (req, res, next) => hObtener(req, res, next, (id) => pedidosService.obtenerPorId(id)));
 
 pedidosRouter.patch('/:id', authorize('ADMINISTRADOR', 'PRODUCCION', 'VENTAS'), async (req: Request, res: Response, next: NextFunction) => {

@@ -52,6 +52,13 @@ pedidosRouter.get('/stats/resumen', async (req: Request, res: Response, next: Ne
   } catch (e) { next(e); }
 });
 
+pedidosRouter.get('/estadisticas', authorize('ADMINISTRADOR', 'PRODUCCION', 'VENTAS', 'CONTABILIDAD'), async (req: Request, res: Response, next: NextFunction) => {
+  try { 
+    const stats = await pedidosService.estadisticas();
+    sendSuccess(res, stats);
+  } catch (e) { next(e); }
+});
+
 // ✅ GET /pedidos/:id - Obtener por ID (dinámica, va AL FINAL)
 pedidosRouter.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, Eye, Pencil, CheckCircle } from 'lucide-react';
 import { pedidosService } from '../../services';
 import { Table, EstadoBadge, Pagination, LoadingScreen, EmptyState } from '../../components/common';
+import { useToastStore } from '../../store/toast.store';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -32,6 +33,7 @@ interface PedidosFetchResponse {
 export default function PedidosPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const toast = useToastStore();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [estado, setEstado] = useState('');
@@ -43,7 +45,7 @@ export default function PedidosPage() {
     queryKey: ['pedidos', page, search, estado, proceso, fechaDesde, fechaHasta],
     queryFn: () => pedidosService.listar({
       page,
-      limit: 20,
+      limit: 10,
       search,
       estado,
       proceso,
@@ -60,7 +62,7 @@ export default function PedidosPage() {
       pedidosService.cambiarEstado(id, estado),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['pedidos'] });
-      alert('✅ Estado del pedido actualizado exitosamente');
+      toast.addToast('Estado del pedido actualizado exitosamente', 'success');
     },
   });
 
@@ -93,8 +95,13 @@ export default function PedidosPage() {
         <div className="flex flex-col gap-1 max-w-xs">
           {r.productos?.map((pp: any) => (
             <div key={pp.id} className="text-xs flex items-center gap-2 bg-gray-50 rounded px-2 py-1">
-              <span className="font-medium truncate max-w-[120px]">{pp.producto?.nombre ?? '—'}</span>
+              <span className="font-medium truncate max-w-[100px]">{pp.producto?.nombre ?? '—'}</span>
               <span className="text-gray-500">x{pp.cantidadPedido}</span>
+              {(pp.cantidadTareas || pp.cantidadRecibida) ? (
+                <span className="text-blue-600 text-[10px]" title="Tareas / Recibido">
+                  ({pp.cantidadTareas || 0}/{pp.cantidadRecibida || 0})
+                </span>
+              ) : null}
               <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${getEstadoColor(pp.estado)}`}>
                 {pp.estado?.replace('EN_', '')}
               </span>

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { Plus, Pencil } from 'lucide-react';
 import { empleadosService } from '../../services';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
+import { useToastStore } from '../../store/toast.store';
 
 const schema = z.object({
   nombre:    z.string().min(2),
@@ -18,13 +19,14 @@ const fmt = (n: any) => `$${Number(n ?? 0).toLocaleString('es-CO')}`;
 
 export default function EmpleadosPage() {
   const qc = useQueryClient();
+  const toast = useToastStore();
   const [page, setPage]       = useState(1);
   const [modal, setModal]     = useState(false);
   const [editing, setEditing] = useState<any>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['empleados', page],
-    queryFn: () => empleadosService.listar({ page, limit: 20 }).then((r) => r.data),
+    queryFn: () => empleadosService.listar({ page, limit: 10 }).then((r) => r.data),
   });
 
   const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<Form>({
@@ -46,7 +48,7 @@ export default function EmpleadosPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['empleados'] });
       closeModal();
-      alert(editing ? '✅ Empleado actualizado exitosamente' : '✅ Empleado creado exitosamente');
+      toast.addToast(editing ? 'Empleado actualizado exitosamente' : 'Empleado creado exitosamente', 'success');
     },
   });
 

@@ -95,6 +95,27 @@ export const nominaService = {
   totalMes: (mes: string)  => api.get<ApiResponse<any>>('/nomina/total-mes', { params: { mes } }),
 };
 
+// ─── Facturas ───────────────────────────────────────────────
+export const facturasService = {
+  listar:   (params?: any) => api.get<PaginatedResponse<any>>('/facturas', { params }),
+  obtener:  (id: string)   => api.get<ApiResponse<any>>(`/facturas/${id}`),
+  crear:    (data: any)    => api.post<ApiResponse<any>>('/facturas', data),
+  actualizar: (id: string, data: any) => api.patch<ApiResponse<any>>(`/facturas/${id}`, data),
+  eliminar: (id: string)   => api.delete(`/facturas/${id}`),
+  obtenerPedidosCliente: (clienteId: string) =>
+    api.get<ApiResponse<any>>(`/facturas/cliente/${clienteId}/pedidos`),
+  obtenerSaldoAnterior: (clienteId: string) =>
+    api.get<ApiResponse<any>>(`/facturas/cliente/${clienteId}/saldo-anterior`),
+};
+
+// ─── Despachos ─────────────────────────────────────────────
+export const despachosService = {
+  listar:   (params?: any) => api.get<PaginatedResponse<any>>('/despachos', { params }),
+  obtener:  (id: string)   => api.get<ApiResponse<any>>(`/despachos/${id}`),
+  despachar: (id: string, data: any) => 
+    api.patch<ApiResponse<any>>(`/despachos/${id}/despachar`, data),
+};
+
 // ─── Reportes ──────────────────────────────────────────────
 export const reportesService = {
   ventasPorCliente: (params: any) =>
