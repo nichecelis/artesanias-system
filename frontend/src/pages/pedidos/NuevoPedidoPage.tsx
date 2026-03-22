@@ -95,9 +95,8 @@ function ClienteBuscador({ value, onChange, error }: {
   }
 
   return (
-    <div ref={ref} className="w-full">
-      <label className="label">Cliente *</label>
-      <div className="flex gap-2 items-center">
+    <div ref={ref}>
+      <div className="flex gap-2 items-center w-full">
         <div className="relative flex-1">
           {mode === 'search' && <Search size={14} className="absolute left-3 top-2.5 text-gray-400"/>}
           <input
@@ -124,13 +123,14 @@ function ClienteBuscador({ value, onChange, error }: {
             </div>
           )}
         </div>
+        <div className="flex flex-col gap-1">
         <button type="button" onClick={() => { setMode(m => m === 'search' ? 'list' : 'search'); setOpen(true); setQuery(''); }}
           className="px-3 h-[38px] rounded-lg border border-blue-500 bg-blue-500 text-white flex items-center justify-center font-bold shadow"
           title={mode === 'search' ? 'Ver todos los clientes' : 'Activar búsqueda'}
-          style={{ minWidth: '44px' }}
-        >
+          style={{ minWidth: '44px' }}>
           <List size={20}/>
         </button>
+        </div>
       </div>
       {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
