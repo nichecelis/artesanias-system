@@ -69,6 +69,8 @@ export function Table<T extends { id: string }>({
   data: T[];
   onRowClick?: (row: T) => void;
 }) {
+  const safeData = Array.isArray(data) ? data : [];
+  
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
@@ -80,7 +82,7 @@ export function Table<T extends { id: string }>({
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-100">
-          {data.map((row) => (
+          {safeData.map((row) => (
             <tr
               key={row.id}
               onClick={() => onRowClick?.(row)}

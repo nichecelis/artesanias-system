@@ -30,6 +30,21 @@ const actualizarSchema = z.object({
   pagado:          z.boolean().optional(),
 });
 
+decoracionesRouter.get('/reporte-por-grupo', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const params = {
+      grupoId:       req.query.grupoId       as string | undefined,
+      decoradoraId:  req.query.decoradoraId  as string | undefined,
+      fechaDesde:    req.query.fechaDesde    as string | undefined,
+      fechaHasta:    req.query.fechaHasta    as string | undefined,
+      search:        req.query.search        as string | undefined,
+      incluirPagadas: req.query.incluirPagadas === 'true',
+    };
+    const result = await decoracionesService.reportePorGrupo(params);
+    sendSuccess(res, result);
+  } catch (e) { next(e); }
+});
+
 decoracionesRouter.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const params = {

@@ -41,7 +41,7 @@ export const clientesService = {
 
 // ─── Pedidos ───────────────────────────────────────────────
 export const pedidosService = {
-  listar(params: { page: number; limit: number; search: string; estado: string; fechaDesde?: string; fechaHasta?: string }) 
+  listar(params: { page: number; limit: number; search: string; estado: string; proceso?: string; fechaDesde?: string; fechaHasta?: string }) 
   {
     return api.get('/pedidos', { params });
   },

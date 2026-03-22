@@ -62,4 +62,70 @@ export const gruposService = {
     if (count > 0) throw new AppError(`No se puede eliminar: tiene ${count} decoradora(s) activa(s)`, 400);
     return prisma.grupo.update({ where: { id }, data: { activo: false } });
   },
+
+  reportePagos: async (id: string, fechaDesde?: string, fechaHasta?: string) => {
+    const grupo = await prisma.grupo.findUnique({
+      where: { id },
+      include: {
+        decoradoras: { where: { activa: true } },
+      },
+    });
+    if (!grupo) throw new AppError('Grupo no encontrado', 404);
+
+    const decoradoraIds = grupo.decoradoras.map(d => d.id);
+
+    const where: any = {
+      decoradoraId: { in: decoradoraIds },
+      pagado: true,
+    };
+    if (fechaDesde || fechaHasta) {
+      where.fechaPago = {};
+      if (fechaDesde) where.fechaPago.gte = new Date(fechaDesde + 'T00:00:00.000Z');
+      if (fechaHasta) where.fechaPago.lte = new Date(fechaHasta + 'T23:59:59.999Z');
+    }
+
+    const decoraciones = await prisma.decoracion.findMany({
+      where,
+      include: {
+        decoradora: { select: { id: true, nombre: true, documento: true } },
+        pedido: { select: { codigo: true } },
+        producto: { select: { nombre: true } },
+      },
+      orderBy: { fechaPago: 'desc' },
+    });
+
+    const totalPagos = decoraciones.reduce((acc, d) => acc + Number(d.totalPagar), 0);
+    const porcentajeResponsable = grupo.porcentajeResponsable || 0;
+    const montoResponsable = totalPagos * (porcentajeResponsable / 100);
+
+    const pagosPorDecoradora = grupo.decoradoras.map(d => {
+      const decoradoraPagos = decoraciones.filter(dec => dec.decoradoraId === d.id);
+      const subtotal = decoradoraPagos.reduce((acc, dec) => acc + Number(dec.totalPagar), 0);
+      return {
+        decoradoraId: d.id,
+        decoradoraNombre: d.nombre,
+        decoradoraDocumento: d.documento,
+        cantidadDecoraciones: decoradoraPagos.length,
+        subtotal,
+      };
+    });
+
+    return {
+      grupo: {
+        id: grupo.id,
+        nombre: grupo.nombre,
+        tipo: grupo.tipo,
+        responsable: grupo.responsable,
+        porcentajeResponsable: grupo.porcentajeResponsable,
+      },
+      resumen: {
+        totalPagos,
+        cantidadDecoraciones: decoraciones.length,
+        montoResponsable,
+        porcentajeResponsable,
+      },
+      pagosPorDecoradora,
+      detalle: decoraciones,
+    };
+  },
 };

@@ -329,6 +329,138 @@ export class DecoracionesService {
     const items = Object.values(grupos);
     return { items, total: items.length };
   }
+
+  async reportePorGrupo(params: {
+    grupoId?: string;
+    decoradoraId?: string;
+    fechaDesde?: string;
+    fechaHasta?: string;
+    search?: string;
+    incluirPagadas?: boolean;
+  }) {
+    const where: any = {};
+    
+    if (params.decoradoraId) where.decoradoraId = params.decoradoraId;
+    if (!params.incluirPagadas) where.pagado = false;
+    
+    if (params.fechaDesde || params.fechaHasta) {
+      where.fechaEgreso = {};
+      if (params.fechaDesde) where.fechaEgreso.gte = new Date(params.fechaDesde + 'T00:00:00.000Z');
+      if (params.fechaHasta) where.fechaEgreso.lte = new Date(params.fechaHasta + 'T23:59:59.999Z');
+    }
+    
+    if (params.search) {
+      where.OR = [
+        { decoradora: { nombre: { contains: params.search, mode: 'insensitive' } } },
+        { pedido: { codigo: { contains: params.search, mode: 'insensitive' } } },
+      ];
+    }
+
+    let grupoFilter: any = {};
+    if (params.grupoId) {
+      const decoradorasDelGrupo = await prisma.decoradora.findMany({
+        where: { grupoId: params.grupoId },
+        select: { id: true }
+      });
+      const ids = decoradorasDelGrupo.map(d => d.id);
+      where.decoradoraId = { in: ids };
+    }
+
+    const decoraciones = await prisma.decoracion.findMany({
+      where,
+      include: {
+        decoradora: {
+          include: {
+            grupo: true
+          }
+        },
+        pedido: { select: { codigo: true } },
+        producto: { select: { nombre: true } },
+      },
+      orderBy: { decoradora: { nombre: 'asc' } },
+    });
+
+    const grupoInfo = params.grupoId ? await prisma.grupo.findUnique({
+      where: { id: params.grupoId },
+    }) : null;
+
+    const porDecoradora = decoraciones.reduce((acc: any, dec) => {
+      const key = dec.decoradoraId;
+      if (!acc[key]) {
+        acc[key] = {
+          decoradoraId: dec.decoradoraId,
+          decoradoraNombre: dec.decoradora.nombre,
+          decoradoraDocumento: dec.decoradora.documento,
+          decoradoraNumCuenta: dec.decoradora.numCuenta,
+          grupoId: dec.decoradora.grupoId,
+          grupoNombre: dec.decoradora.grupo?.nombre,
+          grupoTipo: dec.decoradora.grupo?.tipo,
+          esResponsable: dec.decoradora.grupo?.responsable === dec.decoradora.documento,
+          porcentajeAdicional: dec.decoradora.grupo?.porcentajeResponsable || 0,
+          cantidadDecoraciones: 0,
+          totalEgresos: 0,
+          totalCompras: 0,
+          totalAbonosPrestamo: 0,
+          saldoPrestamos: 0,
+          decoraciones: [],
+        };
+      }
+      acc[key].cantidadDecoraciones += 1;
+      acc[key].totalEgresos += Number(dec.total) || 0;
+      acc[key].totalCompras += Number(dec.compras) || 0;
+      acc[key].totalAbonosPrestamo += Number(dec.abonosPrestamo) || 0;
+      acc[key].decoraciones.push(dec);
+
+      if (dec.prestamo) {
+        acc[key].saldoPrestamos += Number(dec.prestamo.saldo) || 0;
+      }
+
+      return acc;
+    }, {});
+
+    const items = Object.values(porDecoradora).map((d: any) => {
+      const subtotal = d.totalEgresos - d.totalCompras - d.totalAbonosPrestamo;
+      let totalAPagar = subtotal;
+      let calculoPorcentaje = null;
+      
+      if (d.esResponsable && d.porcentajeAdicional > 0) {
+        const otrosMiembros = Object.values(porDecoradora).filter((od: any) => 
+          od.grupoId === d.grupoId && od.decoradoraId !== d.decoradoraId
+        );
+        const totalOtros = otrosMiembros.reduce((sum: number, od: any) => 
+          sum + (od.totalEgresos - od.totalCompras - od.totalAbonosPrestamo), 0
+        );
+        const adicional = totalOtros * (d.porcentajeAdicional / 100);
+        totalAPagar = subtotal + adicional;
+        calculoPorcentaje = {
+          totalOtrosMiembros: totalOtros,
+          porcentaje: d.porcentajeAdicional,
+          adicional: adicional,
+        };
+      }
+
+      return {
+        ...d,
+        subtotal,
+        totalAPagar,
+        calculoPorcentaje,
+      };
+    });
+
+    return {
+      grupo: grupoInfo,
+      items,
+      totales: {
+        cantidadDecoraciones: items.reduce((sum, d) => sum + d.cantidadDecoraciones, 0),
+        totalEgresos: items.reduce((sum, d) => sum + d.totalEgresos, 0),
+        totalCompras: items.reduce((sum, d) => sum + d.totalCompras, 0),
+        totalAbonosPrestamo: items.reduce((sum, d) => sum + d.totalAbonosPrestamo, 0),
+        saldoPrestamos: items.reduce((sum, d) => sum + d.saldoPrestamos, 0),
+        subtotal: items.reduce((sum, d) => sum + d.subtotal, 0),
+        totalAPagar: items.reduce((sum, d) => sum + d.totalAPagar, 0),
+      }
+    };
+  }
 }
 
 export const decoracionesService = new DecoracionesService();

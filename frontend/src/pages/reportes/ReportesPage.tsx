@@ -82,25 +82,49 @@ export default function ReportesPage() {
           </div>
           {loadVentas ? <LoadingScreen /> : (
             <div className="space-y-4">
-              {ventas?.resumen && (
+              {ventas && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <StatCard label="Total facturado"  value={fmt(ventas.resumen.totalFacturado)}   icon={<TrendingUp size={20} />} color="green" />
-                  <StatCard label="Pedidos totales"  value={ventas.resumen.totalPedidos}           icon={<FileText size={20} />}   color="blue" />
-                  <StatCard label="Clientes activos" value={ventas.clientes?.length ?? 0}          icon={<Users size={20} />}      color="purple" />
+                  <StatCard label="Total unidades"    value={ventas.reduce((acc: number, v: any) => acc + (v._sum?.cantidadPedido || 0), 0)} icon={<TrendingUp size={20} />} color="green" />
+                  <StatCard label="Pedidos totales"  value={ventas.reduce((acc: number, v: any) => acc + v.cantidadPedidos, 0)} icon={<FileText size={20} />} color="blue" />
+                  <StatCard label="Clientes activos" value={ventas.length} icon={<Users size={20} />} color="purple" />
                 </div>
               )}
-              {ventas?.clientes?.length > 0 && (
+              {ventas?.length > 0 && (
                 <div className="card">
-                  <h2 className="mb-4">Facturación por cliente</h2>
+                  <h2 className="mb-4">Pedidos por cliente</h2>
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={ventas.clientes.slice(0, 10)} layout="vertical">
+                    <BarChart data={ventas} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                      <XAxis type="number" tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
-                      <YAxis type="category" dataKey="nombre" tick={{ fontSize: 11 }} width={120} />
-                      <Tooltip formatter={(v: any) => fmt(v)} />
-                      <Bar dataKey="totalFacturado" fill="#0ea5e9" radius={[0, 4, 4, 0]} />
+                      <XAxis type="number" tick={{ fontSize: 11 }} />
+                      <YAxis type="category" dataKey="clienteNombre" tick={{ fontSize: 11 }} width={120} />
+                      <Tooltip formatter={(v: any) => v} />
+                      <Bar dataKey="cantidadPedidos" name="Pedidos" fill="#0ea5e9" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
+                </div>
+              )}
+              {ventas?.length > 0 && (
+                <div className="card">
+                  <h2 className="mb-4">Detalle por cliente</h2>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm divide-y divide-gray-100">
+                      <thead><tr>
+                        {['Cliente', 'Pedidos', 'Cant. Pedida', 'Cant. Despachada'].map((h) => (
+                          <th key={h} className="table-header">{h}</th>
+                        ))}
+                      </tr></thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {ventas?.map((v: any) => (
+                          <tr key={v.clienteId}>
+                            <td className="table-cell">{v.clienteNombre}</td>
+                            <td className="table-cell">{v.cantidadPedidos}</td>
+                            <td className="table-cell">{v._sum?.cantidadPedido ?? 0}</td>
+                            <td className="table-cell">{v._sum?.cantidadDespacho ?? 0}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>
@@ -153,24 +177,63 @@ export default function ReportesPage() {
         <div className="space-y-4">
           {loadPagos ? <LoadingScreen /> : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <StatCard label="Total pendiente" value={fmt(pagosD?.totalPendiente)} icon={<Palette size={20} />} color="red" />
-                <StatCard label="Decoraciones"    value={pagosD?.decoraciones?.length ?? 0} icon={<FileText size={20} />} color="blue" />
-              </div>
-              <div className="card">
-                <h2 className="mb-4">Pagos pendientes por decoradora</h2>
-                <div className="space-y-3">
-                  {pagosD?.decoraciones?.map((d: any) => (
-                    <div key={d.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
-                      <div>
-                        <p className="font-medium text-sm">{d.decoradora?.nombre}</p>
-                        <p className="text-xs text-gray-400">{d.pedido?.codigo}</p>
-                      </div>
-                      <p className="font-bold text-orange-600">{fmt(d.totalPagar)}</p>
+              {(() => {
+                const decoraciones = pagosD?.decoraciones || [];
+                const porDecoradora = decoraciones.reduce((acc: any, d: any) => {
+                  const key = d.decoradora?.id || d.decoradoraId;
+                  if (!acc[key]) {
+                    acc[key] = {
+                      decoradora: d.decoradora,
+                      decoraciones: [],
+                      total: 0
+                    };
+                  }
+                  acc[key].decoraciones.push(d);
+                  acc[key].total += Number(d.totalPagar) || 0;
+                  return acc;
+                }, {});
+                const grupos = Object.values(porDecoradora);
+                const totalGeneral = grupos.reduce((sum: number, g: any) => sum + g.total, 0);
+                
+                return (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <StatCard label="Total pendiente" value={fmt(totalGeneral)} icon={<Palette size={20} />} color="red" />
+                      <StatCard label="Decoradoras" value={grupos.length} icon={<FileText size={20} />} color="blue" />
                     </div>
-                  ))}
-                </div>
-              </div>
+                    <div className="card">
+                      <h2 className="mb-4">Pagos pendientes por decoradora</h2>
+                      <div className="space-y-4">
+                        {grupos.map((grupo: any) => (
+                          <div key={grupo.decoradora?.id || grupo.decoraciones[0]?.decoradoraId} className="border border-gray-200 rounded-lg overflow-hidden">
+                            <div className="flex justify-between items-center px-4 py-3 bg-gray-50">
+                              <div>
+                                <p className="font-semibold text-sm">{grupo.decoradora?.nombre}</p>
+                                <p className="text-xs text-gray-500">{grupo.decoraciones.length} decoración(es)</p>
+                              </div>
+                              <p className="font-bold text-orange-600 text-lg">{fmt(grupo.total)}</p>
+                            </div>
+                            <div className="divide-y divide-gray-100">
+                              {grupo.decoraciones.map((d: any) => (
+                                <div key={d.id} className="flex justify-between items-center px-4 py-2 text-sm">
+                                  <div className="flex flex-col">
+                                    <span className="text-gray-700">{d.producto?.nombre}</span>
+                                    <span className="text-xs text-gray-400">Pedido: {d.pedido?.codigo}</span>
+                                  </div>
+                                  <p className="font-medium text-gray-900">{fmt(d.totalPagar)}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                        {grupos.length === 0 && (
+                          <p className="text-center text-gray-500 py-8">No hay pagos pendientes</p>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </>
           )}
         </div>

@@ -54,3 +54,12 @@ gruposRouter.delete('/:id', authorize('ADMINISTRADOR'), async (req: Request, res
     sendSuccess(res, null, 'Grupo eliminado');
   } catch (e) { next(e); }
 });
+
+// Reporte de pagos por grupo
+gruposRouter.get('/:id/reporte', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { fechaDesde, fechaHasta } = req.query as any;
+    const result = await gruposService.reportePagos(req.params.id, fechaDesde, fechaHasta);
+    sendSuccess(res, result);
+  } catch (e) { next(e); }
+});

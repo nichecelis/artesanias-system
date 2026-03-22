@@ -169,11 +169,11 @@ export default function GruposPage() {
     { key: 'miembros',    header: 'Decoradoras', render: (r: any) => (
       <span className="badge bg-gray-100 text-gray-700">{r._count?.decoradoras ?? 0}</span>
     )},
-    { key: 'acciones', header: '', render: (r: any) => (
-      <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-        <button onClick={() => openEdit(r)} className="text-gray-400 hover:text-primary-600"><Pencil size={15} /></button>
+    { key: 'acciones', header: 'Acciones', render: (r: any) => (
+      <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+        <button onClick={() => openEdit(r)} className="btn-secondary text-xs py-1 px-2" title="Editar"><Pencil size={12} /></button>
         <button onClick={() => { if (confirm('¿Eliminar grupo?')) remove.mutate(r.id); }}
-          className="text-gray-400 hover:text-red-600"><Trash2 size={15} /></button>
+          className="btn-secondary text-xs py-1 px-2 text-red-600" title="Eliminar"><Trash2 size={12} /></button>
       </div>
     )},
   ];

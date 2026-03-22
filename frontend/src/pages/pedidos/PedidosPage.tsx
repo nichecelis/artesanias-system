@@ -19,7 +19,11 @@ const PROCESO_COLORS: Record<string, string> = {
 };
 
 interface PedidosFetchResponse {
+  success: boolean;
+  message: string;
   data: {
+    success: boolean;
+    message: string;
     data: any[];
     meta: {
       total: number;
@@ -41,7 +45,7 @@ export default function PedidosPage() {
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
 
-  const { data: response, isLoading, refetch } = useQuery<PedidosFetchResponse>({
+  const { data: response, isLoading, error } = useQuery<PedidosFetchResponse>({
     queryKey: ['pedidos', page, search, estado, proceso, fechaDesde, fechaHasta],
     queryFn: () => pedidosService.listar({
       page,
@@ -54,8 +58,8 @@ export default function PedidosPage() {
     }) as any,
   });
 
-  const pedidos = response?.data?.data || [];
-  const totalPages = response?.data?.meta?.totalPages || 1;
+  const pedidos = Array.isArray(response?.data?.data) ? response.data.data : [];
+  const totalPages = 1;
 
   const cambiarEstado = useMutation({
     mutationFn: ({ id, estado }: { id: string; estado: string }) =>
@@ -160,7 +164,7 @@ export default function PedidosPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">Pedidos</h1>
-          <p className="text-gray-500 text-sm">{response?.data?.meta?.total ?? 0} pedidos en total</p>
+          <p className="text-gray-500 text-sm">{pedidos.length} pedidos en total</p>
         </div>
         <button onClick={() => navigate('/pedidos/nuevo')} className="btn-primary">
           <Plus size={18} /> Nuevo pedido

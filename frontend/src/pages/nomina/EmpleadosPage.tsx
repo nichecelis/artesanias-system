@@ -31,7 +31,7 @@ export default function EmpleadosPage() {
 
   const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<Form>({
     resolver: zodResolver(schema),
-    defaultValues: { salarioBase: 0 },
+    defaultValues: { nombre: '', documento: '', salario: 0 },
   });
 
   const openNew  = () => { setEditing(null); reset({ nombre: '', documento: '', salario: 0 }); setModal(true); };

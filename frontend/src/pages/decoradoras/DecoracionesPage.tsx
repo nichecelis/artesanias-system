@@ -1,13 +1,15 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Search, Pencil, Trash2, CheckCircle, X, List, ChevronDown, ChevronRight, Edit3 } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, CheckCircle, X, List, ChevronDown, ChevronRight, Edit3, Users, FileText } from 'lucide-react';
 import { api } from '../../services/api';
 import { decoradorasService } from '../../services';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
 import { useToastStore } from '../../store/toast.store';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const fmt    = (n: any) => `$${Number(n ?? 0).toLocaleString('es-CO')}`;
 const toDate = (d: any) => d ? new Date(d).toISOString().slice(0,10) : '';
@@ -125,15 +127,52 @@ export default function DecoracionesPage() {
   const [fechaHasta,setFechaHasta] = useState('');
   const [seleccionadas,setSeleccionadas] = useState<Set<string>>(new Set());
   const [gruposExpandidos,setGruposExpandidos] = useState<Set<string>>(new Set());
+  const [filtroGrupo, setFiltroGrupo] = useState<any>(null);
+  const [reporteModal, setReporteModal] = useState<any>(null);
+  const [reporteData, setReporteData] = useState<any>(null);
+  const [reporteLoading, setReporteLoading] = useState(false);
 
   const { data: todasDec } = useQuery({
     queryKey:['dec-filtro'], queryFn:()=>decoradorasService.listar({page:1,limit:500}).then(r=>r.data.data)
+  });
+
+  const { data: grupos } = useQuery({
+    queryKey:['grupos-list'],
+    queryFn:()=>api.get('/grupos',{params:{limit:500}}).then(r=>r.data.data),
   });
 
   const { data, isLoading } = useQuery({
     queryKey:['decoraciones',search,filtroDoc,fechaDesde,fechaHasta],
     queryFn:()=>api.get('/decoraciones',{params:{limit:1000,search:search||undefined,decoradoraId:filtroDoc?.id||undefined,fechaDesde:fechaDesde||undefined,fechaHasta:fechaHasta||undefined,agrupado:true}}).then(r=>r.data),
   });
+
+  const decoradorasDelGrupo = filtroGrupo 
+    ? (todasDec?.filter((d: any) => d.grupoId === filtroGrupo.id) || [])
+    : (todasDec || []);
+  const decoradoraIdsDelGrupo = new Set((decoradorasDelGrupo || []).map((d: any) => d.id));
+
+  const gruposFiltrados = (data?.data || []).filter((g: any) => decoradoraIdsDelGrupo.has(g.decoradoraId));
+
+  useEffect(() => {
+    if (reporteModal) {
+      setReporteLoading(true);
+      api.get('/decoraciones/reporte-por-grupo', {
+        params: {
+          grupoId: filtroGrupo?.id,
+          decoradoraId: filtroDoc?.id,
+          fechaDesde,
+          fechaHasta,
+          search,
+          incluirPagadas: true,
+        }
+      }).then(r => {
+        setReporteData(r.data.data);
+        setReporteLoading(false);
+      }).catch(() => {
+        setReporteLoading(false);
+      });
+    }
+  }, [reporteModal, filtroGrupo, filtroDoc, fechaDesde, fechaHasta, search]);
 
   const { data: prestamosDecoradora } = useQuery({
     queryKey: ['prestamos-dec-edit', editing?.decoradora?.id],
@@ -342,7 +381,7 @@ export default function DecoracionesPage() {
     });
   };
 
-  const pagablesAgrupados = (data?.data ?? []).flatMap((g: any) =>
+  const pagablesAgrupados = gruposFiltrados.flatMap((g: any) =>
     g.productos.filter((p: any) => !p.pagado && p.cantidadIngreso)
   );
 
@@ -352,7 +391,7 @@ export default function DecoracionesPage() {
         <div>
           <h1>Decoraciones</h1>
           <p className="text-gray-500 text-sm">
-            {`${data?.data?.length ?? 0} grupos`}
+            {`${gruposFiltrados.length} grupos`}
           </p>
         </div>
         <button onClick={()=>setModal('crear')} className="btn-primary"><Plus size={16}/> Nueva</button>
@@ -364,7 +403,7 @@ export default function DecoracionesPage() {
           <input className="input pl-9" placeholder="Buscar pedido, decoradora, producto..."
             value={search} onChange={e=>{setSearch(e.target.value);}}/>
         </div>
-        <div className="w-64">
+        <div className="w-48">
           <Selector
             label=""
             placeholder="Buscar decoradora..."
@@ -378,6 +417,25 @@ export default function DecoracionesPage() {
             error=""
           />
         </div>
+        <div className="w-48">
+          <Selector
+            label=""
+            placeholder="Filtrar por grupo..."
+            queryKey="grupos-filtro"
+            queryFn={(q:string)=>{
+              const filtered = grupos?.filter((g: any) => 
+                g.nombre.toLowerCase().includes(q.toLowerCase())
+              ) || [];
+              return Promise.resolve(filtered);
+            }}
+            displayFn={(d:any)=>d.nombre}
+            subFn={()=>''}
+            selected={filtroGrupo}
+            onSelect={(d:any)=>setFiltroGrupo(d)}
+            onClear={()=>setFiltroGrupo(null)}
+            error=""
+          />
+        </div>
         <div className="flex items-center gap-2">
           <label className="text-xs text-gray-500 whitespace-nowrap">Desde</label>
           <input type="date" className="input w-36 text-sm" value={fechaDesde} onChange={e=>setFechaDesde(e.target.value)}/>
@@ -386,14 +444,20 @@ export default function DecoracionesPage() {
           <label className="text-xs text-gray-500 whitespace-nowrap">Hasta</label>
           <input type="date" className="input w-36 text-sm" value={fechaHasta} onChange={e=>setFechaHasta(e.target.value)}/>
         </div>
-        {(filtroDoc || fechaDesde || fechaHasta || search) && (
+        {(filtroDoc || fechaDesde || fechaHasta || search || filtroGrupo) && (
           <button
-            onClick={() => { setFiltroDoc(null); setFechaDesde(''); setFechaHasta(''); setSearch(''); }}
+            onClick={() => { setFiltroDoc(null); setFechaDesde(''); setFechaHasta(''); setSearch(''); setFiltroGrupo(null); }}
             className="text-red-500 hover:text-red-700 text-sm"
           >
             Limpiar
           </button>
         )}
+        <button
+          onClick={() => setReporteModal({ grupo: filtroGrupo, filtroDoc, fechaDesde, fechaHasta, search, gruposFiltrados })}
+          className="btn-primary text-sm flex items-center gap-1"
+        >
+          <FileText size={14}/> Generar Reporte
+        </button>
         {seleccionadas.size > 0 && (
           <button onClick={()=>setModal('masivo')} className="btn-primary text-sm flex items-center gap-1">
             <CheckCircle size={14}/> Pagar {seleccionadas.size}
@@ -402,7 +466,7 @@ export default function DecoracionesPage() {
       </div>
 
       <div className="card p-0 overflow-hidden">
-        {isLoading?<LoadingScreen/>:!data?.data?.length?(
+        {isLoading?<LoadingScreen/>:!gruposFiltrados.length?(
           <EmptyState message="Sin decoraciones" action={<button onClick={()=>setModal('crear')} className="btn-primary">Nueva decoración</button>}/>
         ): (
           <div className="overflow-x-auto">
@@ -429,7 +493,7 @@ export default function DecoracionesPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.data.map((grupo: any) => {
+                {gruposFiltrados.map((grupo: any) => {
                   const key = `${grupo.pedidoId}-${grupo.decoradoraId}`;
                   const expandido = gruposExpandidos.has(key);
                   const productosPagables = grupo.productos.filter((p: any) => !p.pagado && p.cantidadIngreso);
@@ -437,8 +501,8 @@ export default function DecoracionesPage() {
                   const todosSeleccionados = idsPagables.length > 0 && idsPagables.every((id: string) => seleccionadas.has(id));
                   
                   return (
-                    <>
-                      <tr key={key} className="border-b hover:bg-gray-50">
+                    <Fragment key={key}>
+                      <tr className="border-b hover:bg-gray-50">
                         <td className="px-3 py-2 text-center" onClick={e => e.stopPropagation()}>
                           <input
                             type="checkbox"
@@ -528,7 +592,7 @@ export default function DecoracionesPage() {
                           </td>
                         </tr>
                       ))}
-                    </>
+                    </Fragment>
                   );
                 })}
               </tbody>
@@ -899,8 +963,211 @@ export default function DecoracionesPage() {
           </div>
         )}
       </Modal>
+
+      {/* Modal Reporte de Pagos */}
+      <Modal title="Reporte de Decoraciones" open={Boolean(reporteModal)} onClose={() => setReporteModal(null)} size="full">
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <button className="btn-primary text-sm" onClick={() => generarPDFDecoraciones(reporteData)}>
+              <FileText size={14} className="inline mr-1"/> Generar PDF
+            </button>
+          </div>
+
+          {reporteLoading ? (
+            <div className="flex justify-center py-8">
+              <Spinner size="lg"/>
+            </div>
+          ) : !reporteData || reporteData.items.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">Sin decoraciones con los filtros aplicados</p>
+          ) : (
+            <>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-medium mb-2">Totales</h3>
+                <div className="grid grid-cols-5 gap-4">
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-blue-700">
+                      {reporteData.totales.cantidadDecoraciones}
+                    </p>
+                    <p className="text-xs text-gray-500">Decoraciones</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-gray-700">
+                      {fmt(reporteData.totales.totalEgresos)}
+                    </p>
+                    <p className="text-xs text-gray-500">$ Total</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-orange-700">
+                      {fmt(reporteData.totales.subtotal)}
+                    </p>
+                    <p className="text-xs text-gray-500">$ Subtotal</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-purple-700">
+                      {fmt(reporteData.totales.totalAPagar)}
+                    </p>
+                    <p className="text-xs text-gray-500">$ Total a Pagar</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-green-700">
+                      {reporteData.items.length}
+                    </p>
+                    <p className="text-xs text-gray-500">Decoradoras</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card overflow-hidden">
+                <h3 className="font-medium mb-2">Detalle por Decoradora</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-2 py-2 text-left">NOMBRE</th>
+                        <th className="px-2 py-2 text-left">ELITE/GRUPO</th>
+                        <th className="px-2 py-2 text-center">RESP.</th>
+                        <th className="px-2 py-2 text-right">$ COMPRAS</th>
+                        <th className="px-2 py-2 text-right">$ TOTAL</th>
+                        <th className="px-2 py-2 text-right">$ ABONO PRESTAMO</th>
+                        <th className="px-2 py-2 text-right">$ SALDO PRESTAMO</th>
+                        <th className="px-2 py-2 text-right">$ SUBTOTAL</th>
+                        <th className="px-2 py-2 text-right">$ TOTAL A PAGAR</th>
+                        <th className="px-2 py-2 text-center">CUENTA</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {reporteData.items.map((item: any, idx: number) => (
+                        <Fragment key={idx}>
+                          <tr className={item.esResponsable ? 'bg-blue-50' : ''}>
+                            <td className="px-2 py-2 font-medium">
+                              {item.decoradoraNombre}
+                              {item.esResponsable && (
+                                <span className="ml-1 text-[10px] text-blue-600 bg-blue-100 px-1 rounded">
+                                  +{item.porcentajeAdicional}%
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-2 py-2">
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] ${item.grupoTipo === 'ELITE' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
+                                {item.grupoNombre || '—'}
+                              </span>
+                            </td>
+                            <td className="px-2 py-2 text-center">
+                              {item.esResponsable ? (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700">Si</span>
+                              ) : '—'}
+                            </td>
+                            <td className="px-2 py-2 text-right">{fmt(item.totalCompras)}</td>
+                            <td className="px-2 py-2 text-right">{fmt(item.totalEgresos)}</td>
+                            <td className="px-2 py-2 text-right">{fmt(item.totalAbonosPrestamo)}</td>
+                            <td className="px-2 py-2 text-right">{fmt(item.saldoPrestamos)}</td>
+                            <td className="px-2 py-2 text-right">{fmt(item.subtotal)}</td>
+                            <td className="px-2 py-2 text-right font-bold text-primary-700">{fmt(item.totalAPagar)}</td>
+                            <td className="px-2 py-2 text-center font-mono text-[10px]">
+                              {item.decoradoraNumCuenta || '—'}
+                            </td>
+                          </tr>
+                          {item.calculoPorcentaje && (
+                            <tr className="bg-blue-50/50 text-[10px] text-blue-600">
+                              <td colSpan={4} className="px-2 py-1">
+                                Cálculo responsable: {fmt(item.calculoPorcentaje.totalOtrosMiembros)} × {item.calculoPorcentaje.porcentaje}% = {fmt(item.calculoPorcentaje.adicional)}
+                              </td>
+                              <td colSpan={6} className="px-2 py-1 text-right">
+                                (Suma otros miembros × porcentaje = adicional)
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-gray-50 font-bold">
+                      <tr>
+                        <td className="px-2 py-2">TOTALES</td>
+                        <td className="px-2 py-2"></td>
+                        <td className="px-2 py-2"></td>
+                        <td className="px-2 py-2 text-right">{fmt(reporteData.totales.totalCompras)}</td>
+                        <td className="px-2 py-2 text-right">{fmt(reporteData.totales.totalEgresos)}</td>
+                        <td className="px-2 py-2 text-right">{fmt(reporteData.totales.totalAbonosPrestamo)}</td>
+                        <td className="px-2 py-2 text-right">{fmt(reporteData.totales.saldoPrestamos)}</td>
+                        <td className="px-2 py-2 text-right">{fmt(reporteData.totales.subtotal)}</td>
+                        <td className="px-2 py-2 text-right text-primary-700">{fmt(reporteData.totales.totalAPagar)}</td>
+                        <td className="px-2 py-2"></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
     </div>
   );
+}
+
+function generarPDFDecoraciones(reporteData: any) {
+  if (!reporteData || !reporteData.items) return;
+  
+  const doc = new jsPDF({ orientation: 'landscape' });
+  
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('REPORTE DE DECORACIONES POR GRUPO', 140, 15, { align: 'center' });
+  
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Fecha: ${new Date().toLocaleDateString('es-CO')}`, 140, 22, { align: 'center' });
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Total a Pagar: ${fmt(reporteData.totales.totalAPagar)}`, 14, 30);
+  doc.text(`Decoraciones: ${reporteData.totales.cantidadDecoraciones}`, 14, 36);
+  doc.text(`Decoradoras: ${reporteData.items.length}`, 14, 42);
+  
+  const tableData = reporteData.items.map((item: any, idx: number) => [
+    item.decoradoraNombre,
+    item.grupoNombre || '—',
+    item.esResponsable ? 'Si' : 'No',
+    fmt(item.totalCompras),
+    fmt(item.totalEgresos),
+    fmt(item.totalAbonosPrestamo),
+    fmt(item.saldoPrestamos),
+    fmt(item.subtotal),
+    fmt(item.totalAPagar),
+    item.decoradoraNumCuenta || '—',
+  ]);
+  
+  doc.autoTable({
+    startY: 50,
+    head: [['NOMBRE', 'ELITE/GRUPO', 'RESP.', '$ COMPRAS', '$ TOTAL', '$ ABONO PRESTAMO', '$ SALDO PRESTAMO', '$ SUBTOTAL', '$ TOTAL A PAGAR', 'CUENTA']],
+    body: tableData,
+    foot: [
+      ['TOTALES', '', '', fmt(reporteData.totales.totalCompras), fmt(reporteData.totales.totalEgresos), fmt(reporteData.totales.totalAbonosPrestamo), fmt(reporteData.totales.saldoPrestamos), fmt(reporteData.totales.subtotal), fmt(reporteData.totales.totalAPagar), '']
+    ],
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [41, 37, 36] },
+    footStyles: { fillColor: [229, 231, 235], fontStyle: 'bold' },
+    columnStyles: {
+      0: { cellWidth: 30 },
+      1: { cellWidth: 25 },
+      8: { cellWidth: 22 },
+      9: { cellWidth: 20 },
+    },
+  });
+  
+  let finalY = (doc as any).lastAutoTable.finalY || 50;
+  
+  reporteData.items.forEach((item: any) => {
+    if (item.calculoPorcentaje) {
+      finalY += 6;
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(59, 130, 246);
+      doc.text(`${item.decoradoraNombre}: ${fmt(item.calculoPorcentaje.totalOtrosMiembros)} × ${item.calculoPorcentaje.porcentaje}% = ${fmt(item.calculoPorcentaje.adicional)}`, 14, finalY);
+    }
+  });
+  
+  doc.save(`reporte-decoraciones-${new Date().toISOString().slice(0,10)}.pdf`);
 }
 
 // ── Sub-componente selector de producto del pedido ───────────
