@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../config/database';
 import { redis, redisKeys } from '../config/redis';
 import { env } from '../config/env';
-import { AppError, AuthPayload } from '../types';
+import { AppError, AuthPayload, type Rol } from '../types';
 
 interface LoginDto {
   correo: string;
@@ -41,7 +41,7 @@ export class AuthService {
       throw new AppError('Correo o contraseña incorrectos', 401);
     }
 
-    const tokens = await this.generarTokens(usuario.id, usuario.correo, usuario.rol as string);
+    const tokens = await this.generarTokens(usuario.id, usuario.correo, usuario.rol as Rol);
 
     return {
       ...tokens,
@@ -96,9 +96,9 @@ export class AuthService {
   }
 
   private async generarTokens(
-  userId: string,
-  correo: string,
-  rol: string,
+    userId: string,
+    correo: string,
+    rol: Rol,
   ): Promise<TokenPair> {
     const jti = uuidv4();
     const refreshJti = uuidv4();

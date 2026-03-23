@@ -98,7 +98,7 @@ function FilaEmpleado({ idx, empleados, remove, register, watch, setValue }: any
           <span>Salario: {fmt(emp.salario)}</span>
           <span>$/día: {fmt(calc?.salarioDia)}</span>
           <span>$/h.extra: {fmt(calc?.valorHora)}</span>
-          <span>Pago: {fmt(calc?.subtotalDias + calc?.subtotalHoras)}</span>
+          <span>Pago: {fmt((calc?.subtotalDias ?? 0) + (calc?.subtotalHoras ?? 0))}</span>
           {Number(abono) > 0 && <span className="text-red-500">− Abono: {fmt(abono)}</span>}
         </div>
       )}
@@ -150,7 +150,7 @@ function FilaEmpleadoMass({ idx, empleados, prestamosPorEmpleado, register, watc
         <div className="flex gap-4 text-xs text-gray-500 bg-gray-50 rounded px-2 py-1">
           <span>$/día: {fmt(calc?.salarioDia)}</span>
           <span>$/h.extra: {fmt(calc?.valorHora)}</span>
-          <span>Pago: {fmt(calc?.subtotalDias + calc?.subtotalHoras)}</span>
+          <span>Pago: {fmt((calc?.subtotalDias ?? 0) + (calc?.subtotalHoras ?? 0))}</span>
           {abono > 0 && <span className="text-red-500">− Abono: {fmt(abono)}</span>}
         </div>
       )}

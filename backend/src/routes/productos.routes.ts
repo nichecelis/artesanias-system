@@ -46,9 +46,9 @@ const clienteSchema = z.object({
 });
 
 clientesRouter.get('/',      (req, res, next) => handleListar(req, res, next, (p) => clientesService.listar(p)));
-clientesRouter.post('/',     authorize('ADMINISTRADOR', 'VENTAS'), (req, res, next) => handleCrear(req, res, next, (d) => clientesService.crear(d), clienteSchema));
-clientesRouter.get('/:id',   (req, res, next) => handleObtener(req, res, next, (id) => clientesService.obtenerPorId(id)));
-clientesRouter.patch('/:id', authorize('ADMINISTRADOR', 'VENTAS'), (req, res, next) => handleActualizar(req, res, next, (id, d) => clientesService.actualizar(id, d), clienteSchema.partial()));
+clientesRouter.post('/',     authorize('ADMINISTRADOR', 'PRODUCCION'), (req, res, next) => handleCrear(req, res, next, (d) => clientesService.crear(d), clienteSchema));
+clientesRouter.get('/:id',   (req, res, next) => handleObtener(req, res, next, (id) => clientesService.obtener(id)));
+clientesRouter.patch('/:id', authorize('ADMINISTRADOR', 'PRODUCCION'), (req, res, next) => handleActualizar(req, res, next, (id, d) => clientesService.actualizar(id, d), clienteSchema.partial()));
 clientesRouter.delete('/:id', authorize('ADMINISTRADOR'), (req, res, next) => handleEliminar(req, res, next, (id) => clientesService.eliminar(id)));
 
 export { clientesRouter };
@@ -102,7 +102,7 @@ pedidosRouter.get('/', async (req: Request, res: Response, next: NextFunction) =
   } catch (error) { next(error); }
 });
 
-pedidosRouter.post('/', authorize('ADMINISTRADOR', 'VENTAS'), async (req: Request, res: Response, next: NextFunction) => {
+pedidosRouter.post('/', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const dto = pedidoSchema.parse(req.body);
     const data = await pedidosService.crear(dto);
@@ -112,7 +112,7 @@ pedidosRouter.post('/', authorize('ADMINISTRADOR', 'VENTAS'), async (req: Reques
 
 pedidosRouter.get('/:id',   (req, res, next) => hObtener(req, res, next, (id) => pedidosService.obtenerPorId(id)));
 
-pedidosRouter.patch('/:id', authorize('ADMINISTRADOR', 'PRODUCCION', 'VENTAS'), async (req: Request, res: Response, next: NextFunction) => {
+pedidosRouter.patch('/:id', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const dto = actualizarPedidoSchema.parse(req.body);
     const data = await pedidosService.actualizar(req.params.id, dto);

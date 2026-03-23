@@ -17,7 +17,7 @@ const grupoSchema = z.object({
 });
 
 // Listar
-gruposRouter.get('/', async (req: Request, res: Response, next: NextFunction) => {
+gruposRouter.get('/', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const params = parsePagination(req.query as any);
     const result = await gruposService.listar(params);
@@ -26,7 +26,7 @@ gruposRouter.get('/', async (req: Request, res: Response, next: NextFunction) =>
 });
 
 // Obtener por ID
-gruposRouter.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+gruposRouter.get('/:id', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     sendSuccess(res, await gruposService.obtener(req.params.id));
   } catch (e) { next(e); }
@@ -56,7 +56,7 @@ gruposRouter.delete('/:id', authorize('ADMINISTRADOR'), async (req: Request, res
 });
 
 // Reporte de pagos por grupo
-gruposRouter.get('/:id/reporte', async (req: Request, res: Response, next: NextFunction) => {
+gruposRouter.get('/:id/reporte', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { fechaDesde, fechaHasta } = req.query as any;
     const result = await gruposService.reportePagos(req.params.id, fechaDesde, fechaHasta);

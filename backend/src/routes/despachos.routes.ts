@@ -20,7 +20,7 @@ const registrarDespachoSchema = z.object({
   caja3Cantidad: numOpcional,
 });
 
-despachosRouter.get('/', async (req: Request, res: Response, next: NextFunction) => {
+despachosRouter.get('/', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const params = parsePagination(req.query as any);
     const search = req.query.search as string;
@@ -37,7 +37,7 @@ despachosRouter.get('/', async (req: Request, res: Response, next: NextFunction)
   } catch (e) { next(e); }
 });
 
-despachosRouter.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+despachosRouter.get('/:id', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await despachosService.obtenerPorId(req.params.id);
     sendSuccess(res, result);
@@ -45,7 +45,7 @@ despachosRouter.get('/:id', async (req: Request, res: Response, next: NextFuncti
 });
 
 despachosRouter.patch('/:id/despachar', 
-  authorize('ADMINISTRADOR', 'PRODUCCION', 'VENTAS'),
+  authorize('ADMINISTRADOR', 'PRODUCCION'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;

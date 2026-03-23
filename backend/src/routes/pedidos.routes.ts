@@ -45,14 +45,14 @@ const actualizarPedidoSchema = z.object({
   productos:        z.array(productoItemSchema).optional(),
 });
 
-pedidosRouter.get('/stats/resumen', async (req: Request, res: Response, next: NextFunction) => {
+pedidosRouter.get('/stats/resumen', authorize('ADMINISTRADOR', 'PRODUCCION', 'CONTABILIDAD'), async (req: Request, res: Response, next: NextFunction) => {
   try { 
     const stats = await pedidosService.estadisticas();
     res.json({ success: true, data: stats });
   } catch (e) { next(e); }
 });
 
-pedidosRouter.get('/estadisticas', authorize('ADMINISTRADOR', 'PRODUCCION', 'VENTAS', 'CONTABILIDAD'), async (req: Request, res: Response, next: NextFunction) => {
+pedidosRouter.get('/estadisticas', authorize('ADMINISTRADOR', 'PRODUCCION', 'CONTABILIDAD'), async (req: Request, res: Response, next: NextFunction) => {
   try { 
     const stats = await pedidosService.estadisticas();
     sendSuccess(res, stats);
@@ -91,7 +91,7 @@ pedidosRouter.get('/', async (req: Request, res: Response, next: NextFunction) =
 });
 
 // ✅ POST /pedidos - Crear
-pedidosRouter.post('/', authorize('ADMINISTRADOR','VENTAS','PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
+pedidosRouter.post('/', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await pedidosService.crear(crearPedidoSchema.parse(req.body));
     sendSuccess(res, data, 'Pedido creado exitosamente', 201);
@@ -102,7 +102,7 @@ pedidosRouter.post('/', authorize('ADMINISTRADOR','VENTAS','PRODUCCION'), async 
 
 
 // ✅ PATCH /pedidos/:id/estado - Cambiar estado
-pedidosRouter.patch('/:id/estado', async (req: Request, res: Response, next: NextFunction) => {
+pedidosRouter.patch('/:id/estado', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { estado } = z.object({ estado: z.nativeEnum(EstadoPedido) }).parse(req.body);
     const data = await pedidosService.cambiarEstado(req.params.id, estado);
@@ -113,7 +113,7 @@ pedidosRouter.patch('/:id/estado', async (req: Request, res: Response, next: Nex
 });
 
 // ✅ PATCH /pedidos/:id - Actualizar
-pedidosRouter.patch('/:id', authorize('ADMINISTRADOR','VENTAS','PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
+pedidosRouter.patch('/:id', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await pedidosService.actualizar(req.params.id, actualizarPedidoSchema.parse(req.body));
     sendSuccess(res, data, 'Pedido actualizado correctamente', 200);

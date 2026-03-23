@@ -4,10 +4,14 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { api } from '../../services/api';
 import { reportesService, nominaService } from '../../services';
 import { StatCard, LoadingScreen } from '../../components/common';
+import { useAuthStore } from '../../store/auth.store';
 
 const COLORES = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#6b7280'];
 
 export default function DashboardPage() {
+  const { usuario } = useAuthStore();
+  const isProduccion = usuario?.rol === 'PRODUCCION';
+
   const { data: stats, isLoading: loadingStats } = useQuery({
     queryKey: ['pedidos-estadisticas'],
     queryFn: () => api.get('/pedidos/estadisticas').then((r) => r.data.data),
@@ -16,6 +20,7 @@ export default function DashboardPage() {
   const { data: pagos, isLoading: loadingPagos } = useQuery({
     queryKey: ['pagos-decoradoras'],
     queryFn: () => reportesService.pagosDecoradores().then((r) => r.data.data),
+    enabled: !isProduccion,
   });
 
   const { data: nominaStats } = useQuery({
@@ -25,9 +30,10 @@ export default function DashboardPage() {
       const mes = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
       return nominaService.totalMes(mes).then((r) => r.data.data);
     },
+    enabled: !isProduccion,
   });
 
-  if (loadingStats || loadingPagos) return <LoadingScreen />;
+  if (loadingStats || (loadingPagos && !isProduccion)) return <LoadingScreen />;
 
   const porEstado = stats?.porEstado ?? [];
   const totalPedidos = porEstado.reduce((a: number, e: any) => a + e.cantidad, 0);
@@ -46,29 +52,32 @@ export default function DashboardPage() {
         <p className="text-gray-500 text-sm mt-1">Resumen del sistema</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats principales */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard label="Total pedidos"    value={totalPedidos}              icon={<ShoppingBag size={20} />} color="blue" />
         <StatCard label="Pedidos activos"  value={activos}                   icon={<Clock size={20} />}       color="yellow" />
-        <StatCard label="Pedidos mes"      value={stats?.resumen?.totalMes ?? 0} icon={<TrendingUp size={20} />}  color="green" />
-        <StatCard label="Pagos pendientes" value={pagos?.decoraciones?.length ?? 0} icon={<CheckCircle size={20} />} color="purple" />
+        {!isProduccion && (
+          <StatCard label="Pagos pendientes" value={pagos?.decoraciones?.length ?? 0} icon={<CheckCircle size={20} />} color="purple" />
+        )}
       </div>
 
-      {/* Stats financieras */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard 
-          label="Total nómina mes" 
-          value={`$${(nominaStats?.totalNomina ?? 0).toLocaleString('es-CO')}`} 
-          icon={<DollarSign size={20} />} 
-          color="emerald" 
-        />
-        <StatCard 
-          label="Pendiente decoradoras" 
-          value={`$${Number(pagos?.totalPendiente ?? 0).toLocaleString('es-CO')}`} 
-          icon={<Users size={20} />} 
-          color="orange" 
-        />
-      </div>
+      {/* Stats financieras - solo para ADMIN y CONTABILIDAD */}
+      {!isProduccion && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <StatCard 
+            label="Total nómina mes" 
+            value={`$${(nominaStats?.totalNomina ?? 0).toLocaleString('es-CO')}`} 
+            icon={<DollarSign size={20} />} 
+            color="emerald" 
+          />
+          <StatCard 
+            label="Pendiente decoradoras" 
+            value={`$${Number(pagos?.totalPendiente ?? 0).toLocaleString('es-CO')}`} 
+            icon={<Users size={20} />} 
+            color="orange" 
+          />
+        </div>
+      )}
 
       {/* Gráficas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -122,8 +131,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Pagos pendientes */}
-      {pagos?.totalPendiente > 0 && (
+      {/* Pagos pendientes - solo para ADMIN y CONTABILIDAD */}
+      {!isProduccion && pagos?.totalPendiente > 0 && (
         <div className="card border-l-4 border-l-orange-400">
           <div className="flex items-center justify-between">
             <div>

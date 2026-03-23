@@ -1,10 +1,50 @@
 import { Request } from 'express';
 
+// ─── Roles del sistema (Const Types Pattern) ─────────────────
+const ROLES = {
+  ADMINISTRADOR: 'ADMINISTRADOR',
+  PRODUCCION: 'PRODUCCION',
+  CONTABILIDAD: 'CONTABILIDAD',
+} as const;
+
+export type Rol = (typeof ROLES)[keyof typeof ROLES];
+
+// ─── Estados de pedido (Const Types Pattern) ─────────────────
+const ESTADOS_PEDIDO = {
+  PENDIENTE: 'PENDIENTE',
+  EN_PROCESO: 'EN_PROCESO',
+  TERMINADO: 'TERMINADO',
+  DESPACHADO: 'DESPACHADO',
+  CANCELADO: 'CANCELADO',
+} as const;
+
+export type EstadoPedido = (typeof ESTADOS_PEDIDO)[keyof typeof ESTADOS_PEDIDO];
+
+// ─── Estados de producto (Const Types Pattern) ────────────────
+const ESTADOS_PRODUCTO = {
+  PENDIENTE: 'PENDIENTE',
+  CORTE: 'CORTE',
+  ENSAMBLE: 'ENSAMBLE',
+  DECORACION: 'DECORACION',
+  TERMINADO: 'TERMINADO',
+  CANCELADO: 'CANCELADO',
+} as const;
+
+export type EstadoProducto = (typeof ESTADOS_PRODUCTO)[keyof typeof ESTADOS_PRODUCTO];
+
+// ─── Tipos de grupo (Const Types Pattern) ────────────────────
+const TIPOS_GRUPO = {
+  GRUPO: 'GRUPO',
+  ELITE: 'ELITE',
+} as const;
+
+export type TipoGrupo = (typeof TIPOS_GRUPO)[keyof typeof TIPOS_GRUPO];
+
 // ─── Usuario autenticado en el request ───────────────────────
 export interface AuthPayload {
   sub: string;
   correo: string;
-  rol: string;        // ← String, no Rol enum
+  rol: Rol;
   jti: string;
   iat?: number;
   exp?: number;

@@ -7,27 +7,19 @@ import { Plus, Search, Pencil, KeyRound, UserX, UserCheck } from 'lucide-react';
 import { api } from '../../services/api';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
 import { useToastStore } from '../../store/toast.store';
-
-const ROLES = ['ADMINISTRADOR','PRODUCCION','VENTAS','CONTABILIDAD'];
-
-const ROL_COLORS: Record<string,string> = {
-  ADMINISTRADOR: 'bg-red-100 text-red-800',
-  PRODUCCION:    'bg-blue-100 text-blue-800',
-  VENTAS:        'bg-green-100 text-green-800',
-  CONTABILIDAD:  'bg-yellow-100 text-yellow-800',
-};
+import { ROLES_LIST, ROL_COLORS, type Rol } from '../../types';
 
 const crearSchema = z.object({
   nombre:   z.string().min(2, 'Mínimo 2 caracteres'),
   correo:   z.string().email('Correo inválido'),
   password: z.string().min(6, 'Mínimo 6 caracteres'),
-  rol:      z.enum(['ADMINISTRADOR','PRODUCCION','VENTAS','CONTABILIDAD']),
+  rol:      z.enum(['ADMINISTRADOR','PRODUCCION','CONTABILIDAD'] as [Rol, ...Rol[]]),
 });
 
 const editarSchema = z.object({
   nombre: z.string().min(2),
   correo: z.string().email(),
-  rol:    z.enum(['ADMINISTRADOR','PRODUCCION','VENTAS','CONTABILIDAD']),
+  rol:    z.enum(['ADMINISTRADOR','PRODUCCION','CONTABILIDAD'] as [Rol, ...Rol[]]),
 });
 
 const passSchema = z.object({
@@ -52,7 +44,7 @@ export default function UsuariosPage() {
     queryFn: () => api.get('/usuarios', { params: { page, limit: 10, search: search || undefined } }).then(r => r.data),
   });
 
-  const crearForm = useForm<CrearForm>({ resolver: zodResolver(crearSchema), defaultValues: { rol: 'VENTAS' } });
+  const crearForm = useForm<CrearForm>({ resolver: zodResolver(crearSchema), defaultValues: { rol: 'PRODUCCION' } });
   const editarForm = useForm<EditarForm>({ resolver: zodResolver(editarSchema) });
   const passForm  = useForm<PassForm>({ resolver: zodResolver(passSchema) });
 
@@ -97,7 +89,7 @@ export default function UsuariosPage() {
   const columns = [
     { key: 'nombre', header: 'Nombre' },
     { key: 'correo', header: 'Correo' },
-    { key: 'rol',    header: 'Rol', render: (r: any) => (
+    { key: 'rol',    header: 'Rol', render: (r: { rol: Rol }) => (
       <span className={`badge ${ROL_COLORS[r.rol] ?? 'bg-gray-100'}`}>{r.rol}</span>
     )},
     { key: 'activo', header: 'Estado', render: (r: any) => (
@@ -167,7 +159,7 @@ export default function UsuariosPage() {
             <div>
               <label className="label">Rol *</label>
               <select {...crearForm.register('rol')} className="input">
-                {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                {ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
           </div>
@@ -198,7 +190,7 @@ export default function UsuariosPage() {
             <div>
               <label className="label">Rol *</label>
               <select {...editarForm.register('rol')} className="input">
-                {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                {ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
           </div>

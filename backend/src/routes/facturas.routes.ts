@@ -25,7 +25,7 @@ const crearFacturaSchema = z.object({
   items: z.array(facturaItemSchema).min(1, 'Debe incluir al menos un producto'),
 });
 
-facturasRouter.get('/', async (req: Request, res: Response, next: NextFunction) => {
+facturasRouter.get('/', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const params = parsePagination(req.query as any);
     const result = await facturasService.listar({
@@ -49,28 +49,28 @@ facturasRouter.get('/', async (req: Request, res: Response, next: NextFunction) 
   } catch (e) { next(e); }
 });
 
-facturasRouter.get('/cliente/:clienteId/pedidos', async (req: Request, res: Response, next: NextFunction) => {
+facturasRouter.get('/cliente/:clienteId/pedidos', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const pedidos = await facturasService.obtenerPedidosDisponibles(req.params.clienteId);
     sendSuccess(res, pedidos);
   } catch (e) { next(e); }
 });
 
-facturasRouter.get('/cliente/:clienteId/saldo-anterior', async (req: Request, res: Response, next: NextFunction) => {
+facturasRouter.get('/cliente/:clienteId/saldo-anterior', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const saldo = await facturasService.obtenerSaldoAnterior(req.params.clienteId, req.query.excluir as string);
     sendSuccess(res, { saldoAnterior: saldo });
   } catch (e) { next(e); }
 });
 
-facturasRouter.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+facturasRouter.get('/:id', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const factura = await facturasService.obtenerPorId(req.params.id);
     sendSuccess(res, factura);
   } catch (e) { next(e); }
 });
 
-facturasRouter.post('/', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'VENTAS'), async (req: Request, res: Response, next: NextFunction) => {
+facturasRouter.post('/', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const dto = crearFacturaSchema.parse(req.body);
     const factura = await facturasService.crear(dto);

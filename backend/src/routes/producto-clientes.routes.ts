@@ -28,7 +28,7 @@ productoClientesRouter.get('/cliente/:clienteId', async (req: Request, res: Resp
 });
 
 // Crear/actualizar precio
-productoClientesRouter.put('/:clienteId/:productoId', authorize('ADMINISTRADOR', 'VENTAS'), async (req: Request, res: Response, next: NextFunction) => {
+productoClientesRouter.put('/:clienteId/:productoId', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { precioVenta } = precioSchema.parse(req.body);
     // Usar el nombre exacto del modelo: productoCliente (camelCase)
@@ -42,7 +42,7 @@ productoClientesRouter.put('/:clienteId/:productoId', authorize('ADMINISTRADOR',
 });
 
 // Eliminar precio
-productoClientesRouter.delete('/:productoId/:clienteId', authorize('ADMINISTRADOR', 'VENTAS'), async (req: Request, res: Response, next: NextFunction) => {
+productoClientesRouter.delete('/:productoId/:clienteId', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     sendSuccess(res, await productoClientesService.eliminar(req.params.productoId, req.params.clienteId), 'Precio eliminado');
   } catch (e) { next(e); }

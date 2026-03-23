@@ -52,9 +52,9 @@ function BuscadorDecoradora({ value, onSelect, onClear }: {
           onFocus={() => setOpen(true)}
         />
       </div>
-      {open && results?.length > 0 && (
+      {open && (results?.length ?? 0) > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-          {results.map((d: any) => (
+          {(results ?? []).map((d: any) => (
             <button
               key={d.id}
               type="button"

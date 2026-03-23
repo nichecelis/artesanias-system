@@ -45,7 +45,7 @@ const decoradoraUpdateSchema = z.object({
   tipoCuenta: z.nativeEnum(TipoCuenta).optional().nullable(),
 });
 
-decoradorasRouter.get('/', async (req: Request, res: Response, next: NextFunction) => {
+decoradorasRouter.get('/', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const params = {
       ...parsePagination(req.query as any),
@@ -63,14 +63,14 @@ decoradorasRouter.post('/', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req
   } catch (error) { next(error); }
 });
 
-decoradorasRouter.get('/:id',        (req, res, next) => handleObtener(req, res, next, (id) => decoradorasService.obtenerPorId(id)));
+decoradorasRouter.get('/:id', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), (req, res, next) => handleObtener(req, res, next, (id) => decoradorasService.obtenerPorId(id)));
 decoradorasRouter.patch('/:id', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await decoradorasService.actualizar(req.params.id, decoradoraUpdateSchema.parse(req.body));
     sendSuccess(res, data, 'Actualizada');
   } catch (error) { next(error); }
 });
-decoradorasRouter.get('/:id/pagos',  async (req: Request, res: Response, next: NextFunction) => {
+decoradorasRouter.get('/:id/pagos', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await decoradorasService.resumenPagos(req.params.id);
     sendSuccess(res, data);
@@ -99,7 +99,7 @@ const ingresoSchema = z.object({
   compras:         z.number().optional(),
 });
 
-decoracionesRouter.get('/', async (req: Request, res: Response, next: NextFunction) => {
+decoracionesRouter.get('/', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const params = {
       ...parsePagination(req.query as any),
@@ -157,7 +157,7 @@ prestamosRouter.post('/', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (req
     res.status(201).json({ success: true, data });
   } catch (error) { next(error); }
 });
-prestamosRouter.get('/decoradora/:decoradoraId', async (req: Request, res: Response, next: NextFunction) => {
+prestamosRouter.get('/decoradora/:decoradoraId', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await prestamosService.listarPorDecoradora(req.params.decoradoraId);
     sendSuccess(res, data);

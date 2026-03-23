@@ -5,7 +5,7 @@ import { prisma } from '../config/database';
 import { sendSuccess } from '../utils/response';
 
 const router = Router();
-router.use(authenticate, authorize('ADMINISTRADOR', 'CONTABILIDAD', 'VENTAS'));
+router.use(authenticate, authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'));
 
 const rangoFechasSchema = z.object({
   desde: z.coerce.date(),

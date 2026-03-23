@@ -34,8 +34,7 @@ async function main() {
 
   // 3. Usuarios de prueba adicionales
   const users = [
-    { nombre: 'María Producción', correo: 'produccion@artesanias.com', rol: Rol.PRODUCCION },
-    { nombre: 'Carlos Ventas',    correo: 'ventas@artesanias.com',     rol: Rol.VENTAS },
+    { nombre: 'María Producción', correo: 'produccion@artesanias.com', rol: Rol.PRODUCCION }
   ];
   for (const u of users) {
     await prisma.usuario.upsert({

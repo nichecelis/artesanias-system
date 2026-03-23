@@ -4,31 +4,38 @@ import {
   Palette, ClipboardList, UserCheck, FileText, Banknote,
   LogOut, Menu, X, ChevronRight, Truck,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuthStore } from '../../store/auth.store';
 import { authService } from '../../services';
+import type { Rol } from '../../types';
 
-const NAV = [
-  { to: '/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
-  { to: '/pedidos',      label: 'Pedidos',       icon: ShoppingBag },
-  { to: '/despachos',    label: 'Despachos',     icon: Truck },
-  { to: '/clientes',     label: 'Clientes',      icon: Users },
-  { to: '/productos',    label: 'Productos',     icon: Package },
-  { to: '/decoradoras',  label: 'Decoradoras',   icon: Palette },
-  { to: '/decoraciones', label: 'Decoraciones',  icon: ClipboardList },
-  { to: '/prestamos',    label: 'Préstamos',      icon: Banknote },
-  { to: '/grupos',       label: 'Grupos/Elites',  icon: Users },
-  { to: '/facturas',     label: 'Facturas',       icon: FileText },
-  { to: '/nomina',       label: 'Nómina',        icon: FileText },
-  { to: '/usuarios',     label: 'Usuarios',       icon: UserCog },
-  { to: '/empleados',    label: 'Empleados',     icon: UserCheck },
-  { to: '/reportes',     label: 'Reportes',      icon: FileText },
+const NAV_CONFIG = [
+  { to: '/dashboard',    label: 'Dashboard',    icon: LayoutDashboard, roles: ['ADMINISTRADOR', 'PRODUCCION', 'CONTABILIDAD'] as Rol[] },
+  { to: '/pedidos',     label: 'Pedidos',       icon: ShoppingBag,    roles: ['ADMINISTRADOR', 'PRODUCCION'] as Rol[] },
+  { to: '/despachos',   label: 'Despachos',     icon: Truck,         roles: ['ADMINISTRADOR', 'PRODUCCION'] as Rol[] },
+  { to: '/clientes',    label: 'Clientes',      icon: Users,         roles: ['ADMINISTRADOR'] as Rol[] },
+  { to: '/productos',   label: 'Productos',      icon: Package,       roles: ['ADMINISTRADOR', 'PRODUCCION'] as Rol[] },
+  { to: '/decoradoras', label: 'Decoradoras',    icon: Palette,       roles: ['ADMINISTRADOR', 'CONTABILIDAD'] as Rol[] },
+  { to: '/decoraciones',label: 'Decoraciones',   icon: ClipboardList, roles: ['ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'] as Rol[] },
+  { to: '/prestamos',   label: 'Préstamos',     icon: Banknote,      roles: ['ADMINISTRADOR', 'CONTABILIDAD'] as Rol[] },
+  { to: '/grupos',      label: 'Grupos/Elites',  icon: Users,         roles: ['ADMINISTRADOR', 'CONTABILIDAD'] as Rol[] },
+  { to: '/facturas',    label: 'Facturas',       icon: FileText,      roles: ['ADMINISTRADOR', 'CONTABILIDAD'] as Rol[] },
+  { to: '/nomina',      label: 'Nómina',         icon: FileText,      roles: ['ADMINISTRADOR', 'CONTABILIDAD'] as Rol[] },
+  { to: '/empleados',   label: 'Empleados',      icon: UserCheck,     roles: ['ADMINISTRADOR', 'CONTABILIDAD'] as Rol[] },
+  { to: '/reportes',    label: 'Reportes',       icon: FileText,      roles: ['ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'] as Rol[] },
+  { to: '/usuarios',    label: 'Usuarios',        icon: UserCog,       roles: ['ADMINISTRADOR'] as Rol[] },
 ];
 
 export default function Layout() {
   const [open, setOpen] = useState(true);
   const { usuario, logout } = useAuthStore();
   const navigate = useNavigate();
+
+  const userRole = usuario?.rol || '';
+
+  const visibleNav = useMemo(() => {
+    return NAV_CONFIG.filter(item => item.roles.includes(userRole as Rol));
+  }, [userRole]);
 
   const handleLogout = async () => {
     try { await authService.logout(); } catch {}
@@ -48,7 +55,7 @@ export default function Layout() {
 
         {/* Nav */}
         <nav className="flex-1 py-4 space-y-1 overflow-y-auto">
-          {NAV.map(({ to, label, icon: Icon }) => (
+          {visibleNav.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}

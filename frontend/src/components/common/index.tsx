@@ -62,7 +62,7 @@ export function EstadoBadge({ estado }: { estado: string }) {
 
 // ─── Tabla genérica ───────────────────────────────────────
 interface Column<T> { key: string; header: string; render?: (row: T) => React.ReactNode; }
-export function Table<T extends { id: string }>({
+export function Table<T extends object>({
   columns, data, onRowClick,
 }: {
   columns: Column<T>[];
@@ -70,6 +70,12 @@ export function Table<T extends { id: string }>({
   onRowClick?: (row: T) => void;
 }) {
   const safeData = Array.isArray(data) ? data : [];
+  const getRowKey = (row: T): string => {
+    if ('id' in row && typeof (row as { id: unknown }).id === 'string') {
+      return (row as { id: string }).id;
+    }
+    return JSON.stringify(row);
+  };
   
   return (
     <div className="overflow-x-auto">
@@ -82,15 +88,15 @@ export function Table<T extends { id: string }>({
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-100">
-          {safeData.map((row) => (
+          {safeData.map((row, idx) => (
             <tr
-              key={row.id}
+              key={getRowKey(row)}
               onClick={() => onRowClick?.(row)}
               className={onRowClick ? 'cursor-pointer hover:bg-gray-50 transition-colors' : ''}
             >
               {columns.map((c) => (
                 <td key={c.key} className="table-cell">
-                  {c.render ? c.render(row) : String((row as any)[c.key] ?? '—')}
+                  {c.render ? c.render(row) : String((row as Record<string, unknown>)[c.key] ?? '—')}
                 </td>
               ))}
             </tr>

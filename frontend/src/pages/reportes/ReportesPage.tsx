@@ -1,15 +1,43 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { reportesService } from '../../services';
 import { LoadingScreen, StatCard } from '../../components/common';
 import { TrendingUp, Users, Palette, FileText } from 'lucide-react';
+import { useAuthStore } from '../../store/auth.store';
+import type { Rol } from '../../types';
 
-const fmt = (n: any) => `$${Number(n ?? 0).toLocaleString('es-CO')}`;
+const fmt = (n: unknown) => `$${Number(n ?? 0).toLocaleString('es-CO')}`;
 const mesActual = () => new Date().toISOString().slice(0, 7);
 
+const ALL_TABS = [
+  { key: 'ventas',      label: 'Ventas por cliente', icon: <TrendingUp size={16} />, roles: ['ADMINISTRADOR', 'PRODUCCION', 'CONTABILIDAD'] as Rol[] },
+  { key: 'pedidos',     label: 'Pedidos activos',    icon: <FileText size={16} />, roles: ['ADMINISTRADOR', 'PRODUCCION', 'CONTABILIDAD'] as Rol[] },
+  { key: 'decoradoras', label: 'Pagos decoradoras',  icon: <Palette size={16} />, roles: ['ADMINISTRADOR', 'CONTABILIDAD'] as Rol[] },
+  { key: 'nomina',      label: 'Nómina del mes',    icon: <Users size={16} />,   roles: ['ADMINISTRADOR', 'CONTABILIDAD'] as Rol[] },
+] as const;
+
 export default function ReportesPage() {
-  const [tab, setTab]       = useState<'ventas'|'pedidos'|'decoradoras'|'nomina'>('ventas');
+  const { usuario } = useAuthStore();
+  const userRole = usuario?.rol || '';
+
+  const visibleTabs = useMemo(() => {
+    return ALL_TABS.filter(t => t.roles.includes(userRole as Rol));
+  }, [userRole]);
+
+  const defaultTab = visibleTabs[0]?.key || 'ventas';
+  const [tab, setTab] = useState<typeof defaultTab>(defaultTab);
+
+  const currentTabIndex = useMemo(() => {
+    const idx = visibleTabs.findIndex(t => t.key === tab);
+    return idx >= 0 ? idx : 0;
+  }, [visibleTabs, tab]);
+
+  useEffect(() => {
+    if (!visibleTabs.find(t => t.key === tab) && visibleTabs[0]) {
+      setTab(visibleTabs[0].key);
+    }
+  }, [visibleTabs]);
   const [desde, setDesde]   = useState(() => { const d = new Date(); d.setMonth(d.getMonth()-3); return d.toISOString().slice(0,10); });
   const [hasta, setHasta]   = useState(() => new Date().toISOString().slice(0,10));
   const [mes, setMes]       = useState(mesActual());
@@ -38,13 +66,6 @@ export default function ReportesPage() {
     enabled: tab === 'nomina',
   });
 
-  const TABS = [
-    { key: 'ventas',      label: 'Ventas por cliente', icon: <TrendingUp size={16} /> },
-    { key: 'pedidos',     label: 'Pedidos activos',    icon: <FileText size={16} /> },
-    { key: 'decoradoras', label: 'Pagos decoradoras',  icon: <Palette size={16} /> },
-    { key: 'nomina',      label: 'Nómina del mes',     icon: <Users size={16} /> },
-  ] as const;
-
   return (
     <div className="space-y-6">
       <div>
@@ -54,10 +75,10 @@ export default function ReportesPage() {
 
       {/* Tabs */}
       <div className="flex gap-2 flex-wrap border-b border-gray-200">
-        {TABS.map(({ key, label, icon }) => (
+        {visibleTabs.map(({ key, label, icon }) => (
           <button
             key={key}
-            onClick={() => setTab(key)}
+            onClick={() => setTab(key as typeof tab)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
               tab === key ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}

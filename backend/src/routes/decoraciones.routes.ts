@@ -30,7 +30,7 @@ const actualizarSchema = z.object({
   pagado:          z.boolean().optional(),
 });
 
-decoracionesRouter.get('/reporte-por-grupo', async (req: Request, res: Response, next: NextFunction) => {
+decoracionesRouter.get('/reporte-por-grupo', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const params = {
       grupoId:       req.query.grupoId       as string | undefined,
@@ -45,7 +45,7 @@ decoracionesRouter.get('/reporte-por-grupo', async (req: Request, res: Response,
   } catch (e) { next(e); }
 });
 
-decoracionesRouter.get('/', async (req: Request, res: Response, next: NextFunction) => {
+decoracionesRouter.get('/', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const params = {
       ...parsePagination(req.query as any),
@@ -69,7 +69,7 @@ decoracionesRouter.get('/', async (req: Request, res: Response, next: NextFuncti
   } catch (e) { next(e); }
 });
 
-decoracionesRouter.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+decoracionesRouter.get('/:id', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await decoracionesService.obtenerPorId(req.params.id)); } catch (e) { next(e); }
 });
 
@@ -80,13 +80,13 @@ decoracionesRouter.post('/', authorize('ADMINISTRADOR', 'PRODUCCION'), async (re
   } catch (e) { next(e); }
 });
 
-decoracionesRouter.patch('/:id', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
+decoracionesRouter.patch('/:id', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     sendSuccess(res, await decoracionesService.actualizar(req.params.id, actualizarSchema.parse(req.body)), 'Decoración actualizada');
   } catch (e) { next(e); }
 });
 
-decoracionesRouter.delete('/:id', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
+decoracionesRouter.delete('/:id', authorize('ADMINISTRADOR'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     sendSuccess(res, await decoracionesService.eliminar(req.params.id), 'Decoración eliminada');
   } catch (e) { next(e); }

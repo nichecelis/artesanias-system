@@ -56,7 +56,8 @@ export default function DespachosPage() {
     queryFn: () => despachosService.listar({ page, limit: 10, search: search || undefined }),
   });
 
-  const data = response?.data?.data || { items: [], total: 0 };
+  const rawData = response?.data?.data;
+  const data = Array.isArray(rawData) ? { items: rawData, total: rawData.length } : (rawData ?? { items: [], total: 0 });
   const items = data.items || [];
   const total = data.total || 0;
 
