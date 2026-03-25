@@ -53,15 +53,14 @@ function ClienteBuscador({ value, onChange, error }: {
   const [open, setOpen]         = useState(false);
   const ref                     = useRef<HTMLDivElement>(null);
 
-  const { data: clienteActual } = useQuery({
-    queryKey: ['cliente-actual', value],
-    queryFn: () => clientesService.obtener(value).then(r => r.data.data),
-    enabled: Boolean(value) && !selected,
-  });
-
   useEffect(() => {
-    if (clienteActual && !selected) setSelected(`${clienteActual.nombre} — ${clienteActual.documento}`);
-  }, [clienteActual]);
+    if (value && !selected) {
+      clientesService.obtener(value).then(r => {
+        const cliente = r.data.data;
+        if (cliente) setSelected(`${cliente.nombre} — ${cliente.documento}`);
+      });
+    }
+  }, [value]);
 
   const { data: sData, isFetching } = useQuery({
     queryKey: ['clientes-buscar', query],

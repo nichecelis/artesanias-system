@@ -32,7 +32,7 @@ export const productoClientesService = {
     const existe = await prisma.productoCliente.findUnique({
       where: { productoId_clienteId: { productoId, clienteId } },
     });
-    if (!existe) throw new AppError(404, 'Precio no encontrado');
+    if (!existe) throw new AppError('Precio no encontrado', 404);
     return prisma.productoCliente.delete({
       where: { productoId_clienteId: { productoId, clienteId } },
     });

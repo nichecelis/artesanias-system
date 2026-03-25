@@ -67,3 +67,10 @@ prestamosRouter.delete('/:id', authorize('ADMINISTRADOR'), async (req: Request, 
     sendSuccess(res, await prestamosService.eliminar(req.params.id), 'Préstamo eliminado');
   } catch (e) { next(e); }
 });
+
+prestamosRouter.patch('/:id', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { archivoFirmado } = req.body;
+    sendSuccess(res, await prestamosService.actualizarArchivo(req.params.id, archivoFirmado), 'Archivo actualizado');
+  } catch (e) { next(e); }
+});

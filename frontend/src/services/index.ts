@@ -127,3 +127,9 @@ export const reportesService = {
   nominaMes: (mes: string) =>
     api.get<ApiResponse<any>>('/reportes/nomina-mes', { params: { mes } }),
 };
+
+// ─── Parametrización ─────────────────────────────────────────
+export const parametrizacionService = {
+  obtener: () => api.get<ApiResponse<any>>('/parametrizacion'),
+  actualizar: (data: any) => api.patch<ApiResponse<any>>('/parametrizacion', data),
+};

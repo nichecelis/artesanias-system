@@ -18,7 +18,7 @@ export class ClientesService {
     const existe = await prisma.cliente.findUnique({
       where: { documento: dto.documento.trim() },
     });
-    if (existe) throw new AppError(409, 'Ya existe un cliente con ese documento');
+    if (existe) throw new AppError('Ya existe un cliente con ese documento', 409);
 
     return prisma.cliente.create({ data: { ...dto, documento: dto.documento.trim() } });
   }
@@ -80,7 +80,7 @@ export class ClientesService {
       const existe = await prisma.cliente.findFirst({
         where: { documento: dto.documento.trim(), NOT: { id } },
       });
-      if (existe) throw new AppError(409, 'Ese documento ya está en uso');
+      if (existe) throw new AppError('Ese documento ya está en uso', 409);
     }
 
     return prisma.cliente.update({ where: { id }, data: dto });
@@ -89,7 +89,7 @@ export class ClientesService {
   async eliminar(id: string) {
     const cliente = await this.obtenerPorId(id);
     const pedidos = await prisma.pedido.count({ where: { clienteId: id } });
-    if (pedidos > 0) throw new AppError(409, 'No se puede eliminar: el cliente tiene pedidos');
+    if (pedidos > 0) throw new AppError('No se puede eliminar: el cliente tiene pedidos', 409);
 
     return prisma.cliente.update({ where: { id }, data: { activo: false } });
   }

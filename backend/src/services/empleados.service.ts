@@ -14,7 +14,7 @@ export class EmpleadosService {
 
   async crear(dto: CrearEmpleadoDto) {
     const existe = await prisma.empleado.findUnique({ where: { documento: dto.documento.trim() } });
-    if (existe) throw new AppError(409, 'Ya existe un empleado con ese documento');
+    if (existe) throw new AppError('Ya existe un empleado con ese documento', 409);
     return prisma.empleado.create({ data: { ...dto, documento: dto.documento.trim() } });
   }
 
@@ -38,7 +38,7 @@ export class EmpleadosService {
       where: { id },
       include: { nominas: { orderBy: { fecha: 'desc' }, take: 12 } },
     });
-    if (!empleado) throw new AppError(404, 'Empleado no encontrado');
+    if (!empleado) throw new AppError('Empleado no encontrado', 404);
     return empleado;
   }
 
@@ -94,7 +94,7 @@ export class NominaService {
 
   async registrar(dto: CrearNominaDto) {
     const empleado = await prisma.empleado.findUnique({ where: { id: dto.empleadoId } });
-    if (!empleado || !empleado.activo) throw new AppError(404, 'Empleado no encontrado');
+    if (!empleado || !empleado.activo) throw new AppError('Empleado no encontrado', 404);
 
     const horasExtras    = dto.horasExtras    ?? 0;
     const abonosPrestamo = dto.abonosPrestamo ?? 0;
@@ -102,8 +102,8 @@ export class NominaService {
     // Validar préstamo si se especifica
     if (dto.prestamoId) {
       const prestamo = await prisma.prestamo.findUnique({ where: { id: dto.prestamoId } });
-      if (!prestamo) throw new AppError(404, 'Préstamo no encontrado');
-      if (abonosPrestamo > Number(prestamo.saldo)) throw new AppError(400, `El abono supera el saldo del préstamo ($${prestamo.saldo})`);
+      if (!prestamo) throw new AppError('Préstamo no encontrado', 404);
+      if (abonosPrestamo > Number(prestamo.saldo)) throw new AppError(`El abono supera el saldo del préstamo ($${prestamo.saldo})`, 400);
     }
 
     const calc = calcularNomina(Number(empleado.salario), dto.diasTrabajados, horasExtras, abonosPrestamo);
@@ -135,7 +135,7 @@ export class NominaService {
 
   async actualizar(id: string, dto: ActualizarNominaDto) {
     const nomina = await prisma.nomina.findUnique({ where: { id }, include: { empleado: true } });
-    if (!nomina) throw new AppError(404, 'Registro de nómina no encontrado');
+    if (!nomina) throw new AppError('Registro de nómina no encontrado', 404);
 
     const horasExtras    = dto.horasExtras    ?? Number(nomina.horasExtras);
     const abonoNuevo     = dto.abonosPrestamo ?? Number(nomina.abonosPrestamo);
@@ -158,7 +158,7 @@ export class NominaService {
       if (prestamoNuevo && abonoNuevo > 0) {
         const p = await tx.prestamo.findUnique({ where: { id: prestamoNuevo } });
         const saldoBase = nomina.prestamoId === prestamoNuevo ? Number(p!.saldo) + abonoAnterior : Number(p!.saldo);
-        if (abonoNuevo > saldoBase) throw new AppError(400, `El abono supera el saldo ($${saldoBase})`);
+        if (abonoNuevo > saldoBase) throw new AppError(`El abono supera el saldo ($${saldoBase})`, 400);
         await tx.prestamo.update({ where: { id: prestamoNuevo }, data: { saldo: { decrement: abonoNuevo } } });
       }
 
@@ -180,7 +180,7 @@ export class NominaService {
 
   async eliminar(id: string) {
     const nomina = await prisma.nomina.findUnique({ where: { id } });
-    if (!nomina) throw new AppError(404, 'Registro de nómina no encontrado');
+    if (!nomina) throw new AppError('Registro de nómina no encontrado', 404);
 
     return prisma.$transaction(async (tx) => {
       // Revertir abono si tenía

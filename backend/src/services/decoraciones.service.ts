@@ -40,13 +40,13 @@ export class DecoracionesService {
 
   async crear(dto: CrearDecoracionDto) {
     const pedido = await prisma.pedido.findUnique({ where: { id: dto.pedidoId } });
-    if (!pedido) throw new AppError(404, 'Pedido no encontrado');
+    if (!pedido) throw new AppError('Pedido no encontrado', 404);
 
     const decoradora = await prisma.decoradora.findUnique({ where: { id: dto.decoradoraId } });
-    if (!decoradora || !decoradora.activa) throw new AppError(404, 'Decoradora no encontrada');
+    if (!decoradora || !decoradora.activa) throw new AppError('Decoradora no encontrada', 404);
 
     const producto = await prisma.producto.findUnique({ where: { id: dto.productoId } });
-    if (!producto) throw new AppError(404, 'Producto no encontrado');
+    if (!producto) throw new AppError('Producto no encontrado', 404);
 
     const precioDecoracion = Number(producto.precioDecoracion);
     const { total, subtotal, totalPagar } = calcular(dto.cantidadEgreso, precioDecoracion);
@@ -54,7 +54,7 @@ export class DecoracionesService {
     const pedidoProducto = await prisma.pedidoProducto.findFirst({
       where: { pedidoId: dto.pedidoId, productoId: dto.productoId }
     });
-    if (!pedidoProducto) throw new AppError(404, 'Producto del pedido no encontrado');
+    if (!pedidoProducto) throw new AppError('Producto del pedido no encontrado', 404);
 
     const [y, m, day] = dto.fechaEgreso.split('-');
     const fechaAsignacion = new Date(Number(y), Number(m) - 1, Number(day), 12, 0, 0);
@@ -90,13 +90,13 @@ export class DecoracionesService {
 
   async actualizar(id: string, dto: ActualizarDecoracionDto) {
     const dec = await prisma.decoracion.findUnique({ where: { id } });
-    if (!dec) throw new AppError(404, 'Decoración no encontrada');
+    if (!dec) throw new AppError('Decoración no encontrada', 404);
 
     // Validar préstamo si se especifica
     if (dto.prestamoId) {
       const prestamo = await prisma.prestamo.findUnique({ where: { id: dto.prestamoId } });
-      if (!prestamo) throw new AppError(404, 'Préstamo no encontrado');
-      if (Number(prestamo.saldo) <= 0) throw new AppError(400, 'El préstamo ya está saldado');
+      if (!prestamo) throw new AppError('Préstamo no encontrado', 404);
+      if (Number(prestamo.saldo) <= 0) throw new AppError('El préstamo ya está saldado', 400);
     }
 
     const cantidadEgreso  = dto.cantidadEgreso  ?? dec.cantidadEgreso;
@@ -138,7 +138,7 @@ export class DecoracionesService {
         const prestamo = await tx.prestamo.findUnique({ where: { id: prestamoIdNuevo } });
         if (prestamo) {
           const saldoBase = prestamoIdActual === prestamoIdNuevo ? Number(prestamo.saldo) + abonoAnterior : Number(prestamo.saldo);
-          if (abonoNuevo > saldoBase) throw new AppError(400, `El abono ($${abonoNuevo}) supera el saldo del préstamo ($${saldoBase})`);
+          if (abonoNuevo > saldoBase) throw new AppError(`El abono ($${abonoNuevo}) supera el saldo del préstamo ($${saldoBase})`, 400);
           await tx.prestamo.update({
             where: { id: prestamoIdNuevo },
             data:  { saldo: { decrement: abonoNuevo } },
@@ -152,8 +152,8 @@ export class DecoracionesService {
 
   async eliminar(id: string) {
     const dec = await prisma.decoracion.findUnique({ where: { id } });
-    if (!dec) throw new AppError(404, 'Decoración no encontrada');
-    if (dec.pagado) throw new AppError(400, 'No se puede eliminar una decoración ya pagada');
+    if (!dec) throw new AppError('Decoración no encontrada', 404);
+    if (dec.pagado) throw new AppError('No se puede eliminar una decoración ya pagada', 400);
 
     return prisma.$transaction(async (tx) => {
       // Revertir abono si había
@@ -205,14 +205,14 @@ export class DecoracionesService {
 
   async obtenerPorId(id: string) {
     const dec = await prisma.decoracion.findUnique({ where: { id }, include: INCLUDE });
-    if (!dec) throw new AppError(404, 'Decoración no encontrada');
+    if (!dec) throw new AppError('Decoración no encontrada', 404);
     return dec;
   }
 
   async marcarPagado(id: string) {
     const dec = await prisma.decoracion.findUnique({ where: { id } });
-    if (!dec) throw new AppError(404, 'Decoración no encontrada');
-    if (!dec.cantidadIngreso) throw new AppError(400, 'Registra el ingreso antes de pagar');
+    if (!dec) throw new AppError('Decoración no encontrada', 404);
+    if (!dec.cantidadIngreso) throw new AppError('Registra el ingreso antes de pagar', 400);
     return prisma.decoracion.update({ where: { id }, data: { pagado: true } });
   }
 
@@ -224,13 +224,13 @@ export class DecoracionesService {
       },
     });
 
-    if (decoraciones.length === 0) throw new AppError(404, 'No se encontraron decoraciones');
+    if (decoraciones.length === 0) throw new AppError('No se encontraron decoraciones', 404);
 
     const decoracionesSinPagar = decoraciones.filter(d => !d.pagado);
-    if (decoracionesSinPagar.length === 0) throw new AppError(400, 'Todas las decoraciones ya están pagadas');
+    if (decoracionesSinPagar.length === 0) throw new AppError('Todas las decoraciones ya están pagadas', 400);
 
     for (const dec of decoracionesSinPagar) {
-      if (!dec.cantidadIngreso) throw new AppError(400, `La decoración ${dec.id} no tiene cantidad de ingreso`);
+      if (!dec.cantidadIngreso) throw new AppError(`La decoración ${dec.id} no tiene cantidad de ingreso`, 400);
     }
 
     await prisma.$transaction(

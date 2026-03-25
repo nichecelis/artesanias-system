@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Build outputs
+dist/
+frontend/dist/
+build/
+
+# Prisma
+backend/node_modules/.prisma/client/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+frontend/playwright-report/
+frontend/test-results/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temp
+*.tmp
+nul

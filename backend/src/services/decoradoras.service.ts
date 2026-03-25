@@ -25,7 +25,7 @@ export class DecoradorasService {
 
   async crear(dto: CrearDecoradoraDto) {
     const existe = await prisma.decoradora.findUnique({ where: { documento: dto.documento.trim() } });
-    if (existe) throw new AppError(409, 'Ya existe una decoradora con ese documento');
+    if (existe) throw new AppError('Ya existe una decoradora con ese documento', 409);
     const { grupoId, ...rest } = dto as any;
     const data: any = { ...rest, documento: dto.documento.trim() };
     if (grupoId) data.grupo = { connect: { id: grupoId } };
@@ -79,7 +79,7 @@ export class DecoradorasService {
         },
       },
     });
-    if (!decoradora) throw new AppError(404, 'Decoradora no encontrada');
+    if (!decoradora) throw new AppError('Decoradora no encontrada', 404);
     return decoradora;
   }
 

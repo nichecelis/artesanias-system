@@ -32,6 +32,7 @@ import { prestamosRouter as prestamosRoutes } from './routes/prestamos.routes';
 import { nominaRouter as nominaRoutes } from './routes/nomina.routes';
 import { facturasRouter as facturasRoutes } from './routes/facturas.routes';
 import despachosRouter from './routes/despachos.routes';
+import { parametrizacionRouter } from './routes/parametrizacion.routes';
 
 const app = express();
 
@@ -89,6 +90,7 @@ app.use(`${API}/grupos`,      gruposRoutes);
 app.use(`${API}/precios`, preciosRoutes);
 app.use(`${API}/facturas`, facturasRoutes);
 app.use(`${API}/despachos`, despachosRouter);
+app.use(`${API}/parametrizacion`, parametrizacionRouter);
 
 // ─── Manejo de errores ────────────────────────────────────────
 app.use(notFoundHandler);

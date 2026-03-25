@@ -121,6 +121,14 @@ export class PrestamosService {
     if (Number(prestamo.saldo) < Number(prestamo.monto)) throw new AppError('No se puede eliminar: tiene abonos registrados', 400);
     return prisma.prestamo.delete({ where: { id } });
   }
+
+  async actualizarArchivo(id: string, archivoFirmado: string) {
+    return prisma.prestamo.update({
+      where: { id },
+      data: { archivoFirmado },
+      include: INCLUDE,
+    });
+  }
 }
 
 export const prestamosService = new PrestamosService();
