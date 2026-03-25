@@ -411,8 +411,8 @@ export class DecoracionesService {
       acc[key].totalAbonosPrestamo += Number(dec.abonosPrestamo) || 0;
       acc[key].decoraciones.push(dec);
 
-      if (dec.prestamo) {
-        acc[key].saldoPrestamos += Number(dec.prestamo.saldo) || 0;
+      if (dec.prestamoId) {
+        acc[key].saldoPrestamos += Number(dec.totalPagar) || 0;
       }
 
       return acc;

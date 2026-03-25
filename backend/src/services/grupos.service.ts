@@ -91,7 +91,7 @@ export const gruposService = {
         pedido: { select: { codigo: true } },
         producto: { select: { nombre: true } },
       },
-      orderBy: { fechaPago: 'desc' },
+      orderBy: { createdAt: 'desc' },
     });
 
     const totalPagos = decoraciones.reduce((acc, d) => acc + Number(d.totalPagar), 0);

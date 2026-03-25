@@ -85,7 +85,7 @@ nominaRouter.post('/', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (req: R
   try {
     const item = nominaSchema.parse(req.body);
     const emp = await prisma.empleado.findUnique({ where: { id: item.empleadoId } });
-    if (!emp) throw new AppError(404, `Empleado ${item.empleadoId} no encontrado`);
+    if (!emp) throw new AppError(`Empleado ${item.empleadoId} no encontrado`, 404);
     const { salarioDia, subtotalDias, valorHoraExtra, subtotalHoras, totalPagar } = calcular(emp, item);
     const [y, m, d] = item.fecha.split('-');
     const reg = await prisma.nomina.create({
@@ -116,7 +116,7 @@ nominaRouter.patch('/:id', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (re
   try {
     const dto = nominaUpdateSchema.parse(req.body);
     const actual = await prisma.nomina.findUnique({ where: { id: req.params.id }, include: incluir });
-    if (!actual) throw new AppError(404, 'Registro no encontrado');
+    if (!actual) throw new AppError('Registro no encontrado', 404);
 
     if (actual.prestamoId && Number(actual.abonosPrestamo) > 0) {
       await prisma.prestamo.update({ where: { id: actual.prestamoId }, data: { saldo: { increment: Number(actual.abonosPrestamo) } } });
@@ -146,7 +146,7 @@ nominaRouter.patch('/:id', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (re
 nominaRouter.delete('/:id', authorize('ADMINISTRADOR'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const actual = await prisma.nomina.findUnique({ where: { id: req.params.id } });
-    if (!actual) throw new AppError(404, 'Registro no encontrado');
+    if (!actual) throw new AppError('Registro no encontrado', 404);
     if (actual.prestamoId && Number(actual.abonosPrestamo) > 0) {
       await prisma.prestamo.update({ where: { id: actual.prestamoId }, data: { saldo: { increment: Number(actual.abonosPrestamo) } } });
     }

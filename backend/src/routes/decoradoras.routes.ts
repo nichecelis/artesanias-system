@@ -4,8 +4,6 @@ import { TipoCuenta } from '@prisma/client';
 
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { decoradorasService }   from '../services/decoradoras.service';
-import { decoracionesService }  from '../services/decoraciones.service';
-import { prestamosService }     from '../services/prestamos.service';
 import { empleadosService, nominaService } from '../services/empleados.service';
 import { sendSuccess, parsePagination, sendPaginated } from '../utils/response';
 import { handleObtener } from '../controllers/base.controller';
@@ -33,7 +31,7 @@ const decoradoraSchema = z.object({
 const decoradoraUpdateSchema = z.object({
   nombre:     z.string().min(2).max(200).optional(),
   documento:  z.string().min(3).max(20).optional(),
-  telefono:   z.string().optional().nullable(),
+  telefono:   z.string().optional(),
   grupoId:    z.union([
     z.string().uuid(),
     z.string().min(1),
@@ -49,7 +47,6 @@ decoradorasRouter.get('/', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCIO
   try {
     const params = {
       ...parsePagination(req.query as any),
-
     };
     const result = await decoradorasService.listar(params);
     sendPaginated(res, result, params);
@@ -66,7 +63,17 @@ decoradorasRouter.post('/', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req
 decoradorasRouter.get('/:id', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), (req, res, next) => handleObtener(req, res, next, (id) => decoradorasService.obtenerPorId(id)));
 decoradorasRouter.patch('/:id', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await decoradorasService.actualizar(req.params.id, decoradoraUpdateSchema.parse(req.body));
+    const parsed = decoradoraUpdateSchema.parse(req.body);
+    const updateData: any = {};
+    if (parsed.nombre !== undefined) updateData.nombre = parsed.nombre;
+    if (parsed.documento !== undefined) updateData.documento = parsed.documento;
+    if (parsed.telefono !== undefined && parsed.telefono !== null) updateData.telefono = parsed.telefono;
+    if (parsed.grupoId !== undefined) updateData.grupoId = parsed.grupoId;
+    if (parsed.banco !== undefined && parsed.banco !== null) updateData.banco = parsed.banco;
+    if (parsed.numCuenta !== undefined && parsed.numCuenta !== null) updateData.numCuenta = parsed.numCuenta;
+    if (parsed.tipoCuenta !== undefined) updateData.tipoCuenta = parsed.tipoCuenta;
+    
+    const data = await decoradorasService.actualizar(req.params.id, updateData);
     sendSuccess(res, data, 'Actualizada');
   } catch (error) { next(error); }
 });
@@ -74,99 +81,6 @@ decoradorasRouter.get('/:id/pagos', authorize('ADMINISTRADOR', 'CONTABILIDAD', '
   try {
     const data = await decoradorasService.resumenPagos(req.params.id);
     sendSuccess(res, data);
-  } catch (error) { next(error); }
-});
-
-
-// ─── Decoraciones (egreso / ingreso) ─────────────────────────
-export const decoracionesRouter = Router();
-decoracionesRouter.use(authenticate);
-
-const egresoSchema = z.object({
-  pedidoId:         z.string().uuid(),
-  decoradoraId:     z.string().uuid(),
-  productoId:       z.string().uuid(),
-  fechaEgreso:      z.coerce.date(),
-  cantidadEgreso:   z.number().int().positive(),
-  precioDecoracion: z.number().positive(),
-});
-
-const ingresoSchema = z.object({
-  fechaIngreso:    z.coerce.date(),
-  cantidadIngreso: z.number().int().positive(),
-  arreglos:        z.number().int().optional(),
-  perdidas:        z.number().int().optional(),
-  compras:         z.number().optional(),
-});
-
-decoracionesRouter.get('/', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const params = {
-      ...parsePagination(req.query as any),
-      decoradoraId:      req.query.decoradoraId as string | undefined,
-      pedidoId:          req.query.pedidoId as string | undefined,
-      soloSinIngreso:    req.query.soloSinIngreso === 'true',
-      soloPendientePago: req.query.soloPendientePago === 'true',
-    };
-    const result = await decoracionesService.listar(params);
-    sendPaginated(res, result, params);
-  } catch (error) { next(error); }
-});
-
-decoracionesRouter.post('/egreso', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const data = await decoracionesService.registrarEgreso(egresoSchema.parse(req.body));
-    res.status(201).json({ success: true, data, message: 'Egreso registrado' });
-  } catch (error) { next(error); }
-});
-
-decoracionesRouter.patch('/:id/ingreso', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const data = await decoracionesService.registrarIngreso(req.params.id, ingresoSchema.parse(req.body));
-    sendSuccess(res, data, 'Ingreso registrado');
-  } catch (error) { next(error); }
-});
-
-decoracionesRouter.patch('/:id/pagar', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const data = await decoracionesService.marcarPagado(req.params.id);
-    sendSuccess(res, data, 'Marcado como pagado');
-  } catch (error) { next(error); }
-});
-
-
-// ─── Préstamos ────────────────────────────────────────────────
-export const prestamosRouter = Router();
-prestamosRouter.use(authenticate);
-
-const prestamoSchema = z.object({
-  decoradoraId: z.string().uuid(),
-  monto:        z.number().positive(),
-  fecha:        z.coerce.date(),
-  observacion:  z.string().optional(),
-});
-
-const abonoSchema = z.object({
-  monto: z.number().positive(),
-  fecha: z.coerce.date(),
-});
-
-prestamosRouter.post('/', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const data = await prestamosService.crear(prestamoSchema.parse(req.body));
-    res.status(201).json({ success: true, data });
-  } catch (error) { next(error); }
-});
-prestamosRouter.get('/decoradora/:decoradoraId', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const data = await prestamosService.listarPorDecoradora(req.params.decoradoraId);
-    sendSuccess(res, data);
-  } catch (error) { next(error); }
-});
-prestamosRouter.post('/:id/abonos', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const data = await prestamosService.abonar(req.params.id, abonoSchema.parse(req.body));
-    res.status(201).json({ success: true, data, message: 'Abono registrado' });
   } catch (error) { next(error); }
 });
 

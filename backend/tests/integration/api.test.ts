@@ -32,11 +32,11 @@ describe('API Auth', () => {
   });
 
   describe(`POST ${baseUrl}/auth/logout`, () => {
-    it('debería retornar 200 aunque no haya sesión', async () => {
+    it('debería retornar 401 sin autenticación', async () => {
       const res = await request(app)
         .post(`${baseUrl}/auth/logout`);
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(401);
     });
   });
 });
