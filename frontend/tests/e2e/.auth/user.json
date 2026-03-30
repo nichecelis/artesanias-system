@@ -1,0 +1,14 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:5173",
+      "localStorage": [
+        {
+          "name": "artesanias-auth",
+          "value": "{\"state\":{\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjNjhkZWJiOS04NGVhLTQ3ZDUtYjE4ZS1iOWVmYjQ5MDM5YmEiLCJjb3JyZW8iOiJhZG1pbkBhcnRlc2FuaWFzLmNvbSIsInJvbCI6IkFETUlOSVNUUkFET1IiLCJqdGkiOiI0NzhmZTY5OS05OWVlLTQzNjItOTNiZS01MzM4M2I1MDJlOWIiLCJpYXQiOjE3NzQ5MTEzNTAsImV4cCI6MTc3NDk0MDE1MH0.ebGV-Ovze3ONmq-Vy8PFLni9zrr-c7rfRarvM7n_jto\",\"refreshToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjNjhkZWJiOS04NGVhLTQ3ZDUtYjE4ZS1iOWVmYjQ5MDM5YmEiLCJjb3JyZW8iOiJhZG1pbkBhcnRlc2FuaWFzLmNvbSIsInJvbCI6IkFETUlOSVNUUkFET1IiLCJqdGkiOiIyNDY5YmEwYS04NzZkLTQwYjEtODhhNy0yY2Y2YWJlZjgyNDkiLCJpYXQiOjE3NzQ5MTEzNTAsImV4cCI6MTc3NTUxNjE1MH0.DB4lTbfh0N2YJtqBeG_I-byixsO9ZRLMU71OHsa65Lc\",\"usuario\":{\"id\":\"c68debb9-84ea-47d5-b18e-b9efb49039ba\",\"nombre\":\"Administrador\",\"rol\":\"ADMINISTRADOR\"}},\"version\":0}"
+        }
+      ]
+    }
+  ]
+}

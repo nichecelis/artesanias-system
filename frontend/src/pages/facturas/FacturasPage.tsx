@@ -237,9 +237,9 @@ export default function FacturasPage() {
     const doc = new jsPDF();
     const company = await getCompanySettings();
     
-    generateReportHeader(doc, company, 'FACTURA DE VENTA', `No. ${factura.numero} - Fecha: ${showDate(factura.fecha)}`);
+    let yPos = generateReportHeader(doc, company, 'FACTURA DE VENTA', `No. ${factura.numero} - Fecha: ${showDate(factura.fecha)}`);
     
-    let yPos = 55;
+    yPos += 4;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.text('CLIENTE:', 14, yPos);
@@ -281,7 +281,7 @@ export default function FacturasPage() {
     ]);
 
     doc.autoTable({
-      startY: yPos + 8,
+      startY: yPos + 6,
       head: [['#', 'PRODUCTO', 'PEDIDO', 'CORTE 1', 'CORTE 2', 'CORTE 3', 'CANT', 'P. UND', 'TOTAL', 'DCTO', 'SUBTOTAL']],
       body: tableData,
       styles: { fontSize: 8, cellPadding: 2 },

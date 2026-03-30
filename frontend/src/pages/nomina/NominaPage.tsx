@@ -3,10 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Search, Pencil, Trash2, X, Edit3 } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, X, Edit3, Download } from 'lucide-react';
 import { api } from '../../services/api';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
 import { useToastStore } from '../../store/toast.store';
+import { reportesService } from '../../services';
+import { getCompanySettings, generateReportHeader, generateReportFooter, generateFilename } from '../../utils/reportUtils';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const fmt = (n: any) => `$${Number(n ?? 0).toLocaleString('es-CO')}`;
 const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -163,10 +167,16 @@ export default function NominaPage() {
   const toast = useToastStore();
   const [page, setPage]             = useState(1);
   const [search, setSearch]         = useState('');
-  const [mes, setMes]               = useState('');
+  const [mes, setMes]               = useState(() => new Date().toISOString().slice(0, 7));
   const [modal, setModal]           = useState(false);
   const [editMassModal, setEditMassModal] = useState(false);
   const [editFecha, setEditFecha]   = useState('');
+
+  const { data: nominaReporte, isLoading: loadingReporte } = useQuery({
+    queryKey: ['nomina-reporte-pdf', mes],
+    queryFn: () => reportesService.nominaMes(mes).then((r) => r.data.data),
+    enabled: Boolean(mes),
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ['nomina', page, search, mes],
@@ -303,6 +313,45 @@ export default function NominaPage() {
     )},
   ];
 
+  const generarPDFNomina = async () => {
+    if (!nominaReporte) return;
+    const doc = new jsPDF();
+    const company = await getCompanySettings();
+    const mesFormateado = mes.split('-')[1] + '/' + mes.split('-')[0];
+    
+    const startTableY = generateReportHeader(doc, company, 'REPORTE DE NÓMINA', `Mes: ${mesFormateado}`);
+    
+    const tableData = nominaReporte.nominas.map((n: any) => [
+      n.empleado?.nombre || '—',
+      n.fecha,
+      n.diasTrabajados,
+      n.horasExtras || 0,
+      fmt(n.totalDevengado),
+      fmt(n.descuentos),
+      fmt(n.totalNeto),
+    ]);
+
+    doc.autoTable({
+      startY: startTableY,
+      head: [['Empleado', 'Fecha', 'Días', 'H.E.', 'Devengado', 'Descuentos', 'Neto']],
+      body: tableData,
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [41, 37, 36] },
+      foot: [
+        ['TOTALES', '', '', '', fmt(nominaReporte.totales?.totalDevengado), fmt(nominaReporte.totales?.totalDescuentos), fmt(nominaReporte.totales?.totalNeto)]
+      ],
+      footStyles: { fillColor: [229, 231, 235], fontStyle: 'bold' },
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Total a Pagar: ${fmt(nominaReporte.totales?.totalNeto)}`, 14, finalY);
+
+    generateReportFooter(doc);
+    doc.save(generateFilename(`Nomina_${mesFormateado.replace('/', '-')}`));
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -313,13 +362,18 @@ export default function NominaPage() {
         </div>
       </div>
 
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex gap-3 items-end flex-wrap">
         <div className="relative flex-1 min-w-48">
           <Search size={16} className="absolute left-3 top-2.5 text-gray-400"/>
           <input className="input pl-9" placeholder="Buscar empleado..." value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}/>
         </div>
         <input type="month" className="input w-44" value={mes} onChange={e => { setMes(e.target.value); setPage(1); }}/>
+        {nominaReporte?.nominas?.length > 0 && (
+          <button onClick={generarPDFNomina} className="btn-secondary">
+            <Download size={16}/> Descargar PDF
+          </button>
+        )}
       </div>
 
       <div className="card p-0 overflow-hidden">

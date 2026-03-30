@@ -6,10 +6,64 @@ on:
   pull_request:
     branches: [main, develop]
 
+env:
+  NODE_VERSION: '20'
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/artesanias_test
+  JWT_SECRET: test-secret-key-for-ci
+  REDIS_URL: redis://localhost:6379
+
 jobs:
-  lint-and-test:
+  # ─────────────────────────────────────────────────────────────
+  # LINT & TYPE CHECK
+  # ─────────────────────────────────────────────────────────────
+  lint-and-types:
     runs-on: ubuntu-latest
-    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      # Backend lint
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Run backend linter
+        working-directory: backend
+        run: npm run lint
+
+      - name: Run backend type check
+        working-directory: backend
+        run: npx tsc --noEmit
+
+      # Frontend lint
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run frontend linter
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Run frontend type check
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+  # ─────────────────────────────────────────────────────────────
+  # BACKEND TESTS (Unit + Integration)
+  # ─────────────────────────────────────────────────────────────
+  backend-tests:
+    runs-on: ubuntu-latest
+    needs: lint-and-types
+
     services:
       postgres:
         image: postgres:16-alpine
@@ -25,6 +79,16 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,65 +96,51 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: |
-            backend/package-lock.json
-            frontend/package-lock.json
+          cache-dependency-path: backend/package-lock.json
 
-      # Backend jobs
       - name: Install backend dependencies
         working-directory: backend
         run: npm ci
-
-      - name: Run backend linter
-        working-directory: backend
-        run: npm run lint
-
-      - name: Run backend type check
-        working-directory: backend
-        run: npx tsc --noEmit
 
       - name: Generate Prisma Client
         working-directory: backend
         run: npx prisma generate
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/artesanias_test
+          DATABASE_URL: ${{ env.DATABASE_URL }}
 
-      - name: Run backend tests
+      - name: Run database migrations
+        working-directory: backend
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+
+      - name: Run backend unit tests
         working-directory: backend
         run: npm run test:unit
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/artesanias_test
-          JWT_SECRET: test-secret-key
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          JWT_SECRET: ${{ env.JWT_SECRET }}
+          REDIS_URL: ${{ env.REDIS_URL }}
           NODE_ENV: test
 
-      - name: Build backend
+      - name: Run backend integration tests
         working-directory: backend
-        run: npm run build
+        run: npm run test:integration
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          JWT_SECRET: ${{ env.JWT_SECRET }}
+          REDIS_URL: ${{ env.REDIS_URL }}
+          NODE_ENV: test
 
-      # Frontend jobs
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
-
-      - name: Run frontend linter
-        working-directory: frontend
-        run: npm run lint
-
-      - name: Run frontend type check
-        working-directory: frontend
-        run: npx tsc --noEmit
-
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-
-  e2e-tests:
+  # ─────────────────────────────────────────────────────────────
+  # FRONTEND BUILD
+  # ─────────────────────────────────────────────────────────────
+  frontend-build:
     runs-on: ubuntu-latest
-    needs: lint-and-test
-    if: github.event_name == 'pull_request'
-    
+    needs: lint-and-types
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -98,7 +148,51 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+        env:
+          VITE_API_URL: http://localhost:3001/api/v1
+
+  # ─────────────────────────────────────────────────────────────
+  # PLAYWRIGHT E2E TESTS
+  # ─────────────────────────────────────────────────────────────
+  playwright-tests:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-build]
+    if: github.event_name == 'pull_request'
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: artesanias_test
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
@@ -110,25 +204,192 @@ jobs:
         working-directory: frontend
         run: npx playwright install --with-deps
 
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
 
+      - name: Generate Prisma Client
+        working-directory: backend
+        run: npx prisma generate
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+
+      - name: Run database migrations
+        working-directory: backend
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+
+      # Start backend server
+      - name: Start backend server
+        working-directory: backend
+        run: npm run dev &
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          JWT_SECRET: ${{ env.JWT_SECRET }}
+          REDIS_URL: ${{ env.REDIS_URL }}
+          NODE_ENV: development
+          PORT: 3001
+
+      # Start frontend dev server
       - name: Start frontend dev server
         working-directory: frontend
         run: npm run dev &
-        timeout-minutes: 5
+        env:
+          VITE_API_URL: http://localhost:3001/api/v1
 
-      - name: Wait for server to be ready
-        run: sleep 10
+      # Wait for servers
+      - name: Wait for backend to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:3001/api/v1/auth/me > /dev/null 2>&1 || curl -s http://localhost:3001/health > /dev/null 2>&1; then
+              echo "Backend is ready"
+              break
+            fi
+            echo "Waiting for backend... ($i/30)"
+            sleep 2
+          done
 
-      - name: Run E2E tests
+      - name: Wait for frontend to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:5173 > /dev/null 2>&1; then
+              echo "Frontend is ready"
+              break
+            fi
+            echo "Waiting for frontend... ($i/30)"
+            sleep 2
+          done
+
+      - name: Run Playwright tests
         working-directory: frontend
-        run: npm run test:e2e || true
+        run: npx playwright test --reporter=html
+        continue-on-error: true
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
+          path: frontend/test-results/
+          retention-days: 7
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-html-report
           path: frontend/playwright-report/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────
+  # API TESTS (Node.js)
+  # ─────────────────────────────────────────────────────────────
+  api-tests:
+    runs-on: ubuntu-latest
+    needs: [backend-tests]
+    if: github.event_name == 'pull_request'
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: artesanias_test
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: backend
+        run: npx prisma generate
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+
+      - name: Run database migrations
+        working-directory: backend
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+
+      - name: Seed database
+        working-directory: backend
+        run: npx prisma db seed || true
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+
+      - name: Start backend server
+        working-directory: backend
+        run: npm run dev &
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          JWT_SECRET: ${{ env.JWT_SECRET }}
+          REDIS_URL: ${{ env.REDIS_URL }}
+          NODE_ENV: development
+          PORT: 3001
+
+      - name: Wait for backend to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:3001/api/v1/auth/login -X POST -H "Content-Type: application/json" -d '{"correo":"admin@artesanias.com","password":"Admin123!"}' > /dev/null 2>&1; then
+              echo "Backend is ready"
+              break
+            fi
+            echo "Waiting for backend... ($i/30)"
+            sleep 2
+          done
+
+      - name: Run API tests
+        working-directory: backend
+        run: npm run test:api
+        env:
+          API_URL: http://localhost:3001/api/v1
+          NODE_ENV: test
+
+      - name: Upload API test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-test-results
+          path: backend/test-results/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────
+  # DEPLOY (only on main branch push)
+  # ─────────────────────────────────────────────────────────────
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [playwright-tests, api-tests]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production..."
+          # Add your deployment commands here
+          # Example: ./scripts/deploy.sh
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}

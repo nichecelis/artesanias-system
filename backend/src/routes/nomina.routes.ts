@@ -108,7 +108,7 @@ nominaRouter.post('/', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (req: R
     if (item.prestamoId && item.abonosPrestamo) {
       await prisma.prestamo.update({ where: { id: item.prestamoId }, data: { saldo: { decrement: item.abonosPrestamo } } });
     }
-    sendSuccess(res, reg, 'Registro de nómina creado');
+    sendSuccess(res, reg, 'Registro de nómina creado', 201);
   } catch (e) { next(e); }
 });
 

@@ -30,68 +30,65 @@ export function clearCompanyCache() {
 }
 
 export function generateReportHeader(doc: jsPDF, company: CompanyInfo, title: string, subtitle?: string) {
-  let yPos = 15;
+  const pageWidth = doc.internal.pageSize.width;
+  const margin = 14;
+  let yPos = margin;
   
-  if (company.logo) {
+  if (company.logo && company.logo.startsWith('data:')) {
     try {
-      let logoData = company.logo;
-      
-      if (company.logo.startsWith('data:')) {
-        const mimeMatch = company.logo.match(/data:([^;]+);/);
-        const mime = mimeMatch ? mimeMatch[1] : 'image/png';
-        let format = 'PNG';
-        if (mime.includes('jpeg') || mime.includes('jpg')) format = 'JPEG';
-        else if (mime.includes('gif')) format = 'GIF';
-        else if (mime.includes('webp')) format = 'WEBP';
-        
-        doc.addImage(logoData, format, 14, 10, 30, 30);
-        yPos = 45;
-      } else if (company.logo.startsWith('http') || company.logo.startsWith('/')) {
-        console.warn('Logo URL no soportado directamente, omitiendo');
-      }
+      const format = company.logo.includes('png') ? 'PNG' : company.logo.includes('jpeg') || company.logo.includes('jpg') ? 'JPEG' : 'PNG';
+      doc.addImage(company.logo, format, margin, yPos, 28, 28);
+      yPos += 32;
     } catch (e) {
       console.warn('No se pudo agregar el logo:', e);
     }
   }
   
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.text(title, 105, yPos, { align: 'center' });
-  
-  if (subtitle) {
-    yPos += 6;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(subtitle, 105, yPos, { align: 'center' });
-  }
-  
-  const infoX = company.logo ? 50 : 14;
-  
   if (company.nombre) {
-    yPos += 8;
-    doc.setFontSize(11);
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text(company.nombre, infoX, yPos);
+    doc.text(company.nombre, margin, yPos);
+    yPos += 6;
   }
   
   if (company.nit) {
-    yPos += 5;
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.text(`NIT: ${company.nit}`, infoX, yPos);
+    doc.text(`NIT: ${company.nit}`, margin, yPos);
+    yPos += 4;
   }
   
   if (company.direccion) {
+    doc.setFontSize(8);
+    doc.text(`Dirección: ${company.direccion}`, margin, yPos);
     yPos += 4;
-    doc.text(`Dirección: ${company.direccion}`, infoX, yPos);
   }
   
   if (company.telefono) {
+    doc.setFontSize(8);
+    doc.text(`Teléfono: ${company.telefono}`, margin, yPos);
     yPos += 4;
-    doc.text(`Tel: ${company.telefono}`, infoX, yPos);
   }
   
-  return yPos + 10;
+  yPos += 6;
+  
+  doc.setDrawColor(180);
+  doc.line(margin, yPos, pageWidth - margin, yPos);
+  yPos += 8;
+  
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(title, pageWidth / 2, yPos, { align: 'center' });
+  yPos += 8;
+  
+  if (subtitle) {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(subtitle, pageWidth / 2, yPos, { align: 'center' });
+    yPos += 8;
+  }
+  
+  return yPos;
 }
 
 export function generateReportFooter(doc: jsPDF) {

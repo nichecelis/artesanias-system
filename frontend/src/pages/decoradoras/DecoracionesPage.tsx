@@ -1112,13 +1112,15 @@ async function generarPDFDecoraciones(reporteData: any) {
   const doc = new jsPDF({ orientation: 'landscape' });
   const company = await getCompanySettings();
   
-  generateReportHeader(doc, company, 'REPORTE DE DECORACIONES POR GRUPO', `Fecha: ${new Date().toLocaleDateString('es-CO')}`);
+  let yPos = generateReportHeader(doc, company, 'REPORTE DE DECORACIONES POR GRUPO', `Fecha: ${new Date().toLocaleDateString('es-CO')}`);
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text(`Total a Pagar: ${fmt(reporteData.totales.totalAPagar)}`, 14, 48);
-  doc.text(`Decoraciones: ${reporteData.totales.cantidadDecoraciones}`, 120, 48);
-  doc.text(`Decoradoras: ${reporteData.items.length}`, 200, 48);
+  doc.text(`Total a Pagar: ${fmt(reporteData.totales.totalAPagar)}`, 14, yPos);
+  doc.text(`Decoraciones: ${reporteData.totales.cantidadDecoraciones}`, 120, yPos);
+  doc.text(`Decoradoras: ${reporteData.items.length}`, 200, yPos);
+  
+  yPos += 10;
   
   const tableData = reporteData.items.map((item: any, idx: number) => [
     item.decoradoraNombre,
@@ -1134,7 +1136,7 @@ async function generarPDFDecoraciones(reporteData: any) {
   ]);
   
   doc.autoTable({
-    startY: 55,
+    startY: yPos,
     head: [['NOMBRE', 'ELITE/GRUPO', 'RESP.', '$ COMPRAS', '$ TOTAL', '$ ABONO PRESTAMO', '$ SALDO PRESTAMO', '$ SUBTOTAL', '$ TOTAL A PAGAR', 'CUENTA']],
     body: tableData,
     foot: [

@@ -3,9 +3,12 @@ import { useQuery } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { reportesService } from '../../services';
 import { LoadingScreen, StatCard } from '../../components/common';
-import { TrendingUp, Users, Palette, FileText } from 'lucide-react';
+import { TrendingUp, Users, Palette, FileText, Download } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import type { Rol } from '../../types';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { getCompanySettings, generateReportHeader, generateReportFooter, generateFilename } from '../../utils/reportUtils';
 
 const fmt = (n: unknown) => `$${Number(n ?? 0).toLocaleString('es-CO')}`;
 const mesActual = () => new Date().toISOString().slice(0, 7);
@@ -65,6 +68,45 @@ export default function ReportesPage() {
     queryFn: () => reportesService.nominaMes(mes).then((r) => r.data.data),
     enabled: tab === 'nomina',
   });
+
+  const generarPDFNomina = async () => {
+    if (!nomina) return;
+    const doc = new jsPDF();
+    const company = await getCompanySettings();
+    const mesFormateado = mes.split('-')[1] + '/' + mes.split('-')[0];
+    
+    const startTableY = generateReportHeader(doc, company, 'REPORTE DE NÓMINA', `Mes: ${mesFormateado}`);
+    
+    const tableData = nomina.nominas.map((n: any) => [
+      n.empleado?.nombre || '—',
+      n.fecha,
+      n.diasTrabajados,
+      n.horasExtras || 0,
+      fmt(n.totalDevengado),
+      fmt(n.descuentos),
+      fmt(n.totalNeto),
+    ]);
+
+    doc.autoTable({
+      startY: startTableY,
+      head: [['Empleado', 'Fecha', 'Días', 'H.E.', 'Devengado', 'Descuentos', 'Neto']],
+      body: tableData,
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [41, 37, 36] },
+      foot: [
+        ['TOTALES', '', '', '', fmt(nomina.totales?.totalDevengado), fmt(nomina.totales?.totalDescuentos), fmt(nomina.totales?.totalNeto)]
+      ],
+      footStyles: { fillColor: [229, 231, 235], fontStyle: 'bold' },
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Total a Pagar: ${fmt(nomina.totales?.totalNeto)}`, 14, finalY);
+
+    generateReportFooter(doc);
+    doc.save(generateFilename(`Nomina_${mesFormateado.replace('/', '-')}`));
+  };
 
   return (
     <div className="space-y-6">
@@ -263,9 +305,16 @@ export default function ReportesPage() {
       {/* ── Nómina del mes ─────────────────────────────────── */}
       {tab === 'nomina' && (
         <div className="space-y-4">
-          <div>
-            <label className="label">Mes</label>
-            <input type="month" value={mes} onChange={(e) => setMes(e.target.value)} className="input w-44" />
+          <div className="flex gap-4 items-end">
+            <div>
+              <label className="label">Mes</label>
+              <input type="month" value={mes} onChange={(e) => setMes(e.target.value)} className="input w-44" />
+            </div>
+            {nomina && nomina.nominas?.length > 0 && (
+              <button onClick={generarPDFNomina} className="btn-primary">
+                <Download size={16} className="mr-1"/> Descargar PDF
+              </button>
+            )}
           </div>
           {loadNomina ? <LoadingScreen /> : (
             <>
@@ -279,7 +328,7 @@ export default function ReportesPage() {
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm divide-y divide-gray-100">
                     <thead><tr>
-                      {['Empleado','Días','HE','Devengado','Descuentos','Neto'].map((h) => (
+                      {['Empleado','Fecha','Días','H.E.','Devengado','Descuentos','Neto'].map((h) => (
                         <th key={h} className="table-header">{h}</th>
                       ))}
                     </tr></thead>
@@ -287,8 +336,9 @@ export default function ReportesPage() {
                       {nomina?.nominas?.map((n: any) => (
                         <tr key={n.id}>
                           <td className="table-cell">{n.empleado?.nombre}</td>
+                          <td className="table-cell">{n.fecha?.split('T')[0]}</td>
                           <td className="table-cell">{n.diasTrabajados}</td>
-                          <td className="table-cell">{n.horasExtras}</td>
+                          <td className="table-cell">{n.horasExtras || 0}</td>
                           <td className="table-cell">{fmt(n.totalDevengado)}</td>
                           <td className="table-cell text-red-600">{fmt(n.descuentos)}</td>
                           <td className="table-cell font-bold">{fmt(n.totalNeto)}</td>
