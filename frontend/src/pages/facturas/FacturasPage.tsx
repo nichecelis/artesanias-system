@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -356,8 +356,9 @@ export default function FacturasPage() {
       </div>
 
       {/* Modal Crear Factura */}
-      <Modal title="Nueva Factura" open={modal} onClose={closeModal} size="full">
+      <Modal title="Nueva Factura" open={modal} onClose={closeModal} size="xl">
         <form onSubmit={handleSubmit(d => crear.mutate(d))} className="space-y-6">
+          {/* Datos básicos */}
           <div className="flex items-end gap-4">
             <div className="flex-1" ref={dropdownRef}>
               <label className="label">Cliente *</label>
@@ -398,33 +399,35 @@ export default function FacturasPage() {
             </div>
           </div>
 
-          {loadingPedidos ? (
-            <div className="text-center py-8"><Spinner/></div>
-          ) : Object.keys(pedidosAgrupados).length > 0 ? (
-            <div className="space-y-4">
-              <h3 className="font-semibold">Productos por pedido</h3>
-              <div className="border rounded-lg overflow-hidden">
+          {/* Productos */}
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-gray-50 px-4 py-2 border-b">
+              <h3 className="font-medium text-sm">Productos</h3>
+            </div>
+            {loadingPedidos ? (
+              <div className="text-center py-8"><Spinner/></div>
+            ) : Object.keys(pedidosAgrupados).length > 0 ? (
+              <div className="max-h-96 overflow-y-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gray-100 sticky top-0">
                     <tr>
                       <th className="px-2 py-2 text-left w-8"></th>
                       <th className="px-2 py-2 text-left w-8"></th>
                       <th className="px-2 py-2 text-left">Producto</th>
-                      <th className="px-2 py-2 text-center">C1</th>
-                      <th className="px-2 py-2 text-center">C2</th>
-                      <th className="px-2 py-2 text-center">C3</th>
-                      <th className="px-2 py-2 text-center">Cant</th>
-                      <th className="px-2 py-2 text-right">P. Und</th>
-                      <th className="px-2 py-2 text-right">Total</th>
-                      <th className="px-2 py-2 text-right">Dto</th>
-                      <th className="px-2 py-2 text-right">Subtotal</th>
+                      <th className="px-2 py-2 text-center w-12">C1</th>
+                      <th className="px-2 py-2 text-center w-12">C2</th>
+                      <th className="px-2 py-2 text-center w-12">C3</th>
+                      <th className="px-2 py-2 text-center w-16">Cant</th>
+                      <th className="px-2 py-2 text-right w-28">P. Und</th>
+                      <th className="px-2 py-2 text-right w-24">Dto</th>
+                      <th className="px-2 py-2 text-right w-28">Subtotal</th>
                     </tr>
                   </thead>
                   <tbody>
                     {Object.values(pedidosAgrupados).map((pedido: any) => (
-                      <>
-                        <tr key={pedido.codigo} className="bg-gray-100 border-t-2 border-gray-300">
-                          <td className="px-2 py-1">
+                      <Fragment key={pedido.codigo}>
+                        <tr className="bg-gray-100 border-t border-gray-300">
+                          <td className="px-2 py-2">
                             <input 
                               type="checkbox" 
                               checked={pedido.seleccionado} 
@@ -432,17 +435,17 @@ export default function FacturasPage() {
                               className="w-4 h-4"
                             />
                           </td>
-                          <td className="px-2 py-1">
+                          <td className="px-2 py-2">
                             <button 
                               type="button"
                               onClick={() => toggleExpandirPedido(pedido.codigo)}
-                              className="text-gray-500 hover:text-gray-700"
+                              className="text-gray-500 hover:text-gray-700 font-medium"
                             >
                               {pedidosExpandidos.has(pedido.codigo) ? '▼' : '▶'}
                             </button>
                           </td>
-                          <td colSpan={9} className="font-medium">
-                            Pedido: {pedido.codigo} ({pedido.productos.length} producto{pedido.productos.length > 1 ? 's' : ''})
+                          <td colSpan={8} className="font-medium py-2">
+                            {pedido.codigo} ({pedido.productos.length})
                           </td>
                         </tr>
                         {pedidosExpandidos.has(pedido.codigo) && pedido.productos.map((item: any) => (
@@ -450,10 +453,12 @@ export default function FacturasPage() {
                             <td className="px-2 py-1"></td>
                             <td className="px-2 py-1"></td>
                             <td className="px-2 py-1 pl-8">
-                              {item.productoNombre}
-                              {item.esPrecioEspecial && (
-                                <span className="ml-1 text-xs text-green-600 font-medium">★</span>
-                              )}
+                              <div className="flex items-center gap-2">
+                                {item.productoNombre}
+                                {item.esPrecioEspecial && (
+                                  <span className="text-xs text-green-600 bg-green-100 px-1 rounded">★</span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-2 py-1 text-center">{item.corte1 ?? '—'}</td>
                             <td className="px-2 py-1 text-center">{item.corte2 ?? '—'}</td>
@@ -467,7 +472,6 @@ export default function FacturasPage() {
                                 )}
                               </div>
                             </td>
-                            <td className="px-2 py-1 text-right">{fmt(item.total)}</td>
                             <td className="px-2 py-1">
                               <input type="number" min="0" value={item.descuento} onChange={e => {
                                 const updated = [...pedidosDisponibles];
@@ -488,41 +492,45 @@ export default function FacturasPage() {
                             <td className="px-2 py-1 text-right font-medium">{fmt(item.seleccionado ? item.total - item.descuento : 0)}</td>
                           </tr>
                         ))}
-                      </>
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
-          ) : clienteId ? (
-            <p className="text-gray-500 text-center py-4">No hay productos disponibles para facturar</p>
-          ) : null}
-
-          {pedidosDisponibles.some(i => i.seleccionado) && (
-            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-              <div className="flex justify-between text-sm"><span>Subtotal:</span><span>{fmt(subtotal)}</span></div>
-              <div className="flex justify-between text-sm"><span>Descuento global:</span><span>{fmt(descuentoGlobal)}</span></div>
-              <div className="flex justify-between text-sm"><span>Total productos:</span><span>{fmt(total)}</span></div>
-              <div className="flex justify-between text-sm bg-yellow-50 p-2 rounded"><span>Saldo anterior:</span><span className="font-medium">{fmt(saldoAnterior)}</span></div>
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="label">¿Cuánto pagó el cliente?</label>
-                  <input {...register('montoPagado')} type="number" min="0" step="100" className="input"/>
-                </div>
-              </div>
-              <div className="flex justify-between text-sm"><span>Saldo (Total + Anterior - Pago):</span><span>{fmt(saldo)}</span></div>
-              <div className="flex justify-between font-bold text-lg border-t pt-2">
-                <span>Total a Pagar:</span><span className="text-primary-700">{fmt(totalPagar)}</span>
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label className="label">Observaciones</label>
-            <textarea {...register('observaciones')} rows={2} className="input"/>
+            ) : clienteId ? (
+              <p className="text-gray-500 text-center py-8">No hay productos disponibles para facturar</p>
+            ) : (
+              <p className="text-gray-400 text-center py-8 text-sm">Seleccione un cliente para ver productos</p>
+            )}
           </div>
 
-          <div className="flex gap-3">
+          {/* Totales y pago */}
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <div>
+                <label className="label">¿Cuánto pagó el cliente?</label>
+                <input {...register('montoPagado')} type="number" min="0" step="100" className="input"/>
+              </div>
+              <div>
+                <label className="label">Observaciones</label>
+                <textarea {...register('observaciones')} rows={2} className="input"/>
+              </div>
+            </div>
+            {pedidosDisponibles.some(i => i.seleccionado) && (
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between text-sm"><span>Subtotal:</span><span>{fmt(subtotal)}</span></div>
+                <div className="flex justify-between text-sm"><span>Descuento global:</span><span>{fmt(descuentoGlobal)}</span></div>
+                <div className="flex justify-between font-medium"><span>Total productos:</span><span>{fmt(total)}</span></div>
+                <div className="flex justify-between text-sm bg-yellow-50 p-2 rounded"><span>Saldo anterior:</span><span className="font-medium">{fmt(saldoAnterior)}</span></div>
+                <div className="flex justify-between text-sm"><span>Pago:</span><span className="text-green-600">-{fmt(montoPagado)}</span></div>
+                <div className="flex justify-between font-bold text-lg border-t pt-2">
+                  <span>Total a Pagar:</span><span className="text-primary-700">{fmt(totalPagar)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t">
             <button type="submit" disabled={crear.isPending || !pedidosDisponibles.some(i => i.seleccionado)} className="btn-primary">
               {crear.isPending ? <Spinner size="sm"/> : 'Crear Factura'}
             </button>
