@@ -32,10 +32,11 @@ export function clearCompanyCache() {
 export function generateReportHeader(doc: jsPDF, company: CompanyInfo, title: string, subtitle?: string) {
   let yPos = 15;
   
-  if (company.logo) {
+  if (company.logo && company.logo.startsWith('data:image')) {
     try {
-      const logoData = company.logo.startsWith('data:') ? company.logo : `data:image/png;base64,${company.logo}`;
-      doc.addImage(logoData, 'PNG', 14, 10, 30, 30);
+      const format = company.logo.includes('image/png') ? 'PNG' : company.logo.includes('image/jpeg') || company.logo.includes('image/jpg') ? 'JPEG' : 'PNG';
+      doc.addImage(company.logo, format, 14, 10, 30, 30);
+      yPos = 45;
     } catch (e) {
       console.warn('No se pudo agregar el logo:', e);
     }
