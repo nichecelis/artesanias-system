@@ -201,21 +201,37 @@ export class FacturasService {
       orderBy: { createdAt: 'desc' }
     });
 
+    const productoIds = [...new Set(pedidos.flatMap(p => p.productos.map(pr => pr.productoId)))];
+    const preciosEspeciales = await prisma.productoCliente.findMany({
+      where: {
+        clienteId,
+        productoId: { in: productoIds },
+      },
+    });
+
+    const preciosMap = new Map(preciosEspeciales.map(pe => [pe.productoId, Number(pe.precioVenta)]));
+
     return pedidos.map(pedido => ({
       id: pedido.id,
       codigo: pedido.codigo,
       fecha: pedido.createdAt,
-      productos: pedido.productos.map(p => ({
-        id: p.id,
-        nombre: p.producto.nombre,
-        cantidad: p.cantidadPedido,
-        precioUnitario: Number(p.producto.precioVenta),
-        total: Number(p.producto.precioVenta) * p.cantidadPedido,
-        cantidadDespacho: p.cantidadDespacho,
-        corte1: p.corte1,
-        corte2: p.corte2,
-        corte3: p.corte3,
-      }))
+      productos: pedido.productos.map(p => {
+        const precioEspecial = preciosMap.get(p.productoId);
+        const precioUnitario = precioEspecial !== undefined ? precioEspecial : Number(p.producto.precioVenta);
+        return {
+          id: p.id,
+          nombre: p.producto.nombre,
+          cantidad: p.cantidadPedido,
+          precioUnitario,
+          precioOriginal: Number(p.producto.precioVenta),
+          esPrecioEspecial: precioEspecial !== undefined,
+          total: precioUnitario * p.cantidadPedido,
+          cantidadDespacho: p.cantidadDespacho,
+          corte1: p.corte1,
+          corte2: p.corte2,
+          corte3: p.corte3,
+        };
+      })
     }));
   }
 

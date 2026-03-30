@@ -10,6 +10,7 @@ import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '..
 import { useToastStore } from '../../store/toast.store';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { getCompanySettings, generateReportHeader, generateReportFooter, generateFilename } from '../../utils/reportUtils';
 
 const fmt    = (n: any) => `$${Number(n ?? 0).toLocaleString('es-CO')}`;
 const toDate = (d: any) => d ? new Date(d).toISOString().slice(0,10) : '';
@@ -968,7 +969,7 @@ export default function DecoracionesPage() {
       <Modal title="Reporte de Decoraciones" open={Boolean(reporteModal)} onClose={() => setReporteModal(null)} size="full">
         <div className="space-y-4">
           <div className="flex justify-end">
-            <button className="btn-primary text-sm" onClick={() => generarPDFDecoraciones(reporteData)}>
+            <button className="btn-primary text-sm" onClick={async () => { await generarPDFDecoraciones(reporteData); }}>
               <FileText size={14} className="inline mr-1"/> Generar PDF
             </button>
           </div>
@@ -1105,24 +1106,19 @@ export default function DecoracionesPage() {
   );
 }
 
-function generarPDFDecoraciones(reporteData: any) {
+async function generarPDFDecoraciones(reporteData: any) {
   if (!reporteData || !reporteData.items) return;
   
   const doc = new jsPDF({ orientation: 'landscape' });
+  const company = await getCompanySettings();
   
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.text('REPORTE DE DECORACIONES POR GRUPO', 140, 15, { align: 'center' });
-  
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Fecha: ${new Date().toLocaleDateString('es-CO')}`, 140, 22, { align: 'center' });
+  generateReportHeader(doc, company, 'REPORTE DE DECORACIONES POR GRUPO', `Fecha: ${new Date().toLocaleDateString('es-CO')}`);
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text(`Total a Pagar: ${fmt(reporteData.totales.totalAPagar)}`, 14, 30);
-  doc.text(`Decoraciones: ${reporteData.totales.cantidadDecoraciones}`, 14, 36);
-  doc.text(`Decoradoras: ${reporteData.items.length}`, 14, 42);
+  doc.text(`Total a Pagar: ${fmt(reporteData.totales.totalAPagar)}`, 14, 48);
+  doc.text(`Decoraciones: ${reporteData.totales.cantidadDecoraciones}`, 120, 48);
+  doc.text(`Decoradoras: ${reporteData.items.length}`, 200, 48);
   
   const tableData = reporteData.items.map((item: any, idx: number) => [
     item.decoradoraNombre,
@@ -1138,7 +1134,7 @@ function generarPDFDecoraciones(reporteData: any) {
   ]);
   
   doc.autoTable({
-    startY: 50,
+    startY: 55,
     head: [['NOMBRE', 'ELITE/GRUPO', 'RESP.', '$ COMPRAS', '$ TOTAL', '$ ABONO PRESTAMO', '$ SALDO PRESTAMO', '$ SUBTOTAL', '$ TOTAL A PAGAR', 'CUENTA']],
     body: tableData,
     foot: [
@@ -1155,7 +1151,7 @@ function generarPDFDecoraciones(reporteData: any) {
     },
   });
   
-  let finalY = (doc as any).lastAutoTable.finalY || 50;
+  let finalY = (doc as any).lastAutoTable.finalY || 55;
   
   reporteData.items.forEach((item: any) => {
     if (item.calculoPorcentaje) {
@@ -1167,7 +1163,8 @@ function generarPDFDecoraciones(reporteData: any) {
     }
   });
   
-  doc.save(`reporte-decoraciones-${new Date().toISOString().slice(0,10)}.pdf`);
+  generateReportFooter(doc);
+  doc.save(generateFilename('reporte-decoraciones'));
 }
 
 // ── Sub-componente selector de producto del pedido ───────────

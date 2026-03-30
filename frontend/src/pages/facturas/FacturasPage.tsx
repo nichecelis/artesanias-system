@@ -10,6 +10,7 @@ import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '..
 import { useToastStore } from '../../store/toast.store';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { getCompanySettings, generateReportHeader, generateReportFooter, generateFilename } from '../../utils/reportUtils';
 
 const fmt = (n: any) => `$${Number(n ?? 0).toLocaleString('es-CO')}`;
 const showDate = (d: any) => {
@@ -121,6 +122,8 @@ export default function FacturasPage() {
             productoNombre: prod.nombre,
             cantidad: prod.cantidad,
             precioUnitario: prod.precioUnitario,
+            precioOriginal: prod.precioOriginal,
+            esPrecioEspecial: prod.esPrecioEspecial,
             total: prod.total,
             corte1: prod.corte1,
             corte2: prod.corte2,
@@ -230,26 +233,29 @@ export default function FacturasPage() {
     setViewModal(true);
   };
 
-  const generarPDF = (factura: any) => {
+  const generarPDF = async (factura: any) => {
     const doc = new jsPDF();
+    const company = await getCompanySettings();
     
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('FACTURA DE VENTA', 105, 20, { align: 'center' });
+    generateReportHeader(doc, company, 'FACTURA DE VENTA', `No. ${factura.numero} - Fecha: ${showDate(factura.fecha)}`);
     
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`No. ${factura.numero}`, 105, 28, { align: 'center' });
-    doc.text(`Fecha: ${showDate(factura.fecha)}`, 105, 34, { align: 'center' });
-    
+    let yPos = 55;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text('CLIENTE:', 14, 48);
+    doc.text('CLIENTE:', 14, yPos);
+    yPos += 6;
     doc.setFont('helvetica', 'normal');
-    doc.text(`${factura.cliente.nombre}`, 14, 54);
-    doc.text(`CC/NIT: ${factura.cliente.documento}`, 14, 60);
-    if (factura.cliente.direccion) doc.text(`Dirección: ${factura.cliente.direccion}`, 14, 66);
-    if (factura.cliente.telefono) doc.text(`Tel: ${factura.cliente.telefono}`, 14, 72);
+    doc.text(`${factura.cliente.nombre}`, 14, yPos);
+    yPos += 5;
+    doc.text(`CC/NIT: ${factura.cliente.documento}`, 14, yPos);
+    if (factura.cliente.direccion) {
+      yPos += 5;
+      doc.text(`Dirección: ${factura.cliente.direccion}`, 14, yPos);
+    }
+    if (factura.cliente.telefono) {
+      yPos += 5;
+      doc.text(`Tel: ${factura.cliente.telefono}`, 14, yPos);
+    }
     
     const tableData = factura.items.map((item: any, idx: number) => [
       idx + 1,
@@ -266,7 +272,7 @@ export default function FacturasPage() {
     ]);
 
     doc.autoTable({
-      startY: 80,
+      startY: yPos + 8,
       head: [['#', 'PRODUCTO', 'PEDIDO', 'CORTE 1', 'CORTE 2', 'CORTE 3', 'CANT', 'P. UND', 'TOTAL', 'DCTO', 'SUBTOTAL']],
       body: tableData,
       styles: { fontSize: 8, cellPadding: 2 },
@@ -298,7 +304,8 @@ export default function FacturasPage() {
       doc.text(`Observaciones: ${factura.observaciones}`, 14, finalY + 50);
     }
 
-    doc.save(`Factura_${factura.numero}.pdf`);
+    generateReportFooter(doc);
+    doc.save(generateFilename(`Factura_${factura.numero}`));
   };
 
   const columns = [
@@ -433,12 +440,24 @@ export default function FacturasPage() {
                           <tr key={item.pedidoProductoId} className={item.seleccionado ? 'bg-green-50' : 'border-b'}>
                             <td className="px-2 py-1"></td>
                             <td className="px-2 py-1"></td>
-                            <td className="px-2 py-1 pl-8">{item.productoNombre}</td>
+                            <td className="px-2 py-1 pl-8">
+                              {item.productoNombre}
+                              {item.esPrecioEspecial && (
+                                <span className="ml-1 text-xs text-green-600 font-medium">★</span>
+                              )}
+                            </td>
                             <td className="px-2 py-1 text-center">{item.corte1 ?? '—'}</td>
                             <td className="px-2 py-1 text-center">{item.corte2 ?? '—'}</td>
                             <td className="px-2 py-1 text-center">{item.corte3 ?? '—'}</td>
                             <td className="px-2 py-1 text-center">{item.cantidad}</td>
-                            <td className="px-2 py-1 text-right">{fmt(item.precioUnitario)}</td>
+                            <td className="px-2 py-1 text-right">
+                              <div className="flex flex-col items-end">
+                                <span className={item.esPrecioEspecial ? 'text-green-600 font-medium' : ''}>{fmt(item.precioUnitario)}</span>
+                                {item.esPrecioEspecial && item.precioOriginal && (
+                                  <span className="text-xs text-gray-400 line-through">{fmt(item.precioOriginal)}</span>
+                                )}
+                              </div>
+                            </td>
                             <td className="px-2 py-1 text-right">{fmt(item.total)}</td>
                             <td className="px-2 py-1">
                               <input type="number" min="0" value={item.descuento} onChange={e => {

@@ -99,10 +99,13 @@ export default function Layout() {
       </button>
 
       {/* Main */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-6 max-w-7xl mx-auto">
+      <main className="flex-1 overflow-auto flex flex-col">
+        <div className="p-6 max-w-7xl mx-auto flex-1">
           <Outlet />
         </div>
+        <footer className="text-center text-xs text-gray-400 py-3 border-t border-gray-200 bg-white">
+          © 2025 Adrian F. Celis Morales. Todos los derechos reservados.
+        </footer>
       </main>
     </div>
   );
