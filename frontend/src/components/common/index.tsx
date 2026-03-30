@@ -134,7 +134,7 @@ export function Pagination({
 // ─── Modal ────────────────────────────────────────────────
 export function Modal({
   title, open, onClose, children, size = 'md',
-}: { title: string; open: boolean; onClose: () => void; children: React.ReactNode; size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full' }) {
+}: { title: string; open: boolean; onClose: () => void; children: React.ReactNode; size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full' | 'screen' }) {
   if (!open) return null;
   
   const sizes: Record<string, string> = {
@@ -144,17 +144,22 @@ export function Modal({
     xl: 'max-w-4xl',
     '2xl': 'max-w-6xl',
     full: 'max-w-[95vw]',
+    screen: 'w-screen h-screen max-w-full max-h-full rounded-none',
   };
 
+  const isScreen = size === 'screen';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className={`relative bg-white rounded-xl shadow-xl w-full ${sizes[size]} mx-4 max-h-[90vh] overflow-y-auto`}>
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-semibold">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
-        </div>
-        <div className="p-6">{children}</div>
+    <div className={`fixed inset-0 z-50 flex items-center justify-center ${isScreen ? 'bg-white' : ''}`}>
+      {!isScreen && <div className="absolute inset-0 bg-black/40" onClick={onClose} />}
+      <div className={`relative bg-white shadow-xl w-full ${sizes[size]} ${isScreen ? 'mx-0 my-0' : 'mx-4 max-h-[90vh] overflow-y-auto'} ${!isScreen ? 'rounded-xl' : ''}`}>
+        {!isScreen && (
+          <div className="flex items-center justify-between px-6 py-4 border-b">
+            <h2 className="text-lg font-semibold">{title}</h2>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+          </div>
+        )}
+        <div className={isScreen ? 'h-full' : ''}>{children}</div>
       </div>
     </div>
   );
