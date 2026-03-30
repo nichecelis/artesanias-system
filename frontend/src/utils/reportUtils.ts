@@ -32,11 +32,23 @@ export function clearCompanyCache() {
 export function generateReportHeader(doc: jsPDF, company: CompanyInfo, title: string, subtitle?: string) {
   let yPos = 15;
   
-  if (company.logo && company.logo.startsWith('data:image')) {
+  if (company.logo) {
     try {
-      const format = company.logo.includes('image/png') ? 'PNG' : company.logo.includes('image/jpeg') || company.logo.includes('image/jpg') ? 'JPEG' : 'PNG';
-      doc.addImage(company.logo, format, 14, 10, 30, 30);
-      yPos = 45;
+      let logoData = company.logo;
+      
+      if (company.logo.startsWith('data:')) {
+        const mimeMatch = company.logo.match(/data:([^;]+);/);
+        const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+        let format = 'PNG';
+        if (mime.includes('jpeg') || mime.includes('jpg')) format = 'JPEG';
+        else if (mime.includes('gif')) format = 'GIF';
+        else if (mime.includes('webp')) format = 'WEBP';
+        
+        doc.addImage(logoData, format, 14, 10, 30, 30);
+        yPos = 45;
+      } else if (company.logo.startsWith('http') || company.logo.startsWith('/')) {
+        console.warn('Logo URL no soportado directamente, omitiendo');
+      }
     } catch (e) {
       console.warn('No se pudo agregar el logo:', e);
     }
