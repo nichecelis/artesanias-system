@@ -340,7 +340,7 @@ export default function FacturasPage() {
       </div>
 
       <div className="flex gap-3 items-center">
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-2.5 text-gray-400"/>
           <input className="input pl-9" placeholder="Buscar por cliente..." value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}/>
