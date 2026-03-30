@@ -257,7 +257,16 @@ export default function FacturasPage() {
       doc.text(`Tel: ${factura.cliente.telefono}`, 14, yPos);
     }
     
-    const tableData = factura.items.map((item: any, idx: number) => [
+    const itemsConTotales = factura.items.map((item: any) => {
+      const precio = item.precioUnitario ?? item.precioUnitarioOriginal ?? 0;
+      const totalItem = precio * item.cantidad;
+      return { ...item, precio, totalItem };
+    });
+    
+    const subtotalCalculado = itemsConTotales.reduce((acc: number, item: any) => acc + item.totalItem, 0);
+    const descuentoTotal = itemsConTotales.reduce((acc: number, item: any) => acc + (item.descuento ?? 0), 0);
+    
+    const tableData = itemsConTotales.map((item: any, idx: number) => [
       idx + 1,
       item.pedidoProducto?.producto?.nombre || item.pedidoProducto?.producto?.producto?.nombre || '—',
       item.pedidoProducto?.pedido?.codigo || '—',
@@ -265,10 +274,10 @@ export default function FacturasPage() {
       item.pedidoProducto?.corte2 ?? '—',
       item.pedidoProducto?.corte3 ?? '—',
       item.cantidad,
-      fmt(item.precioUnitario),
-      fmt(item.total),
-      fmt(item.descuento),
-      fmt(item.total - item.descuento),
+      fmt(item.precio) + (item.esPrecioEspecial ? ' ★' : ''),
+      fmt(item.totalItem),
+      fmt(item.descuento ?? 0),
+      fmt(item.totalItem - (item.descuento ?? 0)),
     ]);
 
     doc.autoTable({
@@ -287,9 +296,9 @@ export default function FacturasPage() {
     const finalY = (doc as any).lastAutoTable.finalY + 10;
     
     doc.setFontSize(10);
-    doc.text(`Subtotal: ${fmt(factura.subtotal)}`, 140, finalY);
-    doc.text(`Descuento: ${fmt(factura.descuento)}`, 140, finalY + 6);
-    doc.text(`Total: ${fmt(factura.total)}`, 140, finalY + 12);
+    doc.text(`Subtotal: ${fmt(subtotalCalculado)}`, 140, finalY);
+    doc.text(`Descuento: ${fmt(descuentoTotal)}`, 140, finalY + 6);
+    doc.text(`Total: ${fmt(subtotalCalculado - descuentoTotal)}`, 140, finalY + 12);
     doc.text(`Saldo Anterior: ${fmt(factura.saldoAnterior)}`, 140, finalY + 18);
     doc.text(`Pago: ${fmt(factura.montoPagado)}`, 140, finalY + 24);
     doc.text(`Saldo: ${fmt(factura.saldo)}`, 140, finalY + 30);

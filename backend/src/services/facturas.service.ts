@@ -57,7 +57,7 @@ export class FacturasService {
           include: {
             pedidoProducto: {
               include: {
-                producto: { select: { nombre: true, descripcion: true } },
+                producto: { select: { id: true, nombre: true, descripcion: true, precioVenta: true } },
                 pedido: { select: { codigo: true, createdAt: true } },
               }
             }
@@ -68,7 +68,35 @@ export class FacturasService {
     });
 
     if (!factura) throw new AppError('Factura no encontrada', 404);
-    return factura;
+
+    const productoIds = factura.items.map(item => item.pedidoProducto.productoId);
+    const preciosEspeciales = await prisma.productoCliente.findMany({
+      where: {
+        clienteId: factura.clienteId,
+        productoId: { in: productoIds },
+      },
+    });
+
+    const preciosMap = new Map(preciosEspeciales.map(pe => [pe.productoId, Number(pe.precioVenta)]));
+
+    const itemsConPreciosEspeciales = factura.items.map(item => {
+      const precioEspecial = preciosMap.get(item.pedidoProducto.productoId);
+      const precioOriginal = Number(item.pedidoProducto.producto.precioVenta);
+      const precioUnitario = precioEspecial !== undefined ? precioEspecial : precioOriginal;
+      
+      return {
+        ...item,
+        precioUnitarioOriginal: item.precioUnitario,
+        precioUnitario,
+        precioOriginal,
+        esPrecioEspecial: precioEspecial !== undefined,
+      };
+    });
+
+    return {
+      ...factura,
+      items: itemsConPreciosEspeciales,
+    };
   }
 
   async crear(dto: {

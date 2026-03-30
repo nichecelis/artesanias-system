@@ -34,8 +34,11 @@ export function generateReportHeader(doc: jsPDF, company: CompanyInfo, title: st
   
   if (company.logo) {
     try {
-      doc.addImage(company.logo, 'PNG', 14, 10, 30, 30);
-    } catch {}
+      const logoData = company.logo.startsWith('data:') ? company.logo : `data:image/png;base64,${company.logo}`;
+      doc.addImage(logoData, 'PNG', 14, 10, 30, 30);
+    } catch (e) {
+      console.warn('No se pudo agregar el logo:', e);
+    }
   }
   
   doc.setFontSize(16);
