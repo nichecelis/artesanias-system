@@ -113,7 +113,7 @@ jobs:
 
       - name: Run database migrations
         working-directory: backend
-        run: npx prisma migrate deploy
+        run: npx prisma db push --accept-data-loss
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
 
@@ -242,7 +242,7 @@ jobs:
 
       - name: Run database migrations
         working-directory: backend
-        run: npx prisma migrate deploy
+        run: npx prisma db push --accept-data-loss
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
 
@@ -382,7 +382,7 @@ jobs:
 
       - name: Run database migrations
         working-directory: backend
-        run: npx prisma migrate deploy
+        run: npx prisma db push --accept-data-loss
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
 
