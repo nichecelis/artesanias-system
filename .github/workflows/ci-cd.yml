@@ -118,21 +118,47 @@ jobs:
 
       - name: Run backend unit tests
         working-directory: backend
-        run: npm run test:unit
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-          JWT_SECRET: ${{ env.JWT_SECRET }}
-          REDIS_URL: ${{ env.REDIS_URL }}
-          NODE_ENV: test
+        run: |
+          cat > .env.test << EOF
+          NODE_ENV=test
+          PORT=3001
+          API_PREFIX=/api/v1
+          DATABASE_URL=${{ env.DATABASE_URL }}
+          JWT_SECRET=${{ env.JWT_SECRET }}
+          JWT_EXPIRES_IN=15m
+          JWT_REFRESH_SECRET=${{ env.JWT_SECRET }}
+          JWT_REFRESH_EXPIRES_IN=7d
+          REDIS_URL=${{ env.REDIS_URL }}
+          REDIS_PREFIX=artesanias:
+          RATE_LIMIT_WINDOW_MS=900000
+          RATE_LIMIT_MAX=100
+          CORS_ORIGINS=http://localhost:5173
+          BCRYPT_ROUNDS=12
+          LOG_LEVEL=info
+          EOF
+          npm run test:unit
 
       - name: Run backend integration tests
         working-directory: backend
-        run: npm run test:integration
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-          JWT_SECRET: ${{ env.JWT_SECRET }}
-          REDIS_URL: ${{ env.REDIS_URL }}
-          NODE_ENV: test
+        run: |
+          cat > .env.test << EOF
+          NODE_ENV=test
+          PORT=3001
+          API_PREFIX=/api/v1
+          DATABASE_URL=${{ env.DATABASE_URL }}
+          JWT_SECRET=${{ env.JWT_SECRET }}
+          JWT_EXPIRES_IN=15m
+          JWT_REFRESH_SECRET=${{ env.JWT_SECRET }}
+          JWT_REFRESH_EXPIRES_IN=7d
+          REDIS_URL=${{ env.REDIS_URL }}
+          REDIS_PREFIX=artesanias:
+          RATE_LIMIT_WINDOW_MS=900000
+          RATE_LIMIT_MAX=100
+          CORS_ORIGINS=http://localhost:5173
+          BCRYPT_ROUNDS=12
+          LOG_LEVEL=info
+          EOF
+          npm run test:integration
 
   # ─────────────────────────────────────────────────────────────
   # FRONTEND BUILD
