@@ -158,7 +158,7 @@ jobs:
           BCRYPT_ROUNDS=12
           LOG_LEVEL=info
           EOF
-          npm run test:integration
+          npm run test:int
 
   # ─────────────────────────────────────────────────────────────
   # FRONTEND BUILD
