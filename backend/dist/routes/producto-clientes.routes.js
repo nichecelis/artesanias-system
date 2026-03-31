@@ -32,7 +32,7 @@ exports.productoClientesRouter.get('/cliente/:clienteId', async (req, res, next)
     }
 });
 // Crear/actualizar precio
-exports.productoClientesRouter.put('/:clienteId/:productoId', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'VENTAS'), async (req, res, next) => {
+exports.productoClientesRouter.put('/:clienteId/:productoId', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'PRODUCCION'), async (req, res, next) => {
     try {
         const { precioVenta } = precioSchema.parse(req.body);
         // Usar el nombre exacto del modelo: productoCliente (camelCase)
@@ -44,7 +44,7 @@ exports.productoClientesRouter.put('/:clienteId/:productoId', (0, auth_middlewar
     }
 });
 // Eliminar precio
-exports.productoClientesRouter.delete('/:productoId/:clienteId', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'VENTAS'), async (req, res, next) => {
+exports.productoClientesRouter.delete('/:productoId/:clienteId', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'PRODUCCION'), async (req, res, next) => {
     try {
         (0, response_1.sendSuccess)(res, await producto_clientes_service_1.productoClientesService.eliminar(req.params.productoId, req.params.clienteId), 'Precio eliminado');
     }

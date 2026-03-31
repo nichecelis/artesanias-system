@@ -28,6 +28,10 @@ const decoradoras_routes_1 = require("./routes/decoradoras.routes");
 const grupos_routes_1 = require("./routes/grupos.routes");
 const decoraciones_routes_1 = require("./routes/decoraciones.routes");
 const prestamos_routes_1 = require("./routes/prestamos.routes");
+const nomina_routes_1 = require("./routes/nomina.routes");
+const facturas_routes_1 = require("./routes/facturas.routes");
+const despachos_routes_1 = __importDefault(require("./routes/despachos.routes"));
+const parametrizacion_routes_1 = require("./routes/parametrizacion.routes");
 const app = (0, express_1.default)();
 // ─── Seguridad OWASP ─────────────────────────────────────────
 app.use((0, helmet_1.default)({
@@ -71,10 +75,13 @@ app.use(`${API}/decoradoras`, decoradoras_routes_1.decoradorasRouter);
 app.use(`${API}/decoraciones`, decoraciones_routes_1.decoracionesRouter);
 app.use(`${API}/prestamos`, prestamos_routes_1.prestamosRouter);
 app.use(`${API}/empleados`, decoradoras_routes_1.empleadosRouter);
-app.use(`${API}/nomina`, decoradoras_routes_1.nominaRouter);
+app.use(`${API}/nomina`, nomina_routes_1.nominaRouter);
 app.use(`${API}/reportes`, reportes_routes_1.default);
 app.use(`${API}/grupos`, grupos_routes_1.gruposRouter);
 app.use(`${API}/precios`, precios_routes_1.default);
+app.use(`${API}/facturas`, facturas_routes_1.facturasRouter);
+app.use(`${API}/despachos`, despachos_routes_1.default);
+app.use(`${API}/parametrizacion`, parametrizacion_routes_1.parametrizacionRouter);
 // ─── Manejo de errores ────────────────────────────────────────
 app.use(notFoundHandler_1.notFoundHandler);
 app.use(errorHandler_1.errorHandler);

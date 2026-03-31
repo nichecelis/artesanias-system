@@ -14,9 +14,10 @@ const grupoSchema = zod_1.z.object({
     direccion: zod_1.z.string().optional(),
     telefono: zod_1.z.string().optional(),
     responsable: zod_1.z.string().optional(),
+    porcentajeResponsable: zod_1.z.coerce.number().min(0).max(100).optional(),
 });
 // Listar
-exports.gruposRouter.get('/', async (req, res, next) => {
+exports.gruposRouter.get('/', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req, res, next) => {
     try {
         const params = (0, response_1.parsePagination)(req.query);
         const result = await grupos_service_1.gruposService.listar(params);
@@ -27,7 +28,7 @@ exports.gruposRouter.get('/', async (req, res, next) => {
     }
 });
 // Obtener por ID
-exports.gruposRouter.get('/:id', async (req, res, next) => {
+exports.gruposRouter.get('/:id', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req, res, next) => {
     try {
         (0, response_1.sendSuccess)(res, await grupos_service_1.gruposService.obtener(req.params.id));
     }
@@ -59,6 +60,17 @@ exports.gruposRouter.delete('/:id', (0, auth_middleware_1.authorize)('ADMINISTRA
     try {
         await grupos_service_1.gruposService.eliminar(req.params.id);
         (0, response_1.sendSuccess)(res, null, 'Grupo eliminado');
+    }
+    catch (e) {
+        next(e);
+    }
+});
+// Reporte de pagos por grupo
+exports.gruposRouter.get('/:id/reporte', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req, res, next) => {
+    try {
+        const { fechaDesde, fechaHasta } = req.query;
+        const result = await grupos_service_1.gruposService.reportePagos(req.params.id, fechaDesde, fechaHasta);
+        (0, response_1.sendSuccess)(res, result);
     }
     catch (e) {
         next(e);

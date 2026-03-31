@@ -41,6 +41,8 @@ export declare class PrestamosService {
         saldo: import("@prisma/client/runtime/library").Decimal;
         cuotas: number | null;
         observacion: string | null;
+        imagen: string | null;
+        archivoFirmado: string | null;
     }>;
     listar(params: PaginationParams & {
         tipo?: TipoBeneficiario;
@@ -80,6 +82,8 @@ export declare class PrestamosService {
         saldo: import("@prisma/client/runtime/library").Decimal;
         cuotas: number | null;
         observacion: string | null;
+        imagen: string | null;
+        archivoFirmado: string | null;
     }>;
     abonar(id: string, monto: number, fecha: string): Promise<{
         abono: {
@@ -105,6 +109,43 @@ export declare class PrestamosService {
         saldo: import("@prisma/client/runtime/library").Decimal;
         cuotas: number | null;
         observacion: string | null;
+        imagen: string | null;
+        archivoFirmado: string | null;
+    }>;
+    actualizarArchivo(id: string, archivoFirmado: string): Promise<{
+        decoradora: {
+            id: string;
+            nombre: string;
+            documento: string;
+        } | null;
+        empleado: {
+            id: string;
+            nombre: string;
+            documento: string;
+        } | null;
+        _count: {
+            abonos: number;
+        };
+        abonos: {
+            id: string;
+            createdAt: Date;
+            prestamoId: string;
+            fecha: Date;
+            monto: import("@prisma/client/runtime/library").Decimal;
+        }[];
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        decoradoraId: string | null;
+        empleadoId: string | null;
+        fecha: Date;
+        monto: import("@prisma/client/runtime/library").Decimal;
+        saldo: import("@prisma/client/runtime/library").Decimal;
+        cuotas: number | null;
+        observacion: string | null;
+        imagen: string | null;
+        archivoFirmado: string | null;
     }>;
 }
 export declare const prestamosService: PrestamosService;

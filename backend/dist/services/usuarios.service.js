@@ -35,13 +35,13 @@ class UsuariosService {
             select: { id: true, nombre: true, correo: true, rol: true, activo: true, createdAt: true },
         });
         if (!u)
-            throw new types_1.AppError(404, 'Usuario no encontrado');
+            throw new types_1.AppError('Usuario no encontrado', 404);
         return u;
     }
     async crear(dto) {
         const existe = await database_1.prisma.usuario.findUnique({ where: { correo: dto.correo.toLowerCase() } });
         if (existe)
-            throw new types_1.AppError(409, 'Ya existe un usuario con ese correo');
+            throw new types_1.AppError('Ya existe un usuario con ese correo', 409);
         const passwordHash = await bcryptjs_1.default.hash(dto.password, 12);
         return database_1.prisma.usuario.create({
             data: { nombre: dto.nombre, correo: dto.correo.toLowerCase(), passwordHash, rol: dto.rol },
@@ -53,7 +53,7 @@ class UsuariosService {
         if (dto.correo) {
             const existe = await database_1.prisma.usuario.findFirst({ where: { correo: dto.correo.toLowerCase(), NOT: { id } } });
             if (existe)
-                throw new types_1.AppError(409, 'Ese correo ya está en uso');
+                throw new types_1.AppError('Ese correo ya está en uso', 409);
         }
         return database_1.prisma.usuario.update({
             where: { id },

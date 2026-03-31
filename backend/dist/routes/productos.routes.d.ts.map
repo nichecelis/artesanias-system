@@ -1,1 +1,1 @@
-{"version":3,"file":"productos.routes.d.ts","sourceRoot":"","sources":["../../src/routes/productos.routes.ts"],"names":[],"mappings":"AAWA,QAAA,MAAM,eAAe,4CAAW,CAAC;AAiBjC,eAAe,eAAe,CAAC;AAQ/B,QAAA,MAAM,cAAc,4CAAW,CAAC;AAiBhC,OAAO,EAAE,cAAc,EAAE,CAAC;AAY1B,QAAA,MAAM,aAAa,4CAAW,CAAC;AAwE/B,OAAO,EAAE,aAAa,EAAE,CAAC"}
+{"version":3,"file":"productos.routes.d.ts","sourceRoot":"","sources":["../../src/routes/productos.routes.ts"],"names":[],"mappings":"AAWA,QAAA,MAAM,eAAe,4CAAW,CAAC;AAiBjC,eAAe,eAAe,CAAC"}

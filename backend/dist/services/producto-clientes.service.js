@@ -31,7 +31,7 @@ exports.productoClientesService = {
             where: { productoId_clienteId: { productoId, clienteId } },
         });
         if (!existe)
-            throw new types_1.AppError(404, 'Precio no encontrado');
+            throw new types_1.AppError('Precio no encontrado', 404);
         return database_1.prisma.productoCliente.delete({
             where: { productoId_clienteId: { productoId, clienteId } },
         });

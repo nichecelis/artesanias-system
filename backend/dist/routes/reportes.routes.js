@@ -6,7 +6,7 @@ const auth_middleware_1 = require("../middlewares/auth.middleware");
 const database_1 = require("../config/database");
 const response_1 = require("../utils/response");
 const router = (0, express_1.Router)();
-router.use(auth_middleware_1.authenticate, (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'CONTABILIDAD', 'VENTAS'));
+router.use(auth_middleware_1.authenticate, (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'));
 const rangoFechasSchema = zod_1.z.object({
     desde: zod_1.z.coerce.date(),
     hasta: zod_1.z.coerce.date(),
@@ -15,23 +15,35 @@ const rangoFechasSchema = zod_1.z.object({
 router.get('/ventas-por-cliente', async (req, res, next) => {
     try {
         const { desde, hasta } = rangoFechasSchema.parse(req.query);
-        const data = await database_1.prisma.pedido.groupBy({
-            by: ['clienteId'],
+        const pedidos = await database_1.prisma.pedido.findMany({
             where: { createdAt: { gte: desde, lte: hasta } },
-            _count: { id: true },
-            _sum: { cantidadPedido: true, cantidadDespacho: true },
+            select: {
+                clienteId: true,
+                productos: {
+                    select: {
+                        cantidadPedido: true,
+                        cantidadDespacho: true,
+                    }
+                }
+            },
         });
-        // Enriquecer con nombres de clientes
-        const clienteIds = data.map((d) => d.clienteId);
+        const clienteIds = [...new Set(pedidos.map((p) => p.clienteId))];
         const clientes = await database_1.prisma.cliente.findMany({
             where: { id: { in: clienteIds } },
             select: { id: true, nombre: true },
         });
         const clienteMap = new Map(clientes.map((c) => [c.id, c.nombre]));
-        const result = data.map((d) => ({
-            ...d,
-            clienteNombre: clienteMap.get(d.clienteId) ?? 'Desconocido',
-        }));
+        const result = clienteIds.map((clienteId) => {
+            const clientePedidos = pedidos.filter((p) => p.clienteId === clienteId);
+            const totalPedido = clientePedidos.reduce((acc, p) => acc + p.productos.reduce((a, pp) => a + pp.cantidadPedido, 0), 0);
+            const totalDespachado = clientePedidos.reduce((acc, p) => acc + p.productos.reduce((a, pp) => a + (pp.cantidadDespacho || 0), 0), 0);
+            return {
+                clienteId,
+                clienteNombre: clienteMap.get(clienteId) ?? 'Desconocido',
+                cantidadPedidos: clientePedidos.length,
+                _sum: { cantidadPedido: totalPedido, cantidadDespacho: totalDespachado },
+            };
+        });
         (0, response_1.sendSuccess)(res, result);
     }
     catch (error) {
@@ -41,12 +53,17 @@ router.get('/ventas-por-cliente', async (req, res, next) => {
 // Reporte: pedidos activos con estado
 router.get('/pedidos-activos', async (_req, res, next) => {
     try {
-        const data = await database_1.prisma.pedido.findMany({
+        const pedidos = await database_1.prisma.pedido.findMany({
             where: { estado: { notIn: ['DESPACHADO', 'CANCELADO'] } },
             include: { cliente: { select: { nombre: true } } },
             orderBy: { createdAt: 'desc' },
         });
-        (0, response_1.sendSuccess)(res, data);
+        const porEstado = await database_1.prisma.pedido.groupBy({
+            by: ['estado'],
+            where: { estado: { notIn: ['DESPACHADO', 'CANCELADO'] } },
+            _count: { id: true },
+        });
+        (0, response_1.sendSuccess)(res, { porEstado, pedidos });
     }
     catch (error) {
         next(error);
@@ -86,8 +103,30 @@ router.get('/nomina-mes', async (req, res, next) => {
             include: { empleado: { select: { nombre: true, salario: true } } },
             orderBy: { empleado: { nombre: 'asc' } },
         });
-        const totalNomina = data.reduce((acc, n) => acc + Number(n.totalPagar), 0);
-        (0, response_1.sendSuccess)(res, { nominas: data, totalNomina, mes });
+        const nominas = data.map((n) => ({
+            id: n.id,
+            empleadoId: n.empleadoId,
+            empleado: n.empleado,
+            fecha: n.fecha,
+            diasTrabajados: n.diasTrabajados,
+            salarioDia: Number(n.salarioDia),
+            subtotalDias: Number(n.subtotalDias),
+            horasExtras: Number(n.horasExtras),
+            valorHoraExtra: Number(n.valorHoraExtra),
+            subtotalHoras: Number(n.subtotalHoras),
+            totalDevengado: Number(n.subtotalDias) + Number(n.subtotalHoras),
+            abonosPrestamo: Number(n.abonosPrestamo),
+            descuentos: Number(n.abonosPrestamo),
+            totalPagar: Number(n.totalPagar),
+            totalNeto: Number(n.totalPagar),
+            observaciones: n.observaciones,
+        }));
+        const totales = nominas.reduce((acc, n) => ({
+            totalDevengado: acc.totalDevengado + n.totalDevengado,
+            totalDescuentos: acc.totalDescuentos + n.descuentos,
+            totalNeto: acc.totalNeto + n.totalNeto,
+        }), { totalDevengado: 0, totalDescuentos: 0, totalNeto: 0 });
+        (0, response_1.sendSuccess)(res, { nominas, totales, mes });
     }
     catch (error) {
         next(error);

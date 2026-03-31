@@ -10,7 +10,7 @@ class ClientesService {
             where: { documento: dto.documento.trim() },
         });
         if (existe)
-            throw new types_1.AppError(409, 'Ya existe un cliente con ese documento');
+            throw new types_1.AppError('Ya existe un cliente con ese documento', 409);
         return database_1.prisma.cliente.create({ data: { ...dto, documento: dto.documento.trim() } });
     }
     async listar(params) {
@@ -66,7 +66,7 @@ class ClientesService {
                 where: { documento: dto.documento.trim(), NOT: { id } },
             });
             if (existe)
-                throw new types_1.AppError(409, 'Ese documento ya está en uso');
+                throw new types_1.AppError('Ese documento ya está en uso', 409);
         }
         return database_1.prisma.cliente.update({ where: { id }, data: dto });
     }
@@ -74,7 +74,7 @@ class ClientesService {
         const cliente = await this.obtenerPorId(id);
         const pedidos = await database_1.prisma.pedido.count({ where: { clienteId: id } });
         if (pedidos > 0)
-            throw new types_1.AppError(409, 'No se puede eliminar: el cliente tiene pedidos');
+            throw new types_1.AppError('No se puede eliminar: el cliente tiene pedidos', 409);
         return database_1.prisma.cliente.update({ where: { id }, data: { activo: false } });
     }
 }

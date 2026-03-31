@@ -43,10 +43,19 @@ const actualizarPedidoSchema = zod_1.z.object({
     observaciones: zod_1.z.string().optional().transform(v => v === '' ? undefined : v),
     productos: zod_1.z.array(productoItemSchema).optional(),
 });
-pedidosRouter.get('/stats/resumen', async (req, res, next) => {
+pedidosRouter.get('/stats/resumen', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'PRODUCCION', 'CONTABILIDAD'), async (req, res, next) => {
     try {
         const stats = await pedidos_service_1.pedidosService.estadisticas();
         res.json({ success: true, data: stats });
+    }
+    catch (e) {
+        next(e);
+    }
+});
+pedidosRouter.get('/estadisticas', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'PRODUCCION', 'CONTABILIDAD'), async (req, res, next) => {
+    try {
+        const stats = await pedidos_service_1.pedidosService.estadisticas();
+        (0, response_1.sendSuccess)(res, stats);
     }
     catch (e) {
         next(e);
@@ -84,7 +93,7 @@ pedidosRouter.get('/', async (req, res, next) => {
     }
 });
 // ✅ POST /pedidos - Crear
-pedidosRouter.post('/', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'VENTAS', 'PRODUCCION'), async (req, res, next) => {
+pedidosRouter.post('/', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'PRODUCCION'), async (req, res, next) => {
     try {
         const data = await pedidos_service_1.pedidosService.crear(crearPedidoSchema.parse(req.body));
         (0, response_1.sendSuccess)(res, data, 'Pedido creado exitosamente', 201);
@@ -94,7 +103,7 @@ pedidosRouter.post('/', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'VENTA
     }
 });
 // ✅ PATCH /pedidos/:id/estado - Cambiar estado
-pedidosRouter.patch('/:id/estado', async (req, res, next) => {
+pedidosRouter.patch('/:id/estado', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'PRODUCCION'), async (req, res, next) => {
     try {
         const { estado } = zod_1.z.object({ estado: zod_1.z.nativeEnum(client_1.EstadoPedido) }).parse(req.body);
         const data = await pedidos_service_1.pedidosService.cambiarEstado(req.params.id, estado);
@@ -105,7 +114,7 @@ pedidosRouter.patch('/:id/estado', async (req, res, next) => {
     }
 });
 // ✅ PATCH /pedidos/:id - Actualizar
-pedidosRouter.patch('/:id', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'VENTAS', 'PRODUCCION'), async (req, res, next) => {
+pedidosRouter.patch('/:id', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'PRODUCCION'), async (req, res, next) => {
     try {
         const data = await pedidos_service_1.pedidosService.actualizar(req.params.id, actualizarPedidoSchema.parse(req.body));
         (0, response_1.sendSuccess)(res, data, 'Pedido actualizado correctamente', 200);

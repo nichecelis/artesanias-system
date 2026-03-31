@@ -17,6 +17,7 @@ export declare const gruposService: {
             telefono: string | null;
             tipo: import(".prisma/client").$Enums.TipoGrupo;
             responsable: string | null;
+            porcentajeResponsable: number;
         })[];
         meta: {
             total: number;
@@ -44,6 +45,7 @@ export declare const gruposService: {
         telefono: string | null;
         tipo: import(".prisma/client").$Enums.TipoGrupo;
         responsable: string | null;
+        porcentajeResponsable: number;
     }>;
     crear: (data: {
         nombre: string;
@@ -51,6 +53,7 @@ export declare const gruposService: {
         direccion?: string;
         telefono?: string;
         responsable?: string;
+        porcentajeResponsable?: number;
     }) => Promise<{
         id: string;
         nombre: string;
@@ -61,6 +64,7 @@ export declare const gruposService: {
         telefono: string | null;
         tipo: import(".prisma/client").$Enums.TipoGrupo;
         responsable: string | null;
+        porcentajeResponsable: number;
     }>;
     actualizar: (id: string, data: {
         nombre?: string;
@@ -68,6 +72,7 @@ export declare const gruposService: {
         direccion?: string;
         telefono?: string;
         responsable?: string;
+        porcentajeResponsable?: number;
     }) => Promise<{
         id: string;
         nombre: string;
@@ -78,6 +83,7 @@ export declare const gruposService: {
         telefono: string | null;
         tipo: import(".prisma/client").$Enums.TipoGrupo;
         responsable: string | null;
+        porcentajeResponsable: number;
     }>;
     eliminar: (id: string) => Promise<{
         id: string;
@@ -89,6 +95,63 @@ export declare const gruposService: {
         telefono: string | null;
         tipo: import(".prisma/client").$Enums.TipoGrupo;
         responsable: string | null;
+        porcentajeResponsable: number;
+    }>;
+    reportePagos: (id: string, fechaDesde?: string, fechaHasta?: string) => Promise<{
+        grupo: {
+            id: string;
+            nombre: string;
+            tipo: import(".prisma/client").$Enums.TipoGrupo;
+            responsable: string | null;
+            porcentajeResponsable: number;
+        };
+        resumen: {
+            totalPagos: number;
+            cantidadDecoraciones: number;
+            montoResponsable: number;
+            porcentajeResponsable: number;
+        };
+        pagosPorDecoradora: {
+            decoradoraId: string;
+            decoradoraNombre: string;
+            decoradoraDocumento: string;
+            cantidadDecoraciones: number;
+            subtotal: number;
+        }[];
+        detalle: ({
+            producto: {
+                nombre: string;
+            };
+            pedido: {
+                codigo: string;
+            };
+            decoradora: {
+                id: string;
+                nombre: string;
+                documento: string;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            total: import("@prisma/client/runtime/library").Decimal;
+            precioDecoracion: import("@prisma/client/runtime/library").Decimal;
+            productoId: string;
+            fechaIngreso: Date | null;
+            pedidoId: string;
+            decoradoraId: string;
+            fechaEgreso: Date;
+            cantidadEgreso: number;
+            cantidadIngreso: number | null;
+            arreglos: number;
+            perdidas: number;
+            compras: import("@prisma/client/runtime/library").Decimal;
+            abonosPrestamo: import("@prisma/client/runtime/library").Decimal;
+            prestamoId: string | null;
+            subtotal: import("@prisma/client/runtime/library").Decimal;
+            totalPagar: import("@prisma/client/runtime/library").Decimal;
+            pagado: boolean;
+        })[];
     }>;
 };
 //# sourceMappingURL=grupos.service.d.ts.map

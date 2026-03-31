@@ -1,29 +1,46 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.nominaRouter = exports.empleadosRouter = exports.prestamosRouter = exports.decoracionesRouter = exports.decoradorasRouter = void 0;
+exports.nominaRouter = exports.empleadosRouter = exports.decoradorasRouter = void 0;
 const express_1 = require("express");
 const zod_1 = require("zod");
 const client_1 = require("@prisma/client");
 const auth_middleware_1 = require("../middlewares/auth.middleware");
 const decoradoras_service_1 = require("../services/decoradoras.service");
-const decoraciones_service_1 = require("../services/decoraciones.service");
-const prestamos_service_1 = require("../services/prestamos.service");
 const empleados_service_1 = require("../services/empleados.service");
 const response_1 = require("../utils/response");
 const base_controller_1 = require("../controllers/base.controller");
 // ─── Decoradoras ──────────────────────────────────────────────
 exports.decoradorasRouter = (0, express_1.Router)();
 exports.decoradorasRouter.use(auth_middleware_1.authenticate);
+const grupoIdSchema = zod_1.z.union([
+    zod_1.z.string().uuid(),
+    zod_1.z.string().min(1),
+    zod_1.z.literal(''),
+]).transform(v => v === '' ? null : v).optional();
 const decoradoraSchema = zod_1.z.object({
     nombre: zod_1.z.string().min(2).max(200),
     documento: zod_1.z.string().min(3).max(20),
     telefono: zod_1.z.string().optional(),
-    grupoId: zod_1.z.string().uuid().nullable().optional(),
+    grupoId: grupoIdSchema,
     banco: zod_1.z.string().optional(),
     numCuenta: zod_1.z.string().optional(),
     tipoCuenta: zod_1.z.nativeEnum(client_1.TipoCuenta).optional(),
 });
-exports.decoradorasRouter.get('/', async (req, res, next) => {
+const decoradoraUpdateSchema = zod_1.z.object({
+    nombre: zod_1.z.string().min(2).max(200).optional(),
+    documento: zod_1.z.string().min(3).max(20).optional(),
+    telefono: zod_1.z.string().optional(),
+    grupoId: zod_1.z.union([
+        zod_1.z.string().uuid(),
+        zod_1.z.string().min(1),
+        zod_1.z.literal(''),
+        zod_1.z.null(),
+    ]).transform(v => v === '' ? null : v).optional().nullable(),
+    banco: zod_1.z.string().optional().nullable(),
+    numCuenta: zod_1.z.string().optional().nullable(),
+    tipoCuenta: zod_1.z.nativeEnum(client_1.TipoCuenta).optional().nullable(),
+});
+exports.decoradorasRouter.get('/', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req, res, next) => {
     try {
         const params = {
             ...(0, response_1.parsePagination)(req.query),
@@ -44,121 +61,36 @@ exports.decoradorasRouter.post('/', (0, auth_middleware_1.authorize)('ADMINISTRA
         next(error);
     }
 });
-exports.decoradorasRouter.get('/:id', (req, res, next) => (0, base_controller_1.handleObtener)(req, res, next, (id) => decoradoras_service_1.decoradorasService.obtenerPorId(id)));
+exports.decoradorasRouter.get('/:id', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), (req, res, next) => (0, base_controller_1.handleObtener)(req, res, next, (id) => decoradoras_service_1.decoradorasService.obtenerPorId(id)));
 exports.decoradorasRouter.patch('/:id', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'PRODUCCION'), async (req, res, next) => {
     try {
-        const data = await decoradoras_service_1.decoradorasService.actualizar(req.params.id, decoradoraSchema.partial().parse(req.body));
+        const parsed = decoradoraUpdateSchema.parse(req.body);
+        const updateData = {};
+        if (parsed.nombre !== undefined)
+            updateData.nombre = parsed.nombre;
+        if (parsed.documento !== undefined)
+            updateData.documento = parsed.documento;
+        if (parsed.telefono !== undefined && parsed.telefono !== null)
+            updateData.telefono = parsed.telefono;
+        if (parsed.grupoId !== undefined)
+            updateData.grupoId = parsed.grupoId;
+        if (parsed.banco !== undefined && parsed.banco !== null)
+            updateData.banco = parsed.banco;
+        if (parsed.numCuenta !== undefined && parsed.numCuenta !== null)
+            updateData.numCuenta = parsed.numCuenta;
+        if (parsed.tipoCuenta !== undefined)
+            updateData.tipoCuenta = parsed.tipoCuenta;
+        const data = await decoradoras_service_1.decoradorasService.actualizar(req.params.id, updateData);
         (0, response_1.sendSuccess)(res, data, 'Actualizada');
     }
     catch (error) {
         next(error);
     }
 });
-exports.decoradorasRouter.get('/:id/pagos', async (req, res, next) => {
+exports.decoradorasRouter.get('/:id/pagos', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req, res, next) => {
     try {
         const data = await decoradoras_service_1.decoradorasService.resumenPagos(req.params.id);
         (0, response_1.sendSuccess)(res, data);
-    }
-    catch (error) {
-        next(error);
-    }
-});
-// ─── Decoraciones (egreso / ingreso) ─────────────────────────
-exports.decoracionesRouter = (0, express_1.Router)();
-exports.decoracionesRouter.use(auth_middleware_1.authenticate);
-const egresoSchema = zod_1.z.object({
-    pedidoId: zod_1.z.string().uuid(),
-    decoradoraId: zod_1.z.string().uuid(),
-    productoId: zod_1.z.string().uuid(),
-    fechaEgreso: zod_1.z.coerce.date(),
-    cantidadEgreso: zod_1.z.number().int().positive(),
-    precioDecoracion: zod_1.z.number().positive(),
-});
-const ingresoSchema = zod_1.z.object({
-    fechaIngreso: zod_1.z.coerce.date(),
-    cantidadIngreso: zod_1.z.number().int().positive(),
-    arreglos: zod_1.z.number().int().optional(),
-    perdidas: zod_1.z.number().int().optional(),
-    compras: zod_1.z.number().optional(),
-});
-exports.decoracionesRouter.get('/', async (req, res, next) => {
-    try {
-        const params = {
-            ...(0, response_1.parsePagination)(req.query),
-            decoradoraId: req.query.decoradoraId,
-            pedidoId: req.query.pedidoId,
-            soloSinIngreso: req.query.soloSinIngreso === 'true',
-            soloPendientePago: req.query.soloPendientePago === 'true',
-        };
-        const result = await decoraciones_service_1.decoracionesService.listar(params);
-        (0, response_1.sendPaginated)(res, result, params);
-    }
-    catch (error) {
-        next(error);
-    }
-});
-exports.decoracionesRouter.post('/egreso', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'PRODUCCION'), async (req, res, next) => {
-    try {
-        const data = await decoraciones_service_1.decoracionesService.registrarEgreso(egresoSchema.parse(req.body));
-        res.status(201).json({ success: true, data, message: 'Egreso registrado' });
-    }
-    catch (error) {
-        next(error);
-    }
-});
-exports.decoracionesRouter.patch('/:id/ingreso', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'PRODUCCION'), async (req, res, next) => {
-    try {
-        const data = await decoraciones_service_1.decoracionesService.registrarIngreso(req.params.id, ingresoSchema.parse(req.body));
-        (0, response_1.sendSuccess)(res, data, 'Ingreso registrado');
-    }
-    catch (error) {
-        next(error);
-    }
-});
-exports.decoracionesRouter.patch('/:id/pagar', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'CONTABILIDAD'), async (req, res, next) => {
-    try {
-        const data = await decoraciones_service_1.decoracionesService.marcarPagado(req.params.id);
-        (0, response_1.sendSuccess)(res, data, 'Marcado como pagado');
-    }
-    catch (error) {
-        next(error);
-    }
-});
-// ─── Préstamos ────────────────────────────────────────────────
-exports.prestamosRouter = (0, express_1.Router)();
-exports.prestamosRouter.use(auth_middleware_1.authenticate);
-const prestamoSchema = zod_1.z.object({
-    decoradoraId: zod_1.z.string().uuid(),
-    monto: zod_1.z.number().positive(),
-    fecha: zod_1.z.coerce.date(),
-    observacion: zod_1.z.string().optional(),
-});
-const abonoSchema = zod_1.z.object({
-    monto: zod_1.z.number().positive(),
-    fecha: zod_1.z.coerce.date(),
-});
-exports.prestamosRouter.post('/', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'CONTABILIDAD'), async (req, res, next) => {
-    try {
-        const data = await prestamos_service_1.prestamosService.crear(prestamoSchema.parse(req.body));
-        res.status(201).json({ success: true, data });
-    }
-    catch (error) {
-        next(error);
-    }
-});
-exports.prestamosRouter.get('/decoradora/:decoradoraId', async (req, res, next) => {
-    try {
-        const data = await prestamos_service_1.prestamosService.listarPorDecoradora(req.params.decoradoraId);
-        (0, response_1.sendSuccess)(res, data);
-    }
-    catch (error) {
-        next(error);
-    }
-});
-exports.prestamosRouter.post('/:id/abonos', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'CONTABILIDAD'), async (req, res, next) => {
-    try {
-        const data = await prestamos_service_1.prestamosService.abonar(req.params.id, abonoSchema.parse(req.body));
-        res.status(201).json({ success: true, data, message: 'Abono registrado' });
     }
     catch (error) {
         next(error);
@@ -204,12 +136,13 @@ exports.empleadosRouter.patch('/:id', async (req, res, next) => {
 // ─── Nómina ───────────────────────────────────────────────────
 exports.nominaRouter = (0, express_1.Router)();
 exports.nominaRouter.use(auth_middleware_1.authenticate, (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'CONTABILIDAD'));
+const uuidOpcional = zod_1.z.union([zod_1.z.string().uuid(), zod_1.z.literal(''), zod_1.z.null()]).transform(v => v === '' ? null : v).optional();
 const nominaSchema = zod_1.z.object({
     empleadoId: zod_1.z.string().uuid(),
     fecha: zod_1.z.string(),
     diasTrabajados: zod_1.z.coerce.number().int().min(0).max(31),
     horasExtras: zod_1.z.coerce.number().min(0).optional(),
-    prestamoId: zod_1.z.string().uuid().nullable().optional(),
+    prestamoId: uuidOpcional,
     abonosPrestamo: zod_1.z.coerce.number().min(0).optional(),
     observaciones: zod_1.z.string().optional(),
 });
@@ -217,7 +150,7 @@ const actualizarNominaSchema = zod_1.z.object({
     fecha: zod_1.z.string().optional(),
     diasTrabajados: zod_1.z.coerce.number().int().min(0).max(31).optional(),
     horasExtras: zod_1.z.coerce.number().min(0).optional(),
-    prestamoId: zod_1.z.string().uuid().nullable().optional(),
+    prestamoId: uuidOpcional,
     abonosPrestamo: zod_1.z.coerce.number().min(0).optional(),
     observaciones: zod_1.z.string().optional(),
 });

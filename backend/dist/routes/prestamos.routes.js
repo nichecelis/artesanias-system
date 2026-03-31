@@ -81,4 +81,13 @@ exports.prestamosRouter.delete('/:id', (0, auth_middleware_1.authorize)('ADMINIS
         next(e);
     }
 });
+exports.prestamosRouter.patch('/:id', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'CONTABILIDAD'), async (req, res, next) => {
+    try {
+        const { archivoFirmado } = req.body;
+        (0, response_1.sendSuccess)(res, await prestamos_service_1.prestamosService.actualizarArchivo(req.params.id, archivoFirmado), 'Archivo actualizado');
+    }
+    catch (e) {
+        next(e);
+    }
+});
 //# sourceMappingURL=prestamos.routes.js.map

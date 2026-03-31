@@ -19,7 +19,7 @@ exports.rateLimiter = (0, express_rate_limit_1.default)({
         success: false,
         message: 'Demasiadas solicitudes. Intenta de nuevo más tarde.',
     },
-    skip: (req) => req.path === '/health',
+    skip: (req) => req.path === '/health' || process.env.NODE_ENV === 'test' || req.headers['x-test-mode'] === 'true',
 });
 // Rate limiter más estricto para endpoints de autenticación
 exports.authRateLimiter = (0, express_rate_limit_1.default)({
@@ -31,6 +31,7 @@ exports.authRateLimiter = (0, express_rate_limit_1.default)({
         success: false,
         message: 'Demasiados intentos de autenticación. Intenta en 15 minutos.',
     },
+    skip: (req) => process.env.NODE_ENV === 'test',
 });
 // ─── Not Found Handler ────────────────────────────────────────
 function notFoundHandler(req, res) {

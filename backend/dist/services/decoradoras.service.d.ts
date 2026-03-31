@@ -81,6 +81,8 @@ export declare class DecoradorasService {
             saldo: import("@prisma/client/runtime/library").Decimal;
             cuotas: number | null;
             observacion: string | null;
+            imagen: string | null;
+            archivoFirmado: string | null;
         })[];
     } & {
         id: string;

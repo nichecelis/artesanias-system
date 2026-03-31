@@ -202,6 +202,50 @@ export declare class DecoracionesService {
         totalPagar: import("@prisma/client/runtime/library").Decimal;
         pagado: boolean;
     }>;
+    pagarDecoraciones(ids: string[]): Promise<{
+        decoracionesPagadas: string[];
+    }>;
+    listarAgrupado(params: PaginationParams & {
+        decoradoraId?: string;
+        pedidoId?: string;
+        pagado?: boolean;
+        fechaDesde?: string;
+        fechaHasta?: string;
+    }): Promise<{
+        items: any[];
+        total: number;
+    }>;
+    reportePorGrupo(params: {
+        grupoId?: string;
+        decoradoraId?: string;
+        fechaDesde?: string;
+        fechaHasta?: string;
+        search?: string;
+        incluirPagadas?: boolean;
+    }): Promise<{
+        grupo: {
+            id: string;
+            nombre: string;
+            activo: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            direccion: string | null;
+            telefono: string | null;
+            tipo: import(".prisma/client").$Enums.TipoGrupo;
+            responsable: string | null;
+            porcentajeResponsable: number;
+        } | null;
+        items: any[];
+        totales: {
+            cantidadDecoraciones: any;
+            totalEgresos: any;
+            totalCompras: any;
+            totalAbonosPrestamo: any;
+            saldoPrestamos: any;
+            subtotal: any;
+            totalAPagar: any;
+        };
+    }>;
 }
 export declare const decoracionesService: DecoracionesService;
 export {};

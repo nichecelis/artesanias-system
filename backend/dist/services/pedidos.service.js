@@ -24,11 +24,12 @@ function calcularEstadoPedido(productos) {
     return client_1.EstadoPedido.PENDIENTE;
 }
 /**
- * 🔥 MAPEO CORRECTO
+ * 🔥 MAPEO CORRECTO - Calcula estado automáticamente
  */
 function mapProducto(p) {
     const cantidadPedido = Number(p.cantidadPedido || 0);
     const cantidadDespacho = Number(p.cantidadDespacho || 0);
+    const estadoCalculado = (0, calcularEstado_1.calcularEstado)(p);
     return {
         productoId: p.productoId,
         cantidadPedido,
@@ -46,8 +47,8 @@ function mapProducto(p) {
         // 🔥 DESPACHO
         fechaDespacho: p.fechaDespacho ? new Date(p.fechaDespacho) : null,
         cantidadDespacho,
-        cantidadFaltante: cantidadPedido - cantidadDespacho,
-        estado: p.estado || client_1.EstadoPedido.PENDIENTE
+        cantidadFaltante: cantidadDespacho - cantidadPedido,
+        estado: estadoCalculado
     };
 }
 class PedidosService {
@@ -85,6 +86,28 @@ class PedidosService {
         }
         if (filtros.estado) {
             where.estado = filtros.estado;
+        }
+        if (filtros.proceso) {
+            switch (filtros.proceso) {
+                case 'sin_corte':
+                    where.productos = { some: { fechaInicioCorte: null } };
+                    break;
+                case 'en_corte':
+                    where.productos = { some: { fechaInicioCorte: { not: null }, fechaAsignacion: null } };
+                    break;
+                case 'sin_decoracion':
+                    where.productos = { some: { fechaAsignacion: null } };
+                    break;
+                case 'en_decoracion':
+                    where.productos = { some: { fechaAsignacion: { not: null }, fechaDespacho: null } };
+                    break;
+                case 'sin_despacho':
+                    where.productos = { some: { fechaDespacho: null } };
+                    break;
+                case 'despachados':
+                    where.productos = { some: { fechaDespacho: { not: null } } };
+                    break;
+            }
         }
         const [total, pedidos] = await database_1.prisma.$transaction([
             database_1.prisma.pedido.count({ where }),
@@ -191,7 +214,7 @@ class PedidosService {
                 corte3: data.corte3 ? Number(data.corte3) : undefined,
                 cantidadRecibida: data.cantidadRecibida ? Number(data.cantidadRecibida) : undefined,
                 cantidadDespacho,
-                cantidadFaltante: cantidadPedido - cantidadDespacho
+                cantidadFaltante: cantidadDespacho - cantidadPedido
             }
         });
         // 🔥 recalcular pedido

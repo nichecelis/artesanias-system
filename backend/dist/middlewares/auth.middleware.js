@@ -11,20 +11,15 @@ const types_1 = require("../types");
 async function authenticate(req, res, next) {
     try {
         const authHeader = req.headers.authorization;
-        console.log('🔐 Verificando autenticación...');
-        console.log('📋 Header:', authHeader ? '✅ Presente' : '❌ No presente');
         if (!authHeader?.startsWith('Bearer ')) {
             return next(new types_1.AppError('Token de autenticación requerido', 401));
         }
         const token = authHeader.substring(7);
-        console.log('🔑 JWT_SECRET usando:', env_1.env.JWT_SECRET.substring(0, 10) + '...');
         const decoded = jsonwebtoken_1.default.verify(token, env_1.env.JWT_SECRET);
-        console.log('✅ Token válido para usuario:', decoded.correo);
         req.user = decoded;
         next();
     }
     catch (error) {
-        console.error('❌ Error de autenticación:', error);
         next(new types_1.AppError('Su sesión ha expirado o el token es inválido', 401));
     }
 }

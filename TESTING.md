@@ -86,7 +86,7 @@ npm install
 npm run test:api
 
 # With custom API URL
-API_URL=http://localhost:3000/api/v1 npm run test:api
+API_URL=http://localhost:3001/api/v1 npm run test:api
 ```
 
 ### Test Coverage

@@ -106,6 +106,13 @@ class PrestamosService {
             throw new types_1.AppError('No se puede eliminar: tiene abonos registrados', 400);
         return database_1.prisma.prestamo.delete({ where: { id } });
     }
+    async actualizarArchivo(id, archivoFirmado) {
+        return database_1.prisma.prestamo.update({
+            where: { id },
+            data: { archivoFirmado },
+            include: INCLUDE,
+        });
+    }
 }
 exports.PrestamosService = PrestamosService;
 exports.prestamosService = new PrestamosService();
