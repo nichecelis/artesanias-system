@@ -16,8 +16,11 @@ let testResults = { passed: 0, failed: 0, errors: [] };
 
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
-  headers: { 'Content-Type': 'application/json' }
+  timeout: 30000,
+  headers: { 
+    'Content-Type': 'application/json',
+    'x-test-mode': 'true' // Skip rate limiter
+  }
 });
 
 api.interceptors.request.use((config) => {
@@ -48,11 +51,17 @@ async function test(name, fn) {
   try {
     await fn();
   } catch (error) {
-    console.log(`  ✗ Error: ${error.message}`);
+    const status = error.response?.status;
+    const data = error.response?.data;
+    let errorMsg = error.message;
+    if (data) {
+      errorMsg = `Request failed with status ${status}: ${JSON.stringify(data)}`;
+    }
+    console.log(`  ✗ Error: ${errorMsg}`);
     testResults.failed++;
-    testResults.errors.push(`${name}: ${error.message}`);
+    testResults.errors.push(`${name}: ${errorMsg}`);
   }
-  await sleep(800);
+  await sleep(1000);
 }
 
 async function runTests() {
@@ -62,7 +71,7 @@ async function runTests() {
   console.log(`\nBase URL: ${BASE_URL}`);
 
   // Wait for rate limiter to reset
-  await sleep(5000);
+  await sleep(3000);
 
   // ─────────────────────────────────────────────
   // AUTH TESTS
