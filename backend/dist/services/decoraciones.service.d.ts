@@ -51,8 +51,8 @@ export declare class DecoracionesService {
         };
         prestamo: {
             id: string;
-            monto: import("@prisma/client/runtime/library").Decimal;
             saldo: import("@prisma/client/runtime/library").Decimal;
+            monto: import("@prisma/client/runtime/library").Decimal;
         } | null;
     } & {
         id: string;
@@ -62,6 +62,8 @@ export declare class DecoracionesService {
         precioDecoracion: import("@prisma/client/runtime/library").Decimal;
         productoId: string;
         pedidoId: string;
+        subtotal: import("@prisma/client/runtime/library").Decimal;
+        totalPagar: import("@prisma/client/runtime/library").Decimal;
         decoradoraId: string;
         fechaEgreso: Date;
         cantidadEgreso: number;
@@ -72,8 +74,6 @@ export declare class DecoracionesService {
         compras: import("@prisma/client/runtime/library").Decimal;
         abonosPrestamo: import("@prisma/client/runtime/library").Decimal;
         prestamoId: string | null;
-        subtotal: import("@prisma/client/runtime/library").Decimal;
-        totalPagar: import("@prisma/client/runtime/library").Decimal;
         pagado: boolean;
     })[]>;
     actualizar(id: string, dto: ActualizarDecoracionDto): Promise<{
@@ -95,8 +95,8 @@ export declare class DecoracionesService {
         };
         prestamo: {
             id: string;
-            monto: import("@prisma/client/runtime/library").Decimal;
             saldo: import("@prisma/client/runtime/library").Decimal;
+            monto: import("@prisma/client/runtime/library").Decimal;
         } | null;
     } & {
         id: string;
@@ -106,6 +106,8 @@ export declare class DecoracionesService {
         precioDecoracion: import("@prisma/client/runtime/library").Decimal;
         productoId: string;
         pedidoId: string;
+        subtotal: import("@prisma/client/runtime/library").Decimal;
+        totalPagar: import("@prisma/client/runtime/library").Decimal;
         decoradoraId: string;
         fechaEgreso: Date;
         cantidadEgreso: number;
@@ -116,8 +118,6 @@ export declare class DecoracionesService {
         compras: import("@prisma/client/runtime/library").Decimal;
         abonosPrestamo: import("@prisma/client/runtime/library").Decimal;
         prestamoId: string | null;
-        subtotal: import("@prisma/client/runtime/library").Decimal;
-        totalPagar: import("@prisma/client/runtime/library").Decimal;
         pagado: boolean;
     }>;
     actualizarVarias(items: ActualizarDecoracionBatchDto[]): Promise<({
@@ -139,8 +139,8 @@ export declare class DecoracionesService {
         };
         prestamo: {
             id: string;
-            monto: import("@prisma/client/runtime/library").Decimal;
             saldo: import("@prisma/client/runtime/library").Decimal;
+            monto: import("@prisma/client/runtime/library").Decimal;
         } | null;
     } & {
         id: string;
@@ -150,6 +150,8 @@ export declare class DecoracionesService {
         precioDecoracion: import("@prisma/client/runtime/library").Decimal;
         productoId: string;
         pedidoId: string;
+        subtotal: import("@prisma/client/runtime/library").Decimal;
+        totalPagar: import("@prisma/client/runtime/library").Decimal;
         decoradoraId: string;
         fechaEgreso: Date;
         cantidadEgreso: number;
@@ -160,8 +162,6 @@ export declare class DecoracionesService {
         compras: import("@prisma/client/runtime/library").Decimal;
         abonosPrestamo: import("@prisma/client/runtime/library").Decimal;
         prestamoId: string | null;
-        subtotal: import("@prisma/client/runtime/library").Decimal;
-        totalPagar: import("@prisma/client/runtime/library").Decimal;
         pagado: boolean;
     })[]>;
     eliminar(id: string): Promise<{
@@ -172,6 +172,8 @@ export declare class DecoracionesService {
         precioDecoracion: import("@prisma/client/runtime/library").Decimal;
         productoId: string;
         pedidoId: string;
+        subtotal: import("@prisma/client/runtime/library").Decimal;
+        totalPagar: import("@prisma/client/runtime/library").Decimal;
         decoradoraId: string;
         fechaEgreso: Date;
         cantidadEgreso: number;
@@ -182,8 +184,6 @@ export declare class DecoracionesService {
         compras: import("@prisma/client/runtime/library").Decimal;
         abonosPrestamo: import("@prisma/client/runtime/library").Decimal;
         prestamoId: string | null;
-        subtotal: import("@prisma/client/runtime/library").Decimal;
-        totalPagar: import("@prisma/client/runtime/library").Decimal;
         pagado: boolean;
     }>;
     listar(params: PaginationParams & {
@@ -212,8 +212,8 @@ export declare class DecoracionesService {
         };
         prestamo: {
             id: string;
-            monto: import("@prisma/client/runtime/library").Decimal;
             saldo: import("@prisma/client/runtime/library").Decimal;
+            monto: import("@prisma/client/runtime/library").Decimal;
         } | null;
     } & {
         id: string;
@@ -223,6 +223,8 @@ export declare class DecoracionesService {
         precioDecoracion: import("@prisma/client/runtime/library").Decimal;
         productoId: string;
         pedidoId: string;
+        subtotal: import("@prisma/client/runtime/library").Decimal;
+        totalPagar: import("@prisma/client/runtime/library").Decimal;
         decoradoraId: string;
         fechaEgreso: Date;
         cantidadEgreso: number;
@@ -233,8 +235,6 @@ export declare class DecoracionesService {
         compras: import("@prisma/client/runtime/library").Decimal;
         abonosPrestamo: import("@prisma/client/runtime/library").Decimal;
         prestamoId: string | null;
-        subtotal: import("@prisma/client/runtime/library").Decimal;
-        totalPagar: import("@prisma/client/runtime/library").Decimal;
         pagado: boolean;
     }>;
     marcarPagado(id: string): Promise<{
@@ -245,6 +245,8 @@ export declare class DecoracionesService {
         precioDecoracion: import("@prisma/client/runtime/library").Decimal;
         productoId: string;
         pedidoId: string;
+        subtotal: import("@prisma/client/runtime/library").Decimal;
+        totalPagar: import("@prisma/client/runtime/library").Decimal;
         decoradoraId: string;
         fechaEgreso: Date;
         cantidadEgreso: number;
@@ -255,8 +257,6 @@ export declare class DecoracionesService {
         compras: import("@prisma/client/runtime/library").Decimal;
         abonosPrestamo: import("@prisma/client/runtime/library").Decimal;
         prestamoId: string | null;
-        subtotal: import("@prisma/client/runtime/library").Decimal;
-        totalPagar: import("@prisma/client/runtime/library").Decimal;
         pagado: boolean;
     }>;
     pagarDecoraciones(ids: string[]): Promise<{

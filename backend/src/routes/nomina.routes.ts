@@ -11,7 +11,7 @@ nominaRouter.use(authenticate);
 const uuidOpcional = z.union([z.string().uuid(), z.literal(''), z.null()]).transform(v => v === '' ? null : v).optional();
 
 const nominaSchema = z.object({
-  empleadoId:     z.string().uuid(),
+  empleadoId:     z.string().min(1),
   fecha:          z.string(),
   diasTrabajados: z.coerce.number().int().min(0).max(31),
   horasExtras:    z.coerce.number().min(0).optional(),
@@ -83,6 +83,54 @@ nominaRouter.get('/', async (req: Request, res: Response, next: NextFunction) =>
 
 nominaRouter.post('/', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const body = req.body;
+    
+    if (body.items && Array.isArray(body.items) && body.items.length > 0) {
+      const { fecha, items } = body;
+      const results = [];
+      
+      for (const item of items) {
+        const emp = await prisma.empleado.findUnique({ where: { id: item.empleadoId } });
+        if (!emp) throw new AppError(`Empleado ${item.empleadoId} no encontrado`, 404);
+        
+        const { salarioDia, subtotalDias, valorHoraExtra, subtotalHoras, totalPagar } = calcular(emp, item);
+        const [y, m, d] = fecha.split('-');
+        
+        const reg = await prisma.nomina.create({
+          data: {
+            empleadoId: item.empleadoId,
+            fecha: new Date(Number(y), Number(m) - 1, Number(d), 12, 0, 0),
+            diasTrabajados: item.diasTrabajados,
+            salarioDia,
+            horasExtras: item.horasExtras ?? 0,
+            valorHoraExtra,
+            subtotalDias,
+            subtotalHoras,
+            abonosPrestamo: item.abonosPrestamo ?? 0,
+            totalPagar,
+            observaciones: item.observaciones,
+            prestamoId: item.prestamoId || null,
+          },
+          include: incluir,
+        });
+        
+        if (item.prestamoId && item.abonosPrestamo && item.abonosPrestamo > 0) {
+          await prisma.prestamo.update({ 
+            where: { id: item.prestamoId }, 
+            data: { 
+              saldo: { decrement: item.abonosPrestamo },
+              cuotasPagadas: { increment: 1 }
+            } 
+          });
+        }
+        
+        results.push(reg);
+      }
+      
+      sendSuccess(res, results, `${results.length} registros de nómina creados`, 201);
+      return;
+    }
+
     const item = nominaSchema.parse(req.body);
     const emp = await prisma.empleado.findUnique({ where: { id: item.empleadoId } });
     if (!emp) throw new AppError(`Empleado ${item.empleadoId} no encontrado`, 404);
@@ -105,8 +153,14 @@ nominaRouter.post('/', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (req: R
       },
       include: incluir,
     });
-    if (item.prestamoId && item.abonosPrestamo) {
-      await prisma.prestamo.update({ where: { id: item.prestamoId }, data: { saldo: { decrement: item.abonosPrestamo } } });
+    if (item.prestamoId && item.abonosPrestamo && item.abonosPrestamo > 0) {
+      await prisma.prestamo.update({ 
+        where: { id: item.prestamoId }, 
+        data: { 
+          saldo: { decrement: item.abonosPrestamo },
+          cuotasPagadas: { increment: 1 }
+        } 
+      });
     }
     sendSuccess(res, reg, 'Registro de nómina creado', 201);
   } catch (e) { next(e); }
@@ -119,7 +173,13 @@ nominaRouter.patch('/:id', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (re
     if (!actual) throw new AppError('Registro no encontrado', 404);
 
     if (actual.prestamoId && Number(actual.abonosPrestamo) > 0) {
-      await prisma.prestamo.update({ where: { id: actual.prestamoId }, data: { saldo: { increment: Number(actual.abonosPrestamo) } } });
+      await prisma.prestamo.update({ 
+        where: { id: actual.prestamoId }, 
+        data: { 
+          saldo: { increment: Number(actual.abonosPrestamo) },
+          cuotasPagadas: { decrement: 1 }
+        } 
+      });
     }
 
     const emp = await prisma.empleado.findUnique({ where: { id: actual.empleadoId } });
@@ -135,7 +195,13 @@ nominaRouter.patch('/:id', authorize('ADMINISTRADOR', 'CONTABILIDAD'), async (re
     datos.subtotalHoras = subtotalHoras;
     datos.totalPagar = totalPagar;
     if (dto.prestamoId && (dto.abonosPrestamo ?? 0) > 0) {
-      await prisma.prestamo.update({ where: { id: dto.prestamoId }, data: { saldo: { decrement: dto.abonosPrestamo } } });
+      await prisma.prestamo.update({ 
+        where: { id: dto.prestamoId }, 
+        data: { 
+          saldo: { decrement: dto.abonosPrestamo },
+          cuotasPagadas: { increment: 1 }
+        } 
+      });
     }
 
     const updated = await prisma.nomina.update({ where: { id: req.params.id }, data: datos, include: incluir });
@@ -148,7 +214,13 @@ nominaRouter.delete('/:id', authorize('ADMINISTRADOR'), async (req: Request, res
     const actual = await prisma.nomina.findUnique({ where: { id: req.params.id } });
     if (!actual) throw new AppError('Registro no encontrado', 404);
     if (actual.prestamoId && Number(actual.abonosPrestamo) > 0) {
-      await prisma.prestamo.update({ where: { id: actual.prestamoId }, data: { saldo: { increment: Number(actual.abonosPrestamo) } } });
+      await prisma.prestamo.update({ 
+        where: { id: actual.prestamoId }, 
+        data: { 
+          saldo: { increment: Number(actual.abonosPrestamo) },
+          cuotasPagadas: { decrement: 1 }
+        } 
+      });
     }
     await prisma.nomina.delete({ where: { id: req.params.id } });
     sendSuccess(res, null, 'Registro eliminado');

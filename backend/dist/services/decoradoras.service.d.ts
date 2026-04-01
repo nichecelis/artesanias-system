@@ -50,6 +50,8 @@ export declare class DecoradorasService {
             precioDecoracion: import("@prisma/client/runtime/library").Decimal;
             productoId: string;
             pedidoId: string;
+            subtotal: import("@prisma/client/runtime/library").Decimal;
+            totalPagar: import("@prisma/client/runtime/library").Decimal;
             decoradoraId: string;
             fechaEgreso: Date;
             cantidadEgreso: number;
@@ -60,28 +62,28 @@ export declare class DecoradorasService {
             compras: import("@prisma/client/runtime/library").Decimal;
             abonosPrestamo: import("@prisma/client/runtime/library").Decimal;
             prestamoId: string | null;
-            subtotal: import("@prisma/client/runtime/library").Decimal;
-            totalPagar: import("@prisma/client/runtime/library").Decimal;
             pagado: boolean;
         })[];
         prestamos: ({
             abonos: {
                 id: string;
                 createdAt: Date;
-                prestamoId: string;
                 fecha: Date;
+                prestamoId: string;
                 monto: import("@prisma/client/runtime/library").Decimal;
             }[];
         } & {
             id: string;
+            activo: boolean;
             createdAt: Date;
             updatedAt: Date;
+            fecha: Date;
+            saldo: import("@prisma/client/runtime/library").Decimal;
             decoradoraId: string | null;
             empleadoId: string | null;
-            fecha: Date;
             monto: import("@prisma/client/runtime/library").Decimal;
-            saldo: import("@prisma/client/runtime/library").Decimal;
             cuotas: number | null;
+            cuotasPagadas: number;
             observacion: string | null;
             imagen: string | null;
             archivoFirmado: string | null;
@@ -147,8 +149,8 @@ export declare class DecoradorasService {
                 codigo: string;
             };
             id: string;
-            fechaIngreso: Date | null;
             totalPagar: import("@prisma/client/runtime/library").Decimal;
+            fechaIngreso: Date | null;
         }[];
         totalPendiente: number;
         totalPagado: number | import("@prisma/client/runtime/library").Decimal;

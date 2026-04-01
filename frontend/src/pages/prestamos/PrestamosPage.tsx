@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Search, Trash2, PlusCircle, X, List } from 'lucide-react';
+import { Plus, Search, Trash2, PlusCircle, X, List, Eye, EyeOff } from 'lucide-react';
 import { api } from '../../services/api';
 import { decoradorasService } from '../../services';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
@@ -91,17 +91,19 @@ export default function PrestamosPage() {
   const [search, setSearch] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('');
   const [soloSaldo, setSoloSaldo]   = useState(false);
+  const [mostrarInactivos, setMostrarInactivos] = useState(false);
   const [modal, setModal]           = useState<'crear'|'detalle'|null>(null);
   const [selected, setSelected]     = useState<any>(null);
   const [selBenef, setSelBenef]     = useState<any>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['prestamos', page, search, filtroTipo, soloSaldo],
+    queryKey: ['prestamos', page, search, filtroTipo, soloSaldo, mostrarInactivos],
     queryFn: () => api.get('/prestamos', { params: {
       page, limit: 10,
       search:      search    || undefined,
       tipo:        filtroTipo || undefined,
       soloConSaldo: soloSaldo || undefined,
+      activo: mostrarInactivos ? undefined : true,
     }}).then(r => r.data),
   });
 
@@ -149,9 +151,9 @@ export default function PrestamosPage() {
 
   const columns = [
     { key: 'beneficiario', header: 'Beneficiario', render: (r: any) => (
-      <div>
-        <p className="font-medium">{r.decoradora?.nombre ?? r.empleado?.nombre ?? '—'}</p>
-        <p className="text-xs text-gray-400">{r.decoradora?.documento ?? r.empleado?.documento ?? ''}</p>
+      <div className="flex items-center gap-2">
+        <span className={!r.activo ? 'text-gray-400 line-through' : ''}>{r.decoradora?.nombre ?? r.empleado?.nombre ?? '—'}</span>
+        {!r.activo && <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded">Finalizado</span>}
       </div>
     )},
     { key: 'tipo', header: 'Tipo', render: (r: any) => (
@@ -167,7 +169,7 @@ export default function PrestamosPage() {
         {fmt(r.saldo)}{Number(r.saldo) === 0 ? ' ✓' : ''}
       </span>
     )},
-    { key: 'cuotas', header: 'Cuotas', render: (r: any) => r.cuotas ? `${r._count?.abonos ?? 0} / ${r.cuotas}` : '—' },
+    { key: 'cuotas', header: 'Cuotas', render: (r: any) => r.cuotas ? `${r.cuotasPagadas ?? 0} / ${r.cuotas}` : '—' },
     { key: 'acciones', header: '', render: (r: any) => (
       <div className="flex gap-2" onClick={e => e.stopPropagation()}>
         <button onClick={() => { setSelected(r); setModal('detalle'); }}
@@ -203,6 +205,13 @@ export default function PrestamosPage() {
           <input type="checkbox" checked={soloSaldo} onChange={e => setSoloSaldo(e.target.checked)} className="w-4 h-4"/>
           Solo con saldo
         </label>
+        <button onClick={() => { setMostrarInactivos(!mostrarInactivos); setPage(1); }}
+          className={`btn-secondary flex items-center gap-2 ${mostrarInactivos ? 'bg-yellow-100 border-yellow-400 text-yellow-700' : ''}`}
+          title={mostrarInactivos ? 'Ocultar finalizados' : 'Mostrar finalizados'}
+        >
+          {mostrarInactivos ? <EyeOff size={16}/> : <Eye size={16}/>}
+          {mostrarInactivos ? 'Ocultando finalizados' : 'Ver finalizados'}
+        </button>
       </div>
 
       <div className="card p-0 overflow-hidden">

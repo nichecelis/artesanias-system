@@ -26,20 +26,22 @@ export declare class PrestamosService {
         abonos: {
             id: string;
             createdAt: Date;
-            prestamoId: string;
             fecha: Date;
+            prestamoId: string;
             monto: import("@prisma/client/runtime/library").Decimal;
         }[];
     } & {
         id: string;
+        activo: boolean;
         createdAt: Date;
         updatedAt: Date;
+        fecha: Date;
+        saldo: import("@prisma/client/runtime/library").Decimal;
         decoradoraId: string | null;
         empleadoId: string | null;
-        fecha: Date;
         monto: import("@prisma/client/runtime/library").Decimal;
-        saldo: import("@prisma/client/runtime/library").Decimal;
         cuotas: number | null;
+        cuotasPagadas: number;
         observacion: string | null;
         imagen: string | null;
         archivoFirmado: string | null;
@@ -49,6 +51,7 @@ export declare class PrestamosService {
         decoradoraId?: string;
         empleadoId?: string;
         soloConSaldo?: boolean;
+        activo?: boolean | string;
     }): Promise<PaginatedResult<any>>;
     obtenerPorId(id: string): Promise<{
         decoradora: {
@@ -67,20 +70,22 @@ export declare class PrestamosService {
         abonos: {
             id: string;
             createdAt: Date;
-            prestamoId: string;
             fecha: Date;
+            prestamoId: string;
             monto: import("@prisma/client/runtime/library").Decimal;
         }[];
     } & {
         id: string;
+        activo: boolean;
         createdAt: Date;
         updatedAt: Date;
+        fecha: Date;
+        saldo: import("@prisma/client/runtime/library").Decimal;
         decoradoraId: string | null;
         empleadoId: string | null;
-        fecha: Date;
         monto: import("@prisma/client/runtime/library").Decimal;
-        saldo: import("@prisma/client/runtime/library").Decimal;
         cuotas: number | null;
+        cuotasPagadas: number;
         observacion: string | null;
         imagen: string | null;
         archivoFirmado: string | null;
@@ -89,25 +94,28 @@ export declare class PrestamosService {
         abono: {
             id: string;
             createdAt: Date;
-            prestamoId: string;
             fecha: Date;
+            prestamoId: string;
             monto: import("@prisma/client/runtime/library").Decimal;
         };
         saldo: number;
+        saldado: boolean;
     }>;
     eliminarAbono(abonoId: string): Promise<{
         saldo: number;
     }>;
     eliminar(id: string): Promise<{
         id: string;
+        activo: boolean;
         createdAt: Date;
         updatedAt: Date;
+        fecha: Date;
+        saldo: import("@prisma/client/runtime/library").Decimal;
         decoradoraId: string | null;
         empleadoId: string | null;
-        fecha: Date;
         monto: import("@prisma/client/runtime/library").Decimal;
-        saldo: import("@prisma/client/runtime/library").Decimal;
         cuotas: number | null;
+        cuotasPagadas: number;
         observacion: string | null;
         imagen: string | null;
         archivoFirmado: string | null;
@@ -129,20 +137,22 @@ export declare class PrestamosService {
         abonos: {
             id: string;
             createdAt: Date;
-            prestamoId: string;
             fecha: Date;
+            prestamoId: string;
             monto: import("@prisma/client/runtime/library").Decimal;
         }[];
     } & {
         id: string;
+        activo: boolean;
         createdAt: Date;
         updatedAt: Date;
+        fecha: Date;
+        saldo: import("@prisma/client/runtime/library").Decimal;
         decoradoraId: string | null;
         empleadoId: string | null;
-        fecha: Date;
         monto: import("@prisma/client/runtime/library").Decimal;
-        saldo: import("@prisma/client/runtime/library").Decimal;
         cuotas: number | null;
+        cuotasPagadas: number;
         observacion: string | null;
         imagen: string | null;
         archivoFirmado: string | null;

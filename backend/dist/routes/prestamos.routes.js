@@ -10,7 +10,7 @@ exports.prestamosRouter = (0, express_1.Router)();
 exports.prestamosRouter.use(auth_middleware_1.authenticate);
 const crearSchema = zod_1.z.object({
     tipo: zod_1.z.enum(['DECORADORA', 'EMPLEADO']),
-    beneficiarioId: zod_1.z.string().uuid(),
+    beneficiarioId: zod_1.z.string().min(1),
     monto: zod_1.z.coerce.number().positive(),
     fecha: zod_1.z.string(),
     cuotas: zod_1.z.coerce.number().int().positive().optional(),
@@ -28,6 +28,7 @@ exports.prestamosRouter.get('/', async (req, res, next) => {
             decoradoraId: req.query.decoradoraId,
             empleadoId: req.query.empleadoId,
             soloConSaldo: req.query.soloConSaldo === 'true',
+            activo: req.query.activo,
         };
         const result = await prestamos_service_1.prestamosService.listar(params);
         res.json({ success: true, data: result.items, meta: {

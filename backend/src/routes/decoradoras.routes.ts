@@ -161,6 +161,18 @@ const nominaSchema = z.object({
   observaciones:  z.string().optional(),
 });
 
+const nominaBatchSchema = z.object({
+  fecha: z.string(),
+  items: z.array(z.object({
+    empleadoId:     z.string().min(1),
+    diasTrabajados: z.coerce.number().int().min(0).max(31),
+    horasExtras:    z.coerce.number().min(0).optional(),
+    prestamoId:     uuidOpcional,
+    abonosPrestamo: z.coerce.number().min(0).optional(),
+    observaciones:  z.string().optional(),
+  })).min(1, 'Agrega al menos un empleado'),
+});
+
 const actualizarNominaSchema = z.object({
   fecha:          z.string().optional(),
   diasTrabajados: z.coerce.number().int().min(0).max(31).optional(),
@@ -179,12 +191,6 @@ nominaRouter.get('/', async (req: Request, res: Response, next: NextFunction) =>
     };
     const result = await nominaService.listar(params);
     sendPaginated(res, result, params);
-  } catch (error) { next(error); }
-});
-nominaRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const data = await nominaService.registrar(nominaSchema.parse(req.body));
-    res.status(201).json({ success: true, data });
   } catch (error) { next(error); }
 });
 nominaRouter.get('/total-mes', async (req: Request, res: Response, next: NextFunction) => {

@@ -46,6 +46,12 @@ class PrestamosService {
             where.empleadoId = { not: null };
         if (params.soloConSaldo)
             where.saldo = { gt: 0 };
+        if (params.activo === true || params.activo === 'true') {
+            where.activo = true;
+        }
+        else if (params.activo === false || params.activo === 'false') {
+            where.activo = false;
+        }
         if (params.search) {
             where.OR = [
                 { decoradora: { nombre: { contains: params.search, mode: 'insensitive' } } },
@@ -65,6 +71,7 @@ class PrestamosService {
         const itemsConAbonado = items.map((p) => ({
             ...p,
             totalAbonado: Number(p.monto) - Number(p.saldo),
+            cuotasPagadas: p.cuotasPagadas ?? 0,
         }));
         return { items: itemsConAbonado, total };
     }
@@ -81,13 +88,20 @@ class PrestamosService {
         if (monto > Number(prestamo.saldo))
             throw new types_1.AppError(`El abono supera el saldo (${prestamo.saldo})`, 400);
         const nuevoSaldo = Number(prestamo.saldo) - monto;
+        const saldado = nuevoSaldo <= 0;
         const [abono] = await database_1.prisma.$transaction([
             database_1.prisma.abono.create({
                 data: { prestamoId: id, monto, fecha: new Date(fecha + 'T00:00:00.000Z') },
             }),
-            database_1.prisma.prestamo.update({ where: { id }, data: { saldo: nuevoSaldo } }),
+            database_1.prisma.prestamo.update({
+                where: { id },
+                data: {
+                    saldo: saldado ? 0 : nuevoSaldo,
+                    activo: !saldado,
+                }
+            }),
         ]);
-        return { abono, saldo: nuevoSaldo };
+        return { abono, saldo: saldado ? 0 : nuevoSaldo, saldado };
     }
     async eliminarAbono(abonoId) {
         const abono = await database_1.prisma.abono.findUnique({ where: { id: abonoId }, include: { prestamo: true } });
@@ -96,7 +110,13 @@ class PrestamosService {
         const nuevoSaldo = Number(abono.prestamo.saldo) + Number(abono.monto);
         await database_1.prisma.$transaction([
             database_1.prisma.abono.delete({ where: { id: abonoId } }),
-            database_1.prisma.prestamo.update({ where: { id: abono.prestamoId }, data: { saldo: nuevoSaldo } }),
+            database_1.prisma.prestamo.update({
+                where: { id: abono.prestamoId },
+                data: {
+                    saldo: nuevoSaldo,
+                    activo: true,
+                }
+            }),
         ]);
         return { saldo: nuevoSaldo };
     }

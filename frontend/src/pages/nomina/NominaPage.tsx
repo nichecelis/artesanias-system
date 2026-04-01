@@ -185,7 +185,7 @@ export default function NominaPage() {
 
   const { data: empleados } = useQuery({
     queryKey: ['empleados-activos'],
-    queryFn: () => api.get('/empleados', { params: { limit: 500 } }).then(r => r.data.data?.filter((e: any) => e.activo)),
+    queryFn: () => api.get('/empleados', { params: { limit: 500, activo: true } }).then(r => r.data.data),
   });
 
   const crearForm = useForm<CrearForm>({

@@ -49,6 +49,7 @@ export class PrestamosService {
     decoradoraId?:  string;
     empleadoId?:    string;
     soloConSaldo?:  boolean;
+    activo?:       boolean | string;
   }): Promise<PaginatedResult<any>> {
     const where: any = {};
     if (params.decoradoraId) where.decoradoraId = params.decoradoraId;
@@ -56,6 +57,11 @@ export class PrestamosService {
     if (params.tipo === 'DECORADORA') where.decoradoraId = { not: null };
     if (params.tipo === 'EMPLEADO')   where.empleadoId   = { not: null };
     if (params.soloConSaldo) where.saldo = { gt: 0 };
+    if (params.activo === true || params.activo === 'true') {
+      where.activo = true;
+    } else if (params.activo === false || params.activo === 'false') {
+      where.activo = false;
+    }
     if (params.search) {
       where.OR = [
         { decoradora: { nombre: { contains: params.search, mode: 'insensitive' } } },
@@ -77,6 +83,7 @@ export class PrestamosService {
     const itemsConAbonado = items.map((p: any) => ({
       ...p,
       totalAbonado: Number(p.monto) - Number(p.saldo),
+      cuotasPagadas: p.cuotasPagadas ?? 0,
     }));
     return { items: itemsConAbonado, total };
   }
@@ -93,15 +100,22 @@ export class PrestamosService {
     if (monto > Number(prestamo.saldo)) throw new AppError(`El abono supera el saldo (${prestamo.saldo})`, 400);
 
     const nuevoSaldo = Number(prestamo.saldo) - monto;
+    const saldado = nuevoSaldo <= 0;
 
     const [abono] = await prisma.$transaction([
       prisma.abono.create({
         data: { prestamoId: id, monto, fecha: new Date(fecha + 'T00:00:00.000Z') },
       }),
-      prisma.prestamo.update({ where: { id }, data: { saldo: nuevoSaldo } }),
+      prisma.prestamo.update({ 
+        where: { id }, 
+        data: { 
+          saldo: saldado ? 0 : nuevoSaldo,
+          activo: !saldado,
+        } 
+      }),
     ]);
 
-    return { abono, saldo: nuevoSaldo };
+    return { abono, saldo: saldado ? 0 : nuevoSaldo, saldado };
   }
 
   async eliminarAbono(abonoId: string) {
@@ -111,7 +125,13 @@ export class PrestamosService {
     const nuevoSaldo = Number(abono.prestamo.saldo) + Number(abono.monto);
     await prisma.$transaction([
       prisma.abono.delete({ where: { id: abonoId } }),
-      prisma.prestamo.update({ where: { id: abono.prestamoId }, data: { saldo: nuevoSaldo } }),
+      prisma.prestamo.update({ 
+        where: { id: abono.prestamoId }, 
+        data: { 
+          saldo: nuevoSaldo,
+          activo: true,
+        } 
+      }),
     ]);
     return { saldo: nuevoSaldo };
   }
