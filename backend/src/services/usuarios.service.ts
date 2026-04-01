@@ -6,13 +6,18 @@ import { getPrismaSkip } from '../utils/response';
 
 export class UsuariosService {
 
-  async listar(params: PaginationParams): Promise<PaginatedResult<any>> {
+  async listar(params: PaginationParams & { activo?: boolean | string }): Promise<PaginatedResult<any>> {
     const where: any = {};
     if (params.search) {
       where.OR = [
         { nombre: { contains: params.search, mode: 'insensitive' } },
         { correo: { contains: params.search, mode: 'insensitive' } },
       ];
+    }
+    if (params.activo === true || params.activo === 'true') {
+      where.activo = true;
+    } else if (params.activo === false || params.activo === 'false') {
+      where.activo = false;
     }
     const [items, total] = await prisma.$transaction([
       prisma.usuario.findMany({

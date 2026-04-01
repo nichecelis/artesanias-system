@@ -110,7 +110,10 @@ const empleadoSchema = z.object({
 
 empleadosRouter.get('/',    async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const params = parsePagination(req.query as any);
+    const params = {
+      ...parsePagination(req.query as any),
+      activo: req.query.activo as string | boolean | undefined,
+    };
     const result = await empleadosService.listar(params);
     sendPaginated(res, result, params);
   } catch (error) { next(error); }
@@ -126,6 +129,18 @@ empleadosRouter.patch('/:id', async (req: Request, res: Response, next: NextFunc
   try {
     const data = await empleadosService.actualizar(req.params.id, empleadoSchema.partial().parse(req.body));
     sendSuccess(res, data, 'Actualizado');
+  } catch (error) { next(error); }
+});
+empleadosRouter.patch('/:id/inactivar', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await empleadosService.inactivar(req.params.id);
+    sendSuccess(res, data, 'Empleado inactivado');
+  } catch (error) { next(error); }
+});
+empleadosRouter.patch('/:id/activar', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await empleadosService.activar(req.params.id);
+    sendSuccess(res, data, 'Empleado activado');
   } catch (error) { next(error); }
 });
 
