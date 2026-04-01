@@ -18,13 +18,21 @@ export class EmpleadosService {
     return prisma.empleado.create({ data: { ...dto, documento: dto.documento.trim() } });
   }
 
-  async listar(params: PaginationParams): Promise<PaginatedResult<any>> {
-    const where = params.search ? {
-      OR: [
+  async listar(params: PaginationParams & { activo?: boolean | string }): Promise<PaginatedResult<any>> {
+    const where: any = {};
+
+    if (params.search) {
+      where.OR = [
         { nombre:    { contains: params.search, mode: 'insensitive' as const } },
         { documento: { contains: params.search, mode: 'insensitive' as const } },
-      ],
-    } : {};
+      ];
+    }
+
+    if (params.activo === true || params.activo === 'true') {
+      where.activo = true;
+    } else if (params.activo === false || params.activo === 'false') {
+      where.activo = false;
+    }
 
     const [items, total] = await prisma.$transaction([
       prisma.empleado.findMany({ where, skip: getPrismaSkip(params), take: params.limit, orderBy: { nombre: 'asc' } }),

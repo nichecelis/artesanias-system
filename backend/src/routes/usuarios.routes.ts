@@ -30,7 +30,10 @@ const actualizarPorCorreoSchema = z.object({
 
 usuariosRouter.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const params = parsePagination(req.query as any);
+    const params = {
+      ...parsePagination(req.query as any),
+      activo: req.query.activo as string | boolean | undefined,
+    };
     const result = await usuariosService.listar(params);
     res.json({ success: true, data: result.items, meta: {
       total: result.total, page: params.page, limit: params.limit,

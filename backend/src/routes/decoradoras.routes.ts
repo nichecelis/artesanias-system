@@ -110,7 +110,10 @@ const empleadoSchema = z.object({
 
 empleadosRouter.get('/',    async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const params = parsePagination(req.query as any);
+    const params = {
+      ...parsePagination(req.query as any),
+      activo: req.query.activo as string | boolean | undefined,
+    };
     const result = await empleadosService.listar(params);
     sendPaginated(res, result, params);
   } catch (error) { next(error); }

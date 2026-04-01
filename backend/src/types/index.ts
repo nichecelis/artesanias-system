@@ -78,6 +78,7 @@ export interface PaginationParams {
   search?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  activo?: boolean | string;
 }
 
 // ─── Resultado paginado del repositorio ──────────────────────
