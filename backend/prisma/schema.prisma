@@ -348,6 +348,8 @@ model Prestamo {
   fecha         DateTime    @db.Date
   saldo         Decimal     @db.Decimal(12, 2)
   cuotas        Int?
+  cuotasPagadas Int         @default(0) @map("cuotas_pagadas")
+  activo        Boolean     @default(true)
   observacion   String?
   imagen        String?     @db.Text
   archivoFirmado String?   @map("archivo_firmado") @db.Text

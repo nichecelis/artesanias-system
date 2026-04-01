@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { prisma } from '../config/database';
 import { sendSuccess } from '../utils/response';
+import { salesForecastService } from '../services/salesForecast.service';
 
 const router = Router();
 router.use(authenticate, authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'));
@@ -135,6 +136,23 @@ router.get('/nomina-mes', async (req: Request, res: Response, next: NextFunction
     }), { totalDevengado: 0, totalDescuentos: 0, totalNeto: 0 });
 
     sendSuccess(res, { nominas, totales, mes });
+  } catch (error) { next(error); }
+});
+
+// Predicción de ventas con ML
+router.get('/prediccion-ventas', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const months = parseInt(String(req.query.meses || '3'), 10);
+    const result = await salesForecastService.predict(Math.min(months, 12));
+    sendSuccess(res, result);
+  } catch (error) { next(error); }
+});
+
+router.get('/prediccion-productos', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const months = parseInt(String(req.query.meses || '3'), 10);
+    const result = await salesForecastService.predictByProduct(Math.min(months, 6));
+    sendSuccess(res, result);
   } catch (error) { next(error); }
 });
 

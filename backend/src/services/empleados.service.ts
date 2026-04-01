@@ -137,7 +137,7 @@ export class NominaService {
       if (dto.prestamoId && abonosPrestamo > 0) {
         await tx.prestamo.update({
           where: { id: dto.prestamoId },
-          data:  { saldo: { decrement: abonosPrestamo } },
+          data:  { saldo: { decrement: abonosPrestamo }, cuotasPagadas: { increment: 1 } },
         });
       }
 
@@ -155,6 +155,62 @@ export class NominaService {
         include: INCLUDE_NOMINA,
       });
     });
+  }
+
+  async registrarBatch(fecha: string, items: Array<{
+    empleadoId: string;
+    diasTrabajados: number;
+    horasExtras?: number;
+    abonosPrestamo?: number;
+    observaciones?: string;
+    prestamoId?: string | null;
+  }>) {
+    const results = [];
+
+    for (const item of items) {
+      const empleado = await prisma.empleado.findUnique({ where: { id: item.empleadoId } });
+      if (!empleado || !empleado.activo) {
+        throw new AppError(`Empleado ${item.empleadoId} no encontrado o inactivo`, 404);
+      }
+
+      const horasExtras    = item.horasExtras    ?? 0;
+      const abonosPrestamo = item.abonosPrestamo ?? 0;
+
+      if (item.prestamoId) {
+        const prestamo = await prisma.prestamo.findUnique({ where: { id: item.prestamoId } });
+        if (!prestamo) throw new AppError('Préstamo no encontrado', 404);
+        if (abonosPrestamo > Number(prestamo.saldo)) throw new AppError(`El abono supera el saldo del préstamo ($${prestamo.saldo})`, 400);
+      }
+
+      const calc = calcularNomina(Number(empleado.salario), item.diasTrabajados, horasExtras, abonosPrestamo);
+
+      const nomina = await prisma.$transaction(async (tx) => {
+        if (item.prestamoId && abonosPrestamo > 0) {
+          await tx.prestamo.update({
+            where: { id: item.prestamoId },
+            data:  { saldo: { decrement: abonosPrestamo }, cuotasPagadas: { increment: 1 } },
+          });
+        }
+
+        return tx.nomina.create({
+          data: {
+            empleadoId:     item.empleadoId,
+            prestamoId:     item.prestamoId ?? null,
+            fecha:          (() => { const d = new Date(fecha); return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); })(),
+            diasTrabajados: item.diasTrabajados,
+            horasExtras,
+            abonosPrestamo,
+            observaciones:  item.observaciones,
+            ...calc,
+          },
+          include: INCLUDE_NOMINA,
+        });
+      });
+
+      results.push(nomina);
+    }
+
+    return results;
   }
 
   async actualizar(id: string, dto: ActualizarNominaDto) {
@@ -207,9 +263,12 @@ export class NominaService {
     if (!nomina) throw new AppError('Registro de nómina no encontrado', 404);
 
     return prisma.$transaction(async (tx) => {
-      // Revertir abono si tenía
+      // Revertir saldo del préstamo (sin modificar cuotasPagadas)
       if (nomina.prestamoId && Number(nomina.abonosPrestamo) > 0) {
-        await tx.prestamo.update({ where: { id: nomina.prestamoId }, data: { saldo: { increment: Number(nomina.abonosPrestamo) } } });
+        await tx.prestamo.update({ 
+          where: { id: nomina.prestamoId }, 
+          data: { saldo: { increment: Number(nomina.abonosPrestamo) }, activo: true } 
+        });
       }
       return tx.nomina.delete({ where: { id } });
     });

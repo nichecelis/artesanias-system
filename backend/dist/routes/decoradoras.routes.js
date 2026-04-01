@@ -186,6 +186,17 @@ const nominaSchema = zod_1.z.object({
     abonosPrestamo: zod_1.z.coerce.number().min(0).optional(),
     observaciones: zod_1.z.string().optional(),
 });
+const nominaBatchSchema = zod_1.z.object({
+    fecha: zod_1.z.string(),
+    items: zod_1.z.array(zod_1.z.object({
+        empleadoId: zod_1.z.string().min(1),
+        diasTrabajados: zod_1.z.coerce.number().int().min(0).max(31),
+        horasExtras: zod_1.z.coerce.number().min(0).optional(),
+        prestamoId: uuidOpcional,
+        abonosPrestamo: zod_1.z.coerce.number().min(0).optional(),
+        observaciones: zod_1.z.string().optional(),
+    })).min(1, 'Agrega al menos un empleado'),
+});
 const actualizarNominaSchema = zod_1.z.object({
     fecha: zod_1.z.string().optional(),
     diasTrabajados: zod_1.z.coerce.number().int().min(0).max(31).optional(),
@@ -203,15 +214,6 @@ exports.nominaRouter.get('/', async (req, res, next) => {
         };
         const result = await empleados_service_1.nominaService.listar(params);
         (0, response_1.sendPaginated)(res, result, params);
-    }
-    catch (error) {
-        next(error);
-    }
-});
-exports.nominaRouter.post('/', async (req, res, next) => {
-    try {
-        const data = await empleados_service_1.nominaService.registrar(nominaSchema.parse(req.body));
-        res.status(201).json({ success: true, data });
     }
     catch (error) {
         next(error);

@@ -5,6 +5,7 @@ const zod_1 = require("zod");
 const auth_middleware_1 = require("../middlewares/auth.middleware");
 const database_1 = require("../config/database");
 const response_1 = require("../utils/response");
+const salesForecast_service_1 = require("../services/salesForecast.service");
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authenticate, (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'));
 const rangoFechasSchema = zod_1.z.object({
@@ -127,6 +128,27 @@ router.get('/nomina-mes', async (req, res, next) => {
             totalNeto: acc.totalNeto + n.totalNeto,
         }), { totalDevengado: 0, totalDescuentos: 0, totalNeto: 0 });
         (0, response_1.sendSuccess)(res, { nominas, totales, mes });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+// Predicción de ventas con ML
+router.get('/prediccion-ventas', async (req, res, next) => {
+    try {
+        const months = parseInt(String(req.query.meses || '3'), 10);
+        const result = await salesForecast_service_1.salesForecastService.predict(Math.min(months, 12));
+        (0, response_1.sendSuccess)(res, result);
+    }
+    catch (error) {
+        next(error);
+    }
+});
+router.get('/prediccion-productos', async (req, res, next) => {
+    try {
+        const months = parseInt(String(req.query.meses || '3'), 10);
+        const result = await salesForecast_service_1.salesForecastService.predictByProduct(Math.min(months, 6));
+        (0, response_1.sendSuccess)(res, result);
     }
     catch (error) {
         next(error);

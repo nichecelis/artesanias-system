@@ -133,6 +133,10 @@ export const reportesService = {
     api.get<ApiResponse<any>>('/reportes/pagos-decoradoras'),
   nominaMes: (mes: string) =>
     api.get<ApiResponse<any>>('/reportes/nomina-mes', { params: { mes } }),
+  prediccionVentas: (meses: number = 3) =>
+    api.get<ApiResponse<any>>('/reportes/prediccion-ventas', { params: { meses } }),
+  prediccionProductos: (meses: number = 3) =>
+    api.get<ApiResponse<any>>('/reportes/prediccion-productos', { params: { meses } }),
 };
 
 // ─── Parametrización ─────────────────────────────────────────

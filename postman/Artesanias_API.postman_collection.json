@@ -1249,7 +1249,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"nombre\": \"Empleado Test {{$timestamp}}\",\n    \"documento\": \"{{$timestamp}}\",\n    \"telefono\": \"3001234567\",\n    \"salario\": 1500000,\n    \"cargo\": \"Operario\"\n}",
+              "raw": "{\n    \"nombre\": \"prueba empleado\",\n    \"documento\": \"1025369874\",\n    \"salario\": 1500000\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1306,7 +1306,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"salario\": 1600000\n}",
+              "raw": "{\n    \"nombre\": \"prueba empleado\",\n    \"salario\": 1500000\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1369,10 +1369,15 @@
           ],
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"empleadoId\": 1,\n    \"fecha\": \"2025-03-30\",\n    \"diasTrabajados\": 30,\n    \"horasExtras\": 0,\n    \"abonosPrestamo\": 0\n}",
+              "raw": "{\n    \"fecha\": \"2025-03-30\",\n    \"items\": [\n        {\n            \"empleadoId\": \"uuid-empleado-1\",\n            \"diasTrabajados\": 30,\n            \"horasExtras\": 0,\n            \"prestamoId\": null,\n            \"abonosPrestamo\": 0\n        },\n        {\n            \"empleadoId\": \"uuid-empleado-2\",\n            \"diasTrabajados\": 30,\n            \"horasExtras\": 4,\n            \"prestamoId\": \"uuid-prestamo-1\",\n            \"abonosPrestamo\": 50000\n        }\n    ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1463,10 +1468,15 @@
           ],
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"empleadoId\": 1,\n    \"monto\": 500000,\n    \"cuotas\": 5,\n    \"tasaInteres\": 2\n}",
+              "raw": "{\n    \"tipo\": \"DECORADORA\",\n    \"beneficiarioId\": \"uuid-decoradora-o-empleado\",\n    \"monto\": 500000,\n    \"fecha\": \"2026-04-01\",\n    \"cuotas\": 12,\n    \"observacion\": \"Préstamo de ejemplo\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

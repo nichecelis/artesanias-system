@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Search, FileText, Trash2, Eye, Download, X } from 'lucide-react';
+import { Plus, Search, FileText, Trash2, Eye, Download, X, Users } from 'lucide-react';
 import { api } from '../../services/api';
 import { facturasService, clientesService } from '../../services';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
@@ -40,6 +40,7 @@ export default function FacturasPage() {
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
+  const [clientesModal, setClientesModal] = useState(false);
   const [selected, setSelected] = useState<any>(null);
   const [clienteSearch, setClienteSearch] = useState('');
   const [clientesDropdown, setClientesDropdown] = useState<any[]>([]);
@@ -58,6 +59,12 @@ export default function FacturasPage() {
     queryKey: ['clientes-buscar', clienteSearch],
     queryFn: () => clientesService.listar({ page: 1, limit: 50, search: clienteSearch || undefined }).then(r => r.data.data),
     enabled: clienteSearch.length >= 2,
+  });
+
+  const { data: allClientes } = useQuery({
+    queryKey: ['clientes-all'],
+    queryFn: () => clientesService.listar({ page: 1, limit: 100, activo: true }).then(r => r.data.data),
+    enabled: clientesModal,
   });
 
   useEffect(() => {
@@ -360,8 +367,13 @@ export default function FacturasPage() {
         <form onSubmit={handleSubmit(d => crear.mutate(d))} className="space-y-4">
           {/* Fila 1: Cliente, Fecha, Descuento */}
           <div className="flex gap-4 items-end">
-            <div className="flex-1" ref={dropdownRef}>
-              <label className="label">Cliente *</label>
+            <div className="flex-1 relative" ref={dropdownRef}>
+              <label className="label flex justify-between items-center">
+                Cliente *
+                <button type="button" onClick={() => setClientesModal(true)} className="text-xs text-blue-600 hover:text-blue-800 font-normal flex items-center gap-1">
+                  <Users size={12}/> Ver clientes
+                </button>
+              </label>
               {watch('clienteId') ? (
                 <div className="input flex items-center justify-between bg-primary-50 border-primary-300">
                   <span>{clientesDropdown.find(c => c.id === watch('clienteId'))?.nombre || '—'}</span>
@@ -573,6 +585,45 @@ export default function FacturasPage() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Modal Ver Clientes */}
+      <Modal title="Lista de Clientes" open={clientesModal} onClose={() => setClientesModal(false)} size="lg">
+        <div className="space-y-3">
+          {isLoading ? <Spinner/> : !allClientes?.length ? (
+            <p className="text-gray-500 text-center py-8">No hay clientes registrados</p>
+          ) : (
+            <div className="max-h-96 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-100 sticky top-0">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Nombre</th>
+                    <th className="px-3 py-2 text-left">Documento</th>
+                    <th className="px-3 py-2 text-left">Teléfono</th>
+                    <th className="px-3 py-2 text-center">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allClientes.map((c: any) => (
+                    <tr key={c.id} className="border-b hover:bg-gray-50">
+                      <td className="px-3 py-2 font-medium">{c.nombre}</td>
+                      <td className="px-3 py-2 text-gray-600">{c.documento}</td>
+                      <td className="px-3 py-2 text-gray-600">{c.telefono || '—'}</td>
+                      <td className="px-3 py-2 text-center">
+                        <button onClick={() => {
+                          setValue('clienteId', c.id);
+                          setClienteSearch(c.nombre);
+                          setClientesDropdown([c]);
+                          setClientesModal(false);
+                        }} className="btn-primary text-xs py-1 px-2">Seleccionar</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </Modal>
     </div>
   );

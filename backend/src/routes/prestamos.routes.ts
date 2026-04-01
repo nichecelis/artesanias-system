@@ -9,7 +9,7 @@ prestamosRouter.use(authenticate);
 
 const crearSchema = z.object({
   tipo:           z.enum(['DECORADORA', 'EMPLEADO']),
-  beneficiarioId: z.string().uuid(),
+  beneficiarioId: z.string().min(1),
   monto:          z.coerce.number().positive(),
   fecha:          z.string(),
   cuotas:      z.coerce.number().int().positive().optional(),
@@ -29,6 +29,7 @@ prestamosRouter.get('/', async (req: Request, res: Response, next: NextFunction)
       decoradoraId:  req.query.decoradoraId as string | undefined,
       empleadoId:    req.query.empleadoId   as string | undefined,
       soloConSaldo:  req.query.soloConSaldo === 'true',
+      activo:        req.query.activo as boolean | string | undefined,
     };
     const result = await prestamosService.listar(params);
     res.json({ success: true, data: result.items, meta: {

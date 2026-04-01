@@ -2,7 +2,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingBag, Users, Package, UserCog,
   Palette, ClipboardList, UserCheck, FileText, Banknote,
-  LogOut, Menu, X, ChevronRight, Truck, Settings,
+  LogOut, Menu, X, ChevronRight, Truck, Settings, Brain,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useAuthStore } from '../../store/auth.store';
@@ -23,6 +23,7 @@ const NAV_CONFIG = [
   { to: '/nomina',      label: 'Nómina',         icon: FileText,      roles: ['ADMINISTRADOR', 'CONTABILIDAD'] as Rol[] },
   { to: '/empleados',   label: 'Empleados',      icon: UserCheck,     roles: ['ADMINISTRADOR', 'CONTABILIDAD'] as Rol[] },
   { to: '/reportes',    label: 'Reportes',       icon: FileText,      roles: ['ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'] as Rol[] },
+  { to: '/ml',          label: 'ML Predicciones',  icon: Brain,         roles: ['ADMINISTRADOR', 'CONTABILIDAD'] as Rol[] },
   { to: '/usuarios',    label: 'Usuarios',        icon: UserCog,       roles: ['ADMINISTRADOR'] as Rol[] },
   { to: '/parametrizacion', label: 'Configuración', icon: Settings,    roles: ['ADMINISTRADOR'] as Rol[] },
 ];

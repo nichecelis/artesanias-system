@@ -102,23 +102,38 @@ class DecoracionesService {
         const prestamoIdNuevo = dto.prestamoId !== undefined ? dto.prestamoId : prestamoIdActual;
         const diferencia = abonoNuevo - abonoAnterior;
         return database_1.prisma.$transaction(async (tx) => {
-            // Revertir abono anterior si cambió de préstamo
+            // Revertir saldo del préstamo anterior (sin cambiar cuotasPagadas)
             if (prestamoIdActual && (prestamoIdActual !== prestamoIdNuevo || diferencia !== 0)) {
                 await tx.prestamo.update({
                     where: { id: prestamoIdActual },
                     data: { saldo: { increment: abonoAnterior } },
                 });
             }
-            // Aplicar nuevo abono
-            if (prestamoIdNuevo && abonoNuevo > 0) {
+            // Aplicar nuevo abono al préstamo (solo si es la primera vez que se abona desde esta decoración)
+            if (prestamoIdNuevo && abonoNuevo > 0 && abonoAnterior === 0) {
                 const prestamo = await tx.prestamo.findUnique({ where: { id: prestamoIdNuevo } });
                 if (prestamo) {
-                    const saldoBase = prestamoIdActual === prestamoIdNuevo ? Number(prestamo.saldo) + abonoAnterior : Number(prestamo.saldo);
+                    const saldoBase = Number(prestamo.saldo);
                     if (abonoNuevo > saldoBase)
                         throw new types_1.AppError(`El abono ($${abonoNuevo}) supera el saldo del préstamo ($${saldoBase})`, 400);
+                    const nuevoSaldo = saldoBase - abonoNuevo;
                     await tx.prestamo.update({
                         where: { id: prestamoIdNuevo },
-                        data: { saldo: { decrement: abonoNuevo } },
+                        data: { saldo: nuevoSaldo, cuotasPagadas: { increment: 1 }, activo: nuevoSaldo > 0 },
+                    });
+                }
+            }
+            else if (prestamoIdNuevo && abonoNuevo > 0 && abonoAnterior > 0) {
+                // Si ya tenía abono, solo actualiza el saldo
+                const prestamo = await tx.prestamo.findUnique({ where: { id: prestamoIdNuevo } });
+                if (prestamo) {
+                    const saldoBase = Number(prestamo.saldo) + abonoAnterior;
+                    if (abonoNuevo > saldoBase)
+                        throw new types_1.AppError(`El abono ($${abonoNuevo}) supera el saldo del préstamo ($${saldoBase})`, 400);
+                    const nuevoSaldo = saldoBase - abonoNuevo;
+                    await tx.prestamo.update({
+                        where: { id: prestamoIdNuevo },
+                        data: { saldo: nuevoSaldo, activo: nuevoSaldo > 0 },
                     });
                 }
             }
@@ -126,35 +141,72 @@ class DecoracionesService {
         });
     }
     async actualizarVarias(items) {
-        const results = [];
-        for (const item of items) {
-            const { id, ...dto } = item;
-            const dec = await database_1.prisma.decoracion.findUnique({ where: { id } });
-            if (!dec)
-                throw new types_1.AppError(`Decoración ${id} no encontrada`, 404);
-            const cantidadEgreso = dec.cantidadEgreso;
-            const cantidadIngreso = dto.cantidadIngreso ?? dec.cantidadIngreso;
-            const compras = dto.compras ?? Number(dec.compras);
-            const abonoAnterior = Number(dec.abonosPrestamo);
-            const abonoNuevo = dto.abonosPrestamo ?? abonoAnterior;
-            const precioDecoracion = Number(dec.precioDecoracion);
-            const { total, subtotal, totalPagar } = calcular(cantidadEgreso, precioDecoracion, compras, abonoNuevo);
-            const data = {
-                cantidadIngreso, compras, abonosPrestamo: abonoNuevo,
-                total, subtotal, totalPagar,
-            };
-            if (dto.fechaIngreso)
-                data.fechaIngreso = new Date(dto.fechaIngreso + 'T00:00:00.000Z');
-            else if (dto.fechaIngreso === '')
-                data.fechaIngreso = null;
-            const updated = await database_1.prisma.decoracion.update({
-                where: { id },
-                data,
-                include: INCLUDE,
-            });
-            results.push(updated);
-        }
-        return results;
+        return database_1.prisma.$transaction(async (tx) => {
+            const results = [];
+            for (const item of items) {
+                const { id, ...dto } = item;
+                const dec = await tx.decoracion.findUnique({ where: { id } });
+                if (!dec)
+                    throw new types_1.AppError(`Decoración ${id} no encontrada`, 404);
+                const cantidadEgreso = dec.cantidadEgreso;
+                const cantidadIngreso = dto.cantidadIngreso ?? dec.cantidadIngreso;
+                const compras = dto.compras ?? Number(dec.compras);
+                const abonoAnterior = Number(dec.abonosPrestamo);
+                const abonoNuevo = dto.abonosPrestamo ?? abonoAnterior;
+                const precioDecoracion = Number(dec.precioDecoracion);
+                const { total, subtotal, totalPagar } = calcular(cantidadEgreso, precioDecoracion, compras, abonoNuevo);
+                const data = {
+                    cantidadIngreso, compras, abonosPrestamo: abonoNuevo,
+                    total, subtotal, totalPagar,
+                };
+                if (dto.fechaIngreso)
+                    data.fechaIngreso = new Date(dto.fechaIngreso + 'T00:00:00.000Z');
+                else if (dto.fechaIngreso === '')
+                    data.fechaIngreso = null;
+                const prestamoIdActual = dec.prestamoId;
+                const prestamoIdNuevo = dto.prestamoId !== undefined ? dto.prestamoId : prestamoIdActual;
+                const diferencia = abonoNuevo - abonoAnterior;
+                if (prestamoIdActual && (prestamoIdActual !== prestamoIdNuevo || diferencia !== 0)) {
+                    await tx.prestamo.update({
+                        where: { id: prestamoIdActual },
+                        data: { saldo: { increment: abonoAnterior } },
+                    });
+                }
+                if (prestamoIdNuevo && abonoNuevo > 0 && abonoAnterior === 0) {
+                    const prestamo = await tx.prestamo.findUnique({ where: { id: prestamoIdNuevo } });
+                    if (prestamo) {
+                        const saldoBase = Number(prestamo.saldo);
+                        if (abonoNuevo > saldoBase)
+                            throw new types_1.AppError(`El abono ($${abonoNuevo}) supera el saldo del préstamo ($${saldoBase})`, 400);
+                        const nuevoSaldo = saldoBase - abonoNuevo;
+                        await tx.prestamo.update({
+                            where: { id: prestamoIdNuevo },
+                            data: { saldo: nuevoSaldo, cuotasPagadas: { increment: 1 }, activo: nuevoSaldo > 0 },
+                        });
+                    }
+                }
+                else if (prestamoIdNuevo && abonoNuevo > 0 && abonoAnterior > 0) {
+                    const prestamo = await tx.prestamo.findUnique({ where: { id: prestamoIdNuevo } });
+                    if (prestamo) {
+                        const saldoBase = Number(prestamo.saldo) + abonoAnterior;
+                        if (abonoNuevo > saldoBase)
+                            throw new types_1.AppError(`El abono ($${abonoNuevo}) supera el saldo del préstamo ($${saldoBase})`, 400);
+                        const nuevoSaldo = saldoBase - abonoNuevo;
+                        await tx.prestamo.update({
+                            where: { id: prestamoIdNuevo },
+                            data: { saldo: nuevoSaldo, activo: nuevoSaldo > 0 },
+                        });
+                    }
+                }
+                const updated = await tx.decoracion.update({
+                    where: { id },
+                    data,
+                    include: INCLUDE,
+                });
+                results.push(updated);
+            }
+            return results;
+        });
     }
     async eliminar(id) {
         const dec = await database_1.prisma.decoracion.findUnique({ where: { id } });
@@ -163,11 +215,11 @@ class DecoracionesService {
         if (dec.pagado)
             throw new types_1.AppError('No se puede eliminar una decoración ya pagada', 400);
         return database_1.prisma.$transaction(async (tx) => {
-            // Revertir abono si había
+            // Revertir saldo del préstamo (sin modificar cuotasPagadas)
             if (dec.prestamoId && Number(dec.abonosPrestamo) > 0) {
                 await tx.prestamo.update({
                     where: { id: dec.prestamoId },
-                    data: { saldo: { increment: Number(dec.abonosPrestamo) } },
+                    data: { saldo: { increment: Number(dec.abonosPrestamo) }, activo: true },
                 });
             }
             return tx.decoracion.delete({ where: { id } });

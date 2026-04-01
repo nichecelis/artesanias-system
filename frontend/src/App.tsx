@@ -21,6 +21,7 @@ import NominaPage from './pages/nomina/NominaPage';
 import ReportesPage from './pages/reportes/ReportesPage';
 import FacturasPage from './pages/facturas/FacturasPage';
 import { ParametrizacionPage } from './pages/parametrizacion/ParametrizacionPage';
+import MLDashboardPage from './pages/ml/MLDashboardPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token);
@@ -58,6 +59,7 @@ function AppContent() {
           <Route path="nomina"          element={<NominaPage />} />
           <Route path="facturas"        element={<FacturasPage />} />
           <Route path="reportes"        element={<ReportesPage />} />
+          <Route path="ml"              element={<MLDashboardPage />} />
           <Route path="parametrizacion" element={<ParametrizacionPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

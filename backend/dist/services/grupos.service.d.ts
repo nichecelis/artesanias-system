@@ -163,6 +163,8 @@ export declare const gruposService: {
             precioDecoracion: import("@prisma/client/runtime/library").Decimal;
             productoId: string;
             pedidoId: string;
+            subtotal: import("@prisma/client/runtime/library").Decimal;
+            totalPagar: import("@prisma/client/runtime/library").Decimal;
             decoradoraId: string;
             fechaEgreso: Date;
             cantidadEgreso: number;
@@ -173,8 +175,6 @@ export declare const gruposService: {
             compras: import("@prisma/client/runtime/library").Decimal;
             abonosPrestamo: import("@prisma/client/runtime/library").Decimal;
             prestamoId: string | null;
-            subtotal: import("@prisma/client/runtime/library").Decimal;
-            totalPagar: import("@prisma/client/runtime/library").Decimal;
             pagado: boolean;
         })[];
     }>;
