@@ -1,7 +1,9 @@
 import { Rol } from '@prisma/client';
 import { PaginationParams, PaginatedResult } from '../types';
 export declare class UsuariosService {
-    listar(params: PaginationParams): Promise<PaginatedResult<any>>;
+    listar(params: PaginationParams & {
+        activo?: boolean | string;
+    }): Promise<PaginatedResult<any>>;
     obtenerPorId(id: string): Promise<{
         id: string;
         correo: string;

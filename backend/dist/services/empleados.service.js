@@ -12,12 +12,19 @@ class EmpleadosService {
         return database_1.prisma.empleado.create({ data: { ...dto, documento: dto.documento.trim() } });
     }
     async listar(params) {
-        const where = params.search ? {
-            OR: [
+        const where = {};
+        if (params.search) {
+            where.OR = [
                 { nombre: { contains: params.search, mode: 'insensitive' } },
                 { documento: { contains: params.search, mode: 'insensitive' } },
-            ],
-        } : {};
+            ];
+        }
+        if (params.activo === true || params.activo === 'true') {
+            where.activo = true;
+        }
+        else if (params.activo === false || params.activo === 'false') {
+            where.activo = false;
+        }
         const [items, total] = await database_1.prisma.$transaction([
             database_1.prisma.empleado.findMany({ where, skip: (0, response_1.getPrismaSkip)(params), take: params.limit, orderBy: { nombre: 'asc' } }),
             database_1.prisma.empleado.count({ where }),
@@ -36,6 +43,25 @@ class EmpleadosService {
     async actualizar(id, dto) {
         await this.obtenerPorId(id);
         return database_1.prisma.empleado.update({ where: { id }, data: dto });
+    }
+    async inactivar(id) {
+        const empleado = await database_1.prisma.empleado.findUnique({ where: { id } });
+        if (!empleado)
+            throw new types_1.AppError('Empleado no encontrado', 404);
+        if (!empleado.activo)
+            throw new types_1.AppError('El empleado ya está inactivo', 400);
+        const nominasActivas = await database_1.prisma.nomina.count({ where: { empleadoId: id } });
+        if (nominasActivas > 0)
+            throw new types_1.AppError('No se puede inactivar: el empleado tiene nóminas registradas', 409);
+        return database_1.prisma.empleado.update({ where: { id }, data: { activo: false } });
+    }
+    async activar(id) {
+        const empleado = await database_1.prisma.empleado.findUnique({ where: { id } });
+        if (!empleado)
+            throw new types_1.AppError('Empleado no encontrado', 404);
+        if (empleado.activo)
+            throw new types_1.AppError('El empleado ya está activo', 400);
+        return database_1.prisma.empleado.update({ where: { id }, data: { activo: true } });
     }
 }
 exports.EmpleadosService = EmpleadosService;

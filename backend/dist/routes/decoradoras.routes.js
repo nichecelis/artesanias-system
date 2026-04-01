@@ -125,7 +125,10 @@ const empleadoSchema = zod_1.z.object({
 });
 exports.empleadosRouter.get('/', async (req, res, next) => {
     try {
-        const params = (0, response_1.parsePagination)(req.query);
+        const params = {
+            ...(0, response_1.parsePagination)(req.query),
+            activo: req.query.activo,
+        };
         const result = await empleados_service_1.empleadosService.listar(params);
         (0, response_1.sendPaginated)(res, result, params);
     }
@@ -147,6 +150,24 @@ exports.empleadosRouter.patch('/:id', async (req, res, next) => {
     try {
         const data = await empleados_service_1.empleadosService.actualizar(req.params.id, empleadoSchema.partial().parse(req.body));
         (0, response_1.sendSuccess)(res, data, 'Actualizado');
+    }
+    catch (error) {
+        next(error);
+    }
+});
+exports.empleadosRouter.patch('/:id/inactivar', async (req, res, next) => {
+    try {
+        const data = await empleados_service_1.empleadosService.inactivar(req.params.id);
+        (0, response_1.sendSuccess)(res, data, 'Empleado inactivado');
+    }
+    catch (error) {
+        next(error);
+    }
+});
+exports.empleadosRouter.patch('/:id/activar', async (req, res, next) => {
+    try {
+        const data = await empleados_service_1.empleadosService.activar(req.params.id);
+        (0, response_1.sendSuccess)(res, data, 'Empleado activado');
     }
     catch (error) {
         next(error);

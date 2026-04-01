@@ -29,7 +29,10 @@ const actualizarPorCorreoSchema = zod_1.z.object({
 });
 usuariosRouter.get('/', async (req, res, next) => {
     try {
-        const params = (0, response_1.parsePagination)(req.query);
+        const params = {
+            ...(0, response_1.parsePagination)(req.query),
+            activo: req.query.activo,
+        };
         const result = await usuarios_service_1.usuariosService.listar(params);
         res.json({ success: true, data: result.items, meta: {
                 total: result.total, page: params.page, limit: params.limit,

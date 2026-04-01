@@ -57,6 +57,7 @@ export interface PaginationParams {
     search?: string;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
+    activo?: boolean | string;
 }
 export interface PaginatedResult<T> {
     items: T[];

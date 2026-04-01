@@ -14,7 +14,9 @@ export declare class EmpleadosService {
         documento: string;
         salario: import("@prisma/client/runtime/library").Decimal;
     }>;
-    listar(params: PaginationParams): Promise<PaginatedResult<any>>;
+    listar(params: PaginationParams & {
+        activo?: boolean | string;
+    }): Promise<PaginatedResult<any>>;
     obtenerPorId(id: string): Promise<{
         nominas: {
             id: string;
@@ -43,6 +45,24 @@ export declare class EmpleadosService {
         salario: import("@prisma/client/runtime/library").Decimal;
     }>;
     actualizar(id: string, dto: Partial<CrearEmpleadoDto>): Promise<{
+        id: string;
+        nombre: string;
+        activo: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        documento: string;
+        salario: import("@prisma/client/runtime/library").Decimal;
+    }>;
+    inactivar(id: string): Promise<{
+        id: string;
+        nombre: string;
+        activo: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        documento: string;
+        salario: import("@prisma/client/runtime/library").Decimal;
+    }>;
+    activar(id: string): Promise<{
         id: string;
         nombre: string;
         activo: boolean;

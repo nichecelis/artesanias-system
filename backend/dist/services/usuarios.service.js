@@ -17,6 +17,12 @@ class UsuariosService {
                 { correo: { contains: params.search, mode: 'insensitive' } },
             ];
         }
+        if (params.activo === true || params.activo === 'true') {
+            where.activo = true;
+        }
+        else if (params.activo === false || params.activo === 'false') {
+            where.activo = false;
+        }
         const [items, total] = await database_1.prisma.$transaction([
             database_1.prisma.usuario.findMany({
                 where,
