@@ -2,20 +2,27 @@ import { prisma } from '../config/database';
 import { AppError } from '../types';
 
 export const gruposService = {
-  listar: async (params: { page?: number; limit?: number }) => {
+  listar: async (params: { page?: number; limit?: number; activo?: boolean | string }) => {
     const page  = params.page  ?? 1;
     const limit = params.limit ?? 50;
     const skip  = (page - 1) * limit;
 
+    const where: any = {};
+    if (params.activo === true || params.activo === 'true') {
+      where.activo = true;
+    } else if (params.activo === false || params.activo === 'false') {
+      where.activo = false;
+    }
+
     const [data, total] = await Promise.all([
       prisma.grupo.findMany({
-        where: { activo: true },
+        where,
         include: { _count: { select: { decoradoras: true } } },
         orderBy: [{ tipo: 'asc' }, { nombre: 'asc' }],
         skip,
         take: limit,
       }),
-      prisma.grupo.count({ where: { activo: true } }),
+      prisma.grupo.count({ where }),
     ]);
 
     return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
@@ -41,7 +48,18 @@ export const gruposService = {
     responsable?: string;
     porcentajeResponsable?: number;
   }) => {
-    return prisma.grupo.create({ data });
+    return prisma.$transaction(async (tx) => {
+      const grupo = await tx.grupo.create({ data });
+      
+      if (data.responsable) {
+        await tx.decoradora.updateMany({
+          where: { documento: data.responsable },
+          data: { grupoId: grupo.id },
+        });
+      }
+      
+      return grupo;
+    });
   },
 
   actualizar: async (id: string, data: {
@@ -52,8 +70,29 @@ export const gruposService = {
     responsable?: string;
     porcentajeResponsable?: number;
   }) => {
-    await gruposService.obtener(id);
-    return prisma.grupo.update({ where: { id }, data });
+    const grupoActual = await gruposService.obtener(id);
+    
+    return prisma.$transaction(async (tx) => {
+      const grupo = await tx.grupo.update({ where: { id }, data });
+      
+      if (data.responsable !== undefined) {
+        if (grupoActual.responsable) {
+          await tx.decoradora.updateMany({
+            where: { documento: grupoActual.responsable },
+            data: { grupoId: null },
+          });
+        }
+        
+        if (data.responsable) {
+          await tx.decoradora.updateMany({
+            where: { documento: data.responsable },
+            data: { grupoId: id },
+          });
+        }
+      }
+      
+      return grupo;
+    });
   },
 
   eliminar: async (id: string) => {
@@ -61,6 +100,24 @@ export const gruposService = {
     const count = await prisma.decoradora.count({ where: { grupoId: id, activa: true } });
     if (count > 0) throw new AppError(`No se puede eliminar: tiene ${count} decoradora(s) activa(s)`, 400);
     return prisma.grupo.update({ where: { id }, data: { activo: false } });
+  },
+
+  inactivar: async (id: string) => {
+    const grupo = await gruposService.obtener(id);
+    
+    const decoradorasActivas = await prisma.decoradora.count({
+      where: { grupoId: id, activa: true },
+    });
+    if (decoradorasActivas > 0) {
+      throw new AppError('No se puede inactivar: el grupo tiene decoradoras activas', 409);
+    }
+    
+    return prisma.grupo.update({ where: { id }, data: { activo: false } });
+  },
+
+  activar: async (id: string) => {
+    await gruposService.obtener(id);
+    return prisma.grupo.update({ where: { id }, data: { activo: true } });
   },
 
   reportePagos: async (id: string, fechaDesde?: string, fechaHasta?: string) => {

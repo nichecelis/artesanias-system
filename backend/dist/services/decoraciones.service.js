@@ -23,42 +23,47 @@ class DecoracionesService {
         const decoradora = await database_1.prisma.decoradora.findUnique({ where: { id: dto.decoradoraId } });
         if (!decoradora || !decoradora.activa)
             throw new types_1.AppError('Decoradora no encontrada', 404);
-        const producto = await database_1.prisma.producto.findUnique({ where: { id: dto.productoId } });
-        if (!producto)
-            throw new types_1.AppError('Producto no encontrado', 404);
-        const precioDecoracion = Number(producto.precioDecoracion);
-        const { total, subtotal, totalPagar } = calcular(dto.cantidadEgreso, precioDecoracion);
-        const pedidoProducto = await database_1.prisma.pedidoProducto.findFirst({
-            where: { pedidoId: dto.pedidoId, productoId: dto.productoId }
-        });
-        if (!pedidoProducto)
-            throw new types_1.AppError('Producto del pedido no encontrado', 404);
-        const [y, m, day] = dto.fechaEgreso.split('-');
-        const fechaAsignacion = new Date(Number(y), Number(m) - 1, Number(day), 12, 0, 0);
-        const cantidadActual = Number(pedidoProducto.cantidadRecibida) || 0;
-        const nuevaCantidad = cantidadActual + dto.cantidadEgreso;
         return database_1.prisma.$transaction(async (tx) => {
-            await tx.pedidoProducto.update({
-                where: { id: pedidoProducto.id },
-                data: {
-                    fechaAsignacion,
-                    cantidadRecibida: nuevaCantidad,
-                    estado: 'EN_DECORACION',
-                },
-            });
-            return tx.decoracion.create({
-                data: {
-                    pedidoId: dto.pedidoId,
-                    decoradoraId: dto.decoradoraId,
-                    productoId: dto.productoId,
-                    fechaEgreso: new Date(dto.fechaEgreso + 'T00:00:00.000Z'),
-                    cantidadEgreso: dto.cantidadEgreso,
-                    precioDecoracion,
-                    total, subtotal, totalPagar,
-                    compras: 0, arreglos: 0, perdidas: 0, abonosPrestamo: 0,
-                },
-                include: INCLUDE,
-            });
+            const decoracionesCreadas = [];
+            for (const prod of dto.productos) {
+                const producto = await tx.producto.findUnique({ where: { id: prod.productoId } });
+                if (!producto)
+                    throw new types_1.AppError(`Producto ${prod.productoId} no encontrado`, 404);
+                const precioDecoracion = Number(producto.precioDecoracion);
+                const { total, subtotal, totalPagar } = calcular(prod.cantidadEgreso, precioDecoracion);
+                const pedidoProducto = await tx.pedidoProducto.findFirst({
+                    where: { pedidoId: dto.pedidoId, productoId: prod.productoId }
+                });
+                if (!pedidoProducto)
+                    throw new types_1.AppError(`Producto del pedido no encontrado: ${prod.productoId}`, 404);
+                const [y, m, day] = prod.fechaEgreso.split('-');
+                const fechaAsignacion = new Date(Number(y), Number(m) - 1, Number(day), 12, 0, 0);
+                const cantidadActual = Number(pedidoProducto.cantidadRecibida) || 0;
+                const nuevaCantidad = cantidadActual + prod.cantidadEgreso;
+                await tx.pedidoProducto.update({
+                    where: { id: pedidoProducto.id },
+                    data: {
+                        fechaAsignacion,
+                        cantidadRecibida: nuevaCantidad,
+                        estado: 'EN_DECORACION',
+                    },
+                });
+                const decoracion = await tx.decoracion.create({
+                    data: {
+                        pedidoId: dto.pedidoId,
+                        decoradoraId: dto.decoradoraId,
+                        productoId: prod.productoId,
+                        fechaEgreso: new Date(prod.fechaEgreso + 'T00:00:00.000Z'),
+                        cantidadEgreso: prod.cantidadEgreso,
+                        precioDecoracion,
+                        total, subtotal, totalPagar,
+                        compras: 0, arreglos: 0, perdidas: 0, abonosPrestamo: 0,
+                    },
+                    include: INCLUDE,
+                });
+                decoracionesCreadas.push(decoracion);
+            }
+            return decoracionesCreadas;
         });
     }
     async actualizar(id, dto) {
@@ -119,6 +124,37 @@ class DecoracionesService {
             }
             return tx.decoracion.update({ where: { id }, data, include: INCLUDE });
         });
+    }
+    async actualizarVarias(items) {
+        const results = [];
+        for (const item of items) {
+            const { id, ...dto } = item;
+            const dec = await database_1.prisma.decoracion.findUnique({ where: { id } });
+            if (!dec)
+                throw new types_1.AppError(`Decoración ${id} no encontrada`, 404);
+            const cantidadEgreso = dec.cantidadEgreso;
+            const cantidadIngreso = dto.cantidadIngreso ?? dec.cantidadIngreso;
+            const compras = dto.compras ?? Number(dec.compras);
+            const abonoAnterior = Number(dec.abonosPrestamo);
+            const abonoNuevo = dto.abonosPrestamo ?? abonoAnterior;
+            const precioDecoracion = Number(dec.precioDecoracion);
+            const { total, subtotal, totalPagar } = calcular(cantidadEgreso, precioDecoracion, compras, abonoNuevo);
+            const data = {
+                cantidadIngreso, compras, abonosPrestamo: abonoNuevo,
+                total, subtotal, totalPagar,
+            };
+            if (dto.fechaIngreso)
+                data.fechaIngreso = new Date(dto.fechaIngreso + 'T00:00:00.000Z');
+            else if (dto.fechaIngreso === '')
+                data.fechaIngreso = null;
+            const updated = await database_1.prisma.decoracion.update({
+                where: { id },
+                data,
+                include: INCLUDE,
+            });
+            results.push(updated);
+        }
+        return results;
     }
     async eliminar(id) {
         const dec = await database_1.prisma.decoracion.findUnique({ where: { id } });
@@ -334,6 +370,8 @@ class DecoracionesService {
                     decoradoraNombre: dec.decoradora.nombre,
                     decoradoraDocumento: dec.decoradora.documento,
                     decoradoraNumCuenta: dec.decoradora.numCuenta,
+                    decoradoraBanco: dec.decoradora.banco,
+                    decoradoraTipoCuenta: dec.decoradora.tipoCuenta,
                     grupoId: dec.decoradora.grupoId,
                     grupoNombre: dec.decoradora.grupo?.nombre,
                     grupoTipo: dec.decoradora.grupo?.tipo,

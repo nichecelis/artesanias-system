@@ -12,17 +12,22 @@ class ProductosService {
         const page = Number(params.page) || 1;
         const limit = Number(params.limit) || 20;
         const skip = (page - 1) * limit;
+        const where = {};
+        if (params.estado === 'ACTIVO') {
+            where.estado = 'ACTIVO';
+        }
+        else if (params.estado === 'INACTIVO') {
+            where.estado = 'INACTIVO';
+        }
         const [items, total] = await Promise.all([
             database_1.prisma.producto.findMany({
-                where: { estado: 'ACTIVO' }, // 👈 FILTRO CLAVE
+                where,
                 skip,
                 take: limit,
                 include: { productoCliente: true },
                 orderBy: { createdAt: 'desc' }
             }),
-            database_1.prisma.producto.count({
-                where: { estado: 'ACTIVO' } // 👈 IMPORTANTE también aquí
-            })
+            database_1.prisma.producto.count({ where })
         ]);
         return { items, total };
     }
@@ -39,18 +44,31 @@ class ProductosService {
         await this.obtenerPorId(id);
         return database_1.prisma.producto.update({ where: { id }, data: dto });
     }
-    async eliminar(id) {
-        await this.obtenerPorId(id);
-        const decoracionesActivas = await database_1.prisma.decoracion.count({
-            where: { productoId: id, fechaIngreso: null },
+    async inactivar(id) {
+        const producto = await this.obtenerPorId(id);
+        const pedidosActivos = await database_1.prisma.pedidoProducto.count({
+            where: {
+                productoId: id,
+                pedido: { estado: { notIn: ['DESPACHADO', 'CANCELADO'] } },
+            },
         });
-        if (decoracionesActivas > 0) {
-            throw new types_1.AppError('No se puede eliminar: el producto tiene decoraciones activas', 409);
+        if (pedidosActivos > 0) {
+            throw new types_1.AppError('No se puede inactivar: el producto tiene pedidos activos', 409);
         }
         return database_1.prisma.producto.update({
             where: { id },
             data: { estado: client_1.EstadoProducto.INACTIVO },
         });
+    }
+    async activar(id) {
+        const producto = await this.obtenerPorId(id);
+        return database_1.prisma.producto.update({
+            where: { id },
+            data: { estado: client_1.EstadoProducto.ACTIVO },
+        });
+    }
+    async eliminar(id) {
+        return this.inactivar(id);
     }
 }
 exports.ProductosService = ProductosService;

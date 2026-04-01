@@ -32,8 +32,15 @@ export class DecoradorasService {
     return prisma.decoradora.create({ data });
   }
 
-  async listar(params: PaginationParams): Promise<PaginatedResult<any>> {
+  async listar(params: PaginationParams & { activa?: boolean | string }): Promise<PaginatedResult<any>> {
     const where: any = {};
+
+    if (params.activa === true || params.activa === 'true') {
+      where.activa = true;
+    } else if (params.activa === false || params.activa === 'false') {
+      where.activa = false;
+    }
+
     if (params.search) {
       where.OR = [
         { nombre:    { contains: params.search, mode: 'insensitive' } },
@@ -91,6 +98,43 @@ export class DecoradorasService {
       data.grupo = grupoId ? { connect: { id: grupoId } } : { disconnect: true };
     }
     return prisma.decoradora.update({ where: { id }, data });
+  }
+
+  async inactivar(id: string) {
+    const decoradora = await this.obtenerPorId(id);
+    
+    const decoracionesActivas = await prisma.decoracion.count({
+      where: {
+        decoradoraId: id,
+        fechaIngreso: null,
+      },
+    });
+    if (decoracionesActivas > 0) {
+      throw new AppError('No se puede inactivar: la decoradora tiene decoraciones activas (pendientes)', 409);
+    }
+    
+    const decoracionesSinPagar = await prisma.decoracion.count({
+      where: {
+        decoradoraId: id,
+        pagado: false,
+      },
+    });
+    if (decoracionesSinPagar > 0) {
+      throw new AppError('No se puede inactivar: la decoradora tiene decoraciones por pagar', 409);
+    }
+    
+    return prisma.decoradora.update({
+      where: { id },
+      data: { activa: false },
+    });
+  }
+
+  async activar(id: string) {
+    await this.obtenerPorId(id);
+    return prisma.decoradora.update({
+      where: { id },
+      data: { activa: true },
+    });
   }
 
   async resumenPagos(id: string) {

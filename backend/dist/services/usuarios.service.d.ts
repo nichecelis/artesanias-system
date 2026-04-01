@@ -10,6 +10,14 @@ export declare class UsuariosService {
         activo: boolean;
         createdAt: Date;
     }>;
+    obtenerPorCorreo(correo: string): Promise<{
+        id: string;
+        correo: string;
+        nombre: string;
+        rol: import(".prisma/client").$Enums.Rol;
+        activo: boolean;
+        createdAt: Date;
+    }>;
     crear(dto: {
         nombre: string;
         correo: string;
@@ -28,6 +36,18 @@ export declare class UsuariosService {
         correo?: string;
         rol?: Rol;
         activo?: boolean;
+    }): Promise<{
+        id: string;
+        correo: string;
+        nombre: string;
+        rol: import(".prisma/client").$Enums.Rol;
+        activo: boolean;
+        createdAt: Date;
+    }>;
+    actualizarPorCorreo(correo: string, dto: {
+        nombre?: string;
+        rol?: Rol;
+        password?: string;
     }): Promise<{
         id: string;
         correo: string;

@@ -14,14 +14,19 @@ class ClientesService {
         return database_1.prisma.cliente.create({ data: { ...dto, documento: dto.documento.trim() } });
     }
     async listar(params) {
-        const where = params.search
-            ? {
-                OR: [
-                    { nombre: { contains: params.search, mode: 'insensitive' } },
-                    { documento: { contains: params.search, mode: 'insensitive' } },
-                ],
-            }
-            : {};
+        const where = {};
+        if (params.activo === true || params.activo === 'true') {
+            where.activo = true;
+        }
+        else if (params.activo === false || params.activo === 'false') {
+            where.activo = false;
+        }
+        if (params.search) {
+            where.OR = [
+                { nombre: { contains: params.search, mode: 'insensitive' } },
+                { documento: { contains: params.search, mode: 'insensitive' } },
+            ];
+        }
         const [items, total] = await database_1.prisma.$transaction([
             database_1.prisma.cliente.findMany({
                 where,
@@ -57,6 +62,29 @@ class ClientesService {
                 }
             }
         });
+        if (!cliente)
+            throw new types_1.AppError('Cliente no encontrado', 404);
+        return cliente;
+    }
+    async obtenerPorDocumento(documento) {
+        const cliente = await database_1.prisma.cliente.findUnique({
+            where: { documento: documento.trim() },
+            include: {
+                pedidos: {
+                    orderBy: { createdAt: "desc" },
+                    take: 10,
+                    select: {
+                        id: true,
+                        codigo: true,
+                        estado: true,
+                        createdAt: true,
+                        _count: { select: { productos: true } }
+                    }
+                }
+            }
+        });
+        if (!cliente)
+            throw new types_1.AppError('Cliente no encontrado', 404);
         return cliente;
     }
     async actualizar(id, dto) {
@@ -76,6 +104,34 @@ class ClientesService {
         if (pedidos > 0)
             throw new types_1.AppError('No se puede eliminar: el cliente tiene pedidos', 409);
         return database_1.prisma.cliente.update({ where: { id }, data: { activo: false } });
+    }
+    async actualizarPorDocumento(documento, dto) {
+        const cliente = await database_1.prisma.cliente.findUnique({ where: { documento: documento.trim() } });
+        if (!cliente)
+            throw new types_1.AppError('Cliente no encontrado', 404);
+        if (dto.documento) {
+            const existe = await database_1.prisma.cliente.findFirst({
+                where: { documento: dto.documento.trim(), NOT: { id: cliente.id } },
+            });
+            if (existe)
+                throw new types_1.AppError('Ese documento ya está en uso', 409);
+        }
+        return database_1.prisma.cliente.update({ where: { id: cliente.id }, data: dto });
+    }
+    async eliminarPorDocumento(documento) {
+        const cliente = await database_1.prisma.cliente.findUnique({ where: { documento: documento.trim() } });
+        if (!cliente)
+            throw new types_1.AppError('Cliente no encontrado', 404);
+        const pedidosActivos = await database_1.prisma.pedido.count({
+            where: {
+                clienteId: cliente.id,
+                estado: { notIn: ['DESPACHADO', 'CANCELADO'] },
+            },
+        });
+        if (pedidosActivos > 0) {
+            throw new types_1.AppError('No se puede inactivar: el cliente tiene pedidos activos', 409);
+        }
+        return database_1.prisma.cliente.update({ where: { id: cliente.id }, data: { activo: false } });
     }
 }
 exports.ClientesService = ClientesService;

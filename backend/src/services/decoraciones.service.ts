@@ -5,14 +5,28 @@ import { getPrismaSkip } from '../utils/response';
 interface CrearDecoracionDto {
   pedidoId:      string;
   decoradoraId:  string;
-  productoId:    string;
-  fechaEgreso:   string;
-  cantidadEgreso: number;
+  productos: {
+    productoId:    string;
+    fechaEgreso:   string;
+    cantidadEgreso: number;
+  }[];
 }
 
 interface ActualizarDecoracionDto {
   fechaEgreso?:     string;
   cantidadEgreso?:  number;
+  fechaIngreso?:    string;
+  cantidadIngreso?: number;
+  arreglos?:        number;
+  perdidas?:        number;
+  compras?:         number;
+  abonosPrestamo?:  number;
+  prestamoId?:      string | null;
+  pagado?:          boolean;
+}
+
+interface ActualizarDecoracionBatchDto {
+  id:             string;
   fechaIngreso?:    string;
   cantidadIngreso?: number;
   arreglos?:        number;
@@ -45,46 +59,54 @@ export class DecoracionesService {
     const decoradora = await prisma.decoradora.findUnique({ where: { id: dto.decoradoraId } });
     if (!decoradora || !decoradora.activa) throw new AppError('Decoradora no encontrada', 404);
 
-    const producto = await prisma.producto.findUnique({ where: { id: dto.productoId } });
-    if (!producto) throw new AppError('Producto no encontrado', 404);
-
-    const precioDecoracion = Number(producto.precioDecoracion);
-    const { total, subtotal, totalPagar } = calcular(dto.cantidadEgreso, precioDecoracion);
-
-    const pedidoProducto = await prisma.pedidoProducto.findFirst({
-      where: { pedidoId: dto.pedidoId, productoId: dto.productoId }
-    });
-    if (!pedidoProducto) throw new AppError('Producto del pedido no encontrado', 404);
-
-    const [y, m, day] = dto.fechaEgreso.split('-');
-    const fechaAsignacion = new Date(Number(y), Number(m) - 1, Number(day), 12, 0, 0);
-
-    const cantidadActual = Number(pedidoProducto.cantidadRecibida) || 0;
-    const nuevaCantidad = cantidadActual + dto.cantidadEgreso;
-
     return prisma.$transaction(async (tx) => {
-      await tx.pedidoProducto.update({
-        where: { id: pedidoProducto.id },
-        data: {
-          fechaAsignacion,
-          cantidadRecibida: nuevaCantidad,
-          estado: 'EN_DECORACION',
-        },
-      });
+      const decoracionesCreadas = [];
 
-      return tx.decoracion.create({
-        data: {
-          pedidoId:        dto.pedidoId,
-          decoradoraId:    dto.decoradoraId,
-          productoId:      dto.productoId,
-          fechaEgreso:     new Date(dto.fechaEgreso + 'T00:00:00.000Z'),
-          cantidadEgreso:  dto.cantidadEgreso,
-          precioDecoracion,
-          total, subtotal, totalPagar,
-          compras: 0, arreglos: 0, perdidas: 0, abonosPrestamo: 0,
-        },
-        include: INCLUDE,
-      });
+      for (const prod of dto.productos) {
+        const producto = await tx.producto.findUnique({ where: { id: prod.productoId } });
+        if (!producto) throw new AppError(`Producto ${prod.productoId} no encontrado`, 404);
+
+        const precioDecoracion = Number(producto.precioDecoracion);
+        const { total, subtotal, totalPagar } = calcular(prod.cantidadEgreso, precioDecoracion);
+
+        const pedidoProducto = await tx.pedidoProducto.findFirst({
+          where: { pedidoId: dto.pedidoId, productoId: prod.productoId }
+        });
+        if (!pedidoProducto) throw new AppError(`Producto del pedido no encontrado: ${prod.productoId}`, 404);
+
+        const [y, m, day] = prod.fechaEgreso.split('-');
+        const fechaAsignacion = new Date(Number(y), Number(m) - 1, Number(day), 12, 0, 0);
+
+        const cantidadActual = Number(pedidoProducto.cantidadRecibida) || 0;
+        const nuevaCantidad = cantidadActual + prod.cantidadEgreso;
+
+        await tx.pedidoProducto.update({
+          where: { id: pedidoProducto.id },
+          data: {
+            fechaAsignacion,
+            cantidadRecibida: nuevaCantidad,
+            estado: 'EN_DECORACION',
+          },
+        });
+
+        const decoracion = await tx.decoracion.create({
+          data: {
+            pedidoId:        dto.pedidoId,
+            decoradoraId:    dto.decoradoraId,
+            productoId:      prod.productoId,
+            fechaEgreso:     new Date(prod.fechaEgreso + 'T00:00:00.000Z'),
+            cantidadEgreso:  prod.cantidadEgreso,
+            precioDecoracion,
+            total, subtotal, totalPagar,
+            compras: 0, arreglos: 0, perdidas: 0, abonosPrestamo: 0,
+          },
+          include: INCLUDE,
+        });
+
+        decoracionesCreadas.push(decoracion);
+      }
+
+      return decoracionesCreadas;
     });
   }
 
@@ -148,6 +170,41 @@ export class DecoracionesService {
 
       return tx.decoracion.update({ where: { id }, data, include: INCLUDE });
     });
+  }
+
+  async actualizarVarias(items: ActualizarDecoracionBatchDto[]) {
+    const results = [];
+    
+    for (const item of items) {
+      const { id, ...dto } = item;
+      const dec = await prisma.decoracion.findUnique({ where: { id } });
+      if (!dec) throw new AppError(`Decoración ${id} no encontrada`, 404);
+
+      const cantidadEgreso    = dec.cantidadEgreso;
+      const cantidadIngreso   = dto.cantidadIngreso ?? dec.cantidadIngreso;
+      const compras           = dto.compras         ?? Number(dec.compras);
+      const abonoAnterior     = Number(dec.abonosPrestamo);
+      const abonoNuevo        = dto.abonosPrestamo  ?? abonoAnterior;
+      const precioDecoracion  = Number(dec.precioDecoracion);
+      const { total, subtotal, totalPagar } = calcular(cantidadEgreso, precioDecoracion, compras, abonoNuevo);
+
+      const data: any = {
+        cantidadIngreso, compras, abonosPrestamo: abonoNuevo,
+        total, subtotal, totalPagar,
+      };
+
+      if (dto.fechaIngreso) data.fechaIngreso = new Date(dto.fechaIngreso + 'T00:00:00.000Z');
+      else if (dto.fechaIngreso === '') data.fechaIngreso = null;
+
+      const updated = await prisma.decoracion.update({
+        where: { id },
+        data,
+        include: INCLUDE,
+      });
+      results.push(updated);
+    }
+    
+    return results;
   }
 
   async eliminar(id: string) {
@@ -392,6 +449,8 @@ export class DecoracionesService {
           decoradoraNombre: dec.decoradora.nombre,
           decoradoraDocumento: dec.decoradora.documento,
           decoradoraNumCuenta: dec.decoradora.numCuenta,
+          decoradoraBanco: dec.decoradora.banco,
+          decoradoraTipoCuenta: dec.decoradora.tipoCuenta,
           grupoId: dec.decoradora.grupoId,
           grupoNombre: dec.decoradora.grupo?.nombre,
           grupoTipo: dec.decoradora.grupo?.tipo,

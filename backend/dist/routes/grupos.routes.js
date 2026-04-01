@@ -19,7 +19,7 @@ const grupoSchema = zod_1.z.object({
 // Listar
 exports.gruposRouter.get('/', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req, res, next) => {
     try {
-        const params = (0, response_1.parsePagination)(req.query);
+        const params = { ...(0, response_1.parsePagination)(req.query), activo: req.query.activo };
         const result = await grupos_service_1.gruposService.listar(params);
         res.json({ success: true, data: result.data, meta: result.meta });
     }
@@ -50,6 +50,24 @@ exports.gruposRouter.post('/', (0, auth_middleware_1.authorize)('ADMINISTRADOR',
 exports.gruposRouter.patch('/:id', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'PRODUCCION'), async (req, res, next) => {
     try {
         (0, response_1.sendSuccess)(res, await grupos_service_1.gruposService.actualizar(req.params.id, grupoSchema.partial().parse(req.body)), 'Grupo actualizado');
+    }
+    catch (e) {
+        next(e);
+    }
+});
+// Inactivar
+exports.gruposRouter.patch('/:id/inactivar', (0, auth_middleware_1.authorize)('ADMINISTRADOR'), async (req, res, next) => {
+    try {
+        (0, response_1.sendSuccess)(res, await grupos_service_1.gruposService.inactivar(req.params.id), 'Grupo inactivado');
+    }
+    catch (e) {
+        next(e);
+    }
+});
+// Activar
+exports.gruposRouter.patch('/:id/activar', (0, auth_middleware_1.authorize)('ADMINISTRADOR'), async (req, res, next) => {
+    try {
+        (0, response_1.sendSuccess)(res, await grupos_service_1.gruposService.activar(req.params.id), 'Grupo activado');
     }
     catch (e) {
         next(e);

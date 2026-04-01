@@ -47,6 +47,7 @@ decoradorasRouter.get('/', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCIO
   try {
     const params = {
       ...parsePagination(req.query as any),
+      activa: req.query.activa as string | boolean | undefined,
     };
     const result = await decoradorasService.listar(params);
     sendPaginated(res, result, params);
@@ -61,6 +62,18 @@ decoradorasRouter.post('/', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req
 });
 
 decoradorasRouter.get('/:id', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), (req, res, next) => handleObtener(req, res, next, (id) => decoradorasService.obtenerPorId(id)));
+decoradorasRouter.patch('/:id/inactivar', authorize('ADMINISTRADOR'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await decoradorasService.inactivar(req.params.id);
+    sendSuccess(res, data, 'Decoradora inactivada');
+  } catch (error) { next(error); }
+});
+decoradorasRouter.patch('/:id/activar', authorize('ADMINISTRADOR'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await decoradorasService.activar(req.params.id);
+    sendSuccess(res, data, 'Decoradora activada');
+  } catch (error) { next(error); }
+});
 decoradorasRouter.patch('/:id', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsed = decoradoraUpdateSchema.parse(req.body);

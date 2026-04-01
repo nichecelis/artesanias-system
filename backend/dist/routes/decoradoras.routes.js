@@ -44,6 +44,7 @@ exports.decoradorasRouter.get('/', (0, auth_middleware_1.authorize)('ADMINISTRAD
     try {
         const params = {
             ...(0, response_1.parsePagination)(req.query),
+            activa: req.query.activa,
         };
         const result = await decoradoras_service_1.decoradorasService.listar(params);
         (0, response_1.sendPaginated)(res, result, params);
@@ -62,6 +63,24 @@ exports.decoradorasRouter.post('/', (0, auth_middleware_1.authorize)('ADMINISTRA
     }
 });
 exports.decoradorasRouter.get('/:id', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), (req, res, next) => (0, base_controller_1.handleObtener)(req, res, next, (id) => decoradoras_service_1.decoradorasService.obtenerPorId(id)));
+exports.decoradorasRouter.patch('/:id/inactivar', (0, auth_middleware_1.authorize)('ADMINISTRADOR'), async (req, res, next) => {
+    try {
+        const data = await decoradoras_service_1.decoradorasService.inactivar(req.params.id);
+        (0, response_1.sendSuccess)(res, data, 'Decoradora inactivada');
+    }
+    catch (error) {
+        next(error);
+    }
+});
+exports.decoradorasRouter.patch('/:id/activar', (0, auth_middleware_1.authorize)('ADMINISTRADOR'), async (req, res, next) => {
+    try {
+        const data = await decoradoras_service_1.decoradorasService.activar(req.params.id);
+        (0, response_1.sendSuccess)(res, data, 'Decoradora activada');
+    }
+    catch (error) {
+        next(error);
+    }
+});
 exports.decoradorasRouter.patch('/:id', (0, auth_middleware_1.authorize)('ADMINISTRADOR', 'PRODUCCION'), async (req, res, next) => {
     try {
         const parsed = decoradoraUpdateSchema.parse(req.body);

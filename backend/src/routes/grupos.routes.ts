@@ -19,7 +19,7 @@ const grupoSchema = z.object({
 // Listar
 gruposRouter.get('/', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const params = parsePagination(req.query as any);
+    const params = { ...parsePagination(req.query as any), activo: req.query.activo as string | boolean | undefined };
     const result = await gruposService.listar(params);
     res.json({ success: true, data: result.data, meta: result.meta });
   } catch (e) { next(e); }
@@ -44,6 +44,20 @@ gruposRouter.post('/', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Req
 gruposRouter.patch('/:id', authorize('ADMINISTRADOR', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     sendSuccess(res, await gruposService.actualizar(req.params.id, grupoSchema.partial().parse(req.body)), 'Grupo actualizado');
+  } catch (e) { next(e); }
+});
+
+// Inactivar
+gruposRouter.patch('/:id/inactivar', authorize('ADMINISTRADOR'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    sendSuccess(res, await gruposService.inactivar(req.params.id), 'Grupo inactivado');
+  } catch (e) { next(e); }
+});
+
+// Activar
+gruposRouter.patch('/:id/activar', authorize('ADMINISTRADOR'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    sendSuccess(res, await gruposService.activar(req.params.id), 'Grupo activado');
   } catch (e) { next(e); }
 });
 

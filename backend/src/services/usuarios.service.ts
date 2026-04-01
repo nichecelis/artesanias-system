@@ -36,6 +36,15 @@ export class UsuariosService {
     return u;
   }
 
+  async obtenerPorCorreo(correo: string) {
+    const u = await prisma.usuario.findUnique({
+      where: { correo: correo.toLowerCase() },
+      select: { id: true, nombre: true, correo: true, rol: true, activo: true, createdAt: true },
+    });
+    if (!u) throw new AppError('Usuario no encontrado', 404);
+    return u;
+  }
+
   async crear(dto: { nombre: string; correo: string; password: string; rol: Rol }) {
     const existe = await prisma.usuario.findUnique({ where: { correo: dto.correo.toLowerCase() } });
     if (existe) throw new AppError('Ya existe un usuario con ese correo', 409);
@@ -55,6 +64,37 @@ export class UsuariosService {
     return prisma.usuario.update({
       where: { id },
       data: { ...dto, correo: dto.correo?.toLowerCase() },
+      select: { id: true, nombre: true, correo: true, rol: true, activo: true, createdAt: true },
+    });
+  }
+
+  async actualizarPorCorreo(
+    correo: string, 
+    dto: { nombre?: string; rol?: Rol; password?: string }
+  ) {
+    const usuario = await this.obtenerPorCorreo(correo);
+    
+    const updateData: any = {};
+    
+    if (dto.nombre !== undefined) {
+      updateData.nombre = dto.nombre;
+    }
+    
+    if (dto.rol !== undefined) {
+      updateData.rol = dto.rol;
+    }
+    
+    if (dto.password !== undefined) {
+      updateData.passwordHash = await bcrypt.hash(dto.password, 12);
+    }
+    
+    if (Object.keys(updateData).length === 0) {
+      throw new AppError('No se proporcionaron datos para actualizar', 400);
+    }
+    
+    return prisma.usuario.update({
+      where: { correo: correo.toLowerCase() },
+      data: updateData,
       select: { id: true, nombre: true, correo: true, rol: true, activo: true, createdAt: true },
     });
   }

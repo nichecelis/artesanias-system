@@ -2,6 +2,7 @@ export declare const gruposService: {
     listar: (params: {
         page?: number;
         limit?: number;
+        activo?: boolean | string;
     }) => Promise<{
         data: ({
             _count: {
@@ -97,6 +98,30 @@ export declare const gruposService: {
         responsable: string | null;
         porcentajeResponsable: number;
     }>;
+    inactivar: (id: string) => Promise<{
+        id: string;
+        nombre: string;
+        activo: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        direccion: string | null;
+        telefono: string | null;
+        tipo: import(".prisma/client").$Enums.TipoGrupo;
+        responsable: string | null;
+        porcentajeResponsable: number;
+    }>;
+    activar: (id: string) => Promise<{
+        id: string;
+        nombre: string;
+        activo: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        direccion: string | null;
+        telefono: string | null;
+        tipo: import(".prisma/client").$Enums.TipoGrupo;
+        responsable: string | null;
+        porcentajeResponsable: number;
+    }>;
     reportePagos: (id: string, fechaDesde?: string, fechaHasta?: string) => Promise<{
         grupo: {
             id: string;
@@ -137,11 +162,11 @@ export declare const gruposService: {
             total: import("@prisma/client/runtime/library").Decimal;
             precioDecoracion: import("@prisma/client/runtime/library").Decimal;
             productoId: string;
-            fechaIngreso: Date | null;
             pedidoId: string;
             decoradoraId: string;
             fechaEgreso: Date;
             cantidadEgreso: number;
+            fechaIngreso: Date | null;
             cantidadIngreso: number | null;
             arreglos: number;
             perdidas: number;
