@@ -122,7 +122,7 @@ export class ClientesService {
     return prisma.cliente.update({ where: { id }, data: { activo: false } });
   }
 
-  async actualizarPorDocumento(documento: string, dto: { nombre?: string; direccion?: string; telefono?: string; transportadora?: string }) {
+  async actualizarPorDocumento(documento: string, dto: { nombre?: string; direccion?: string; telefono?: string; transportadora?: string; documento?: string }) {
     const cliente = await prisma.cliente.findUnique({ where: { documento: documento.trim() } });
     if (!cliente) throw new AppError('Cliente no encontrado', 404);
 

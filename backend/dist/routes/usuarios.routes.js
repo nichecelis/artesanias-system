@@ -22,6 +22,11 @@ const actualizarSchema = zod_1.z.object({
     rol: zod_1.z.nativeEnum(client_1.Rol).optional(),
     activo: zod_1.z.boolean().optional(),
 });
+const actualizarPorCorreoSchema = zod_1.z.object({
+    nombre: zod_1.z.string().min(2).max(200).optional(),
+    rol: zod_1.z.nativeEnum(client_1.Rol).optional(),
+    password: zod_1.z.string().min(6).optional(),
+});
 usuariosRouter.get('/', async (req, res, next) => {
     try {
         const params = (0, response_1.parsePagination)(req.query);
@@ -30,6 +35,14 @@ usuariosRouter.get('/', async (req, res, next) => {
                 total: result.total, page: params.page, limit: params.limit,
                 totalPages: Math.ceil(result.total / params.limit),
             } });
+    }
+    catch (e) {
+        next(e);
+    }
+});
+usuariosRouter.get('/correo/:correo', async (req, res, next) => {
+    try {
+        (0, response_1.sendSuccess)(res, await usuarios_service_1.usuariosService.obtenerPorCorreo(req.params.correo));
     }
     catch (e) {
         next(e);
@@ -47,6 +60,15 @@ usuariosRouter.post('/', async (req, res, next) => {
     try {
         const data = await usuarios_service_1.usuariosService.crear(crearSchema.parse(req.body));
         res.status(201).json({ success: true, data });
+    }
+    catch (e) {
+        next(e);
+    }
+});
+usuariosRouter.patch('/correo/:correo', async (req, res, next) => {
+    try {
+        const data = await usuarios_service_1.usuariosService.actualizarPorCorreo(req.params.correo, actualizarPorCorreoSchema.parse(req.body));
+        (0, response_1.sendSuccess)(res, data, 'Usuario actualizado');
     }
     catch (e) {
         next(e);

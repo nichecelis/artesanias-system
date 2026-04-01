@@ -19,7 +19,7 @@ const grupoSchema = z.object({
 // Listar
 gruposRouter.get('/', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const params = { ...parsePagination(req.query as any), activo: req.query.activo };
+    const params = { ...parsePagination(req.query as any), activo: req.query.activo as string | boolean | undefined };
     const result = await gruposService.listar(params);
     res.json({ success: true, data: result.data, meta: result.meta });
   } catch (e) { next(e); }

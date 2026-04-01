@@ -47,7 +47,7 @@ decoradorasRouter.get('/', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCIO
   try {
     const params = {
       ...parsePagination(req.query as any),
-      activa: req.query.activa,
+      activa: req.query.activa as string | boolean | undefined,
     };
     const result = await decoradorasService.listar(params);
     sendPaginated(res, result, params);

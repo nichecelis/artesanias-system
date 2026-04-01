@@ -23,12 +23,13 @@ export const authService = {
 
 // ─── Productos ─────────────────────────────────────────────
 export const productosService = {
-  listar:   (params: { page: number; limit: number; estado?: string }) => api.get<PaginatedResponse<any>>('/productos', { params }),
+  listar:   (params: { page: number; limit: number; estado?: string; search?: string }) => api.get<PaginatedResponse<any>>('/productos', { params }),
   obtener:  (id: string)   => api.get<ApiResponse<any>>(`/productos/${id}`),
   crear:    (data: any)    => api.post<ApiResponse<any>>('/productos', data),
   actualizar: (id: string, data: any) => api.patch<ApiResponse<any>>(`/productos/${id}`, data),
   inactivar: (id: string)  => api.patch(`/productos/${id}/inactivar`),
   activar: (id: string)    => api.patch(`/productos/${id}/activar`),
+  eliminar: (id: string)    => api.delete(`/productos/${id}`),
 };
 
 // ─── Clientes ──────────────────────────────────────────────

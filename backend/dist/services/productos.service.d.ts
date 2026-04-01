@@ -22,6 +22,7 @@ export declare class ProductosService {
     listar(params: {
         page?: number;
         limit?: number;
+        estado?: string;
     }): Promise<{
         items: ({
             productoCliente: {
@@ -64,6 +65,26 @@ export declare class ProductosService {
         estado: import(".prisma/client").$Enums.EstadoProducto;
     }>;
     actualizar(id: string, dto: ActualizarProductoDto): Promise<{
+        id: string;
+        nombre: string;
+        createdAt: Date;
+        updatedAt: Date;
+        descripcion: string | null;
+        precioVenta: import("@prisma/client/runtime/library").Decimal;
+        precioDecoracion: import("@prisma/client/runtime/library").Decimal;
+        estado: import(".prisma/client").$Enums.EstadoProducto;
+    }>;
+    inactivar(id: string): Promise<{
+        id: string;
+        nombre: string;
+        createdAt: Date;
+        updatedAt: Date;
+        descripcion: string | null;
+        precioVenta: import("@prisma/client/runtime/library").Decimal;
+        precioDecoracion: import("@prisma/client/runtime/library").Decimal;
+        estado: import(".prisma/client").$Enums.EstadoProducto;
+    }>;
+    activar(id: string): Promise<{
         id: string;
         nombre: string;
         createdAt: Date;

@@ -26,7 +26,9 @@ export declare class DecoradorasService {
         grupoId: string | null;
         activa: boolean;
     }>;
-    listar(params: PaginationParams): Promise<PaginatedResult<any>>;
+    listar(params: PaginationParams & {
+        activa?: boolean | string;
+    }): Promise<PaginatedResult<any>>;
     obtenerPorId(id: string): Promise<{
         grupo: {
             id: string;
@@ -47,11 +49,11 @@ export declare class DecoradorasService {
             total: import("@prisma/client/runtime/library").Decimal;
             precioDecoracion: import("@prisma/client/runtime/library").Decimal;
             productoId: string;
-            fechaIngreso: Date | null;
             pedidoId: string;
             decoradoraId: string;
             fechaEgreso: Date;
             cantidadEgreso: number;
+            fechaIngreso: Date | null;
             cantidadIngreso: number | null;
             arreglos: number;
             perdidas: number;
@@ -98,6 +100,32 @@ export declare class DecoradorasService {
         activa: boolean;
     }>;
     actualizar(id: string, dto: ActualizarDecoradoraDto): Promise<{
+        id: string;
+        nombre: string;
+        createdAt: Date;
+        updatedAt: Date;
+        documento: string;
+        telefono: string | null;
+        banco: string | null;
+        numCuenta: string | null;
+        tipoCuenta: import(".prisma/client").$Enums.TipoCuenta | null;
+        grupoId: string | null;
+        activa: boolean;
+    }>;
+    inactivar(id: string): Promise<{
+        id: string;
+        nombre: string;
+        createdAt: Date;
+        updatedAt: Date;
+        documento: string;
+        telefono: string | null;
+        banco: string | null;
+        numCuenta: string | null;
+        tipoCuenta: import(".prisma/client").$Enums.TipoCuenta | null;
+        grupoId: string | null;
+        activa: boolean;
+    }>;
+    activar(id: string): Promise<{
         id: string;
         nombre: string;
         createdAt: Date;

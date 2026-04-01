@@ -180,7 +180,7 @@ export class DecoracionesService {
       const dec = await prisma.decoracion.findUnique({ where: { id } });
       if (!dec) throw new AppError(`Decoración ${id} no encontrada`, 404);
 
-      const cantidadEgreso    = dto.cantidadEgreso  ?? dec.cantidadEgreso;
+      const cantidadEgreso    = dec.cantidadEgreso;
       const cantidadIngreso   = dto.cantidadIngreso ?? dec.cantidadIngreso;
       const compras           = dto.compras         ?? Number(dec.compras);
       const abonoAnterior     = Number(dec.abonosPrestamo);
@@ -189,12 +189,10 @@ export class DecoracionesService {
       const { total, subtotal, totalPagar } = calcular(cantidadEgreso, precioDecoracion, compras, abonoNuevo);
 
       const data: any = {
-        ...dto,
-        cantidadEgreso, compras, abonosPrestamo: abonoNuevo,
+        cantidadIngreso, compras, abonosPrestamo: abonoNuevo,
         total, subtotal, totalPagar,
       };
 
-      if (dto.fechaEgreso) data.fechaEgreso = new Date(dto.fechaEgreso + 'T00:00:00.000Z');
       if (dto.fechaIngreso) data.fechaIngreso = new Date(dto.fechaIngreso + 'T00:00:00.000Z');
       else if (dto.fechaIngreso === '') data.fechaIngreso = null;
 

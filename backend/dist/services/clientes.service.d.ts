@@ -19,8 +19,10 @@ export declare class ClientesService {
         telefono: string | null;
         transportadora: string | null;
     }>;
-    listar(params: PaginationParams): Promise<PaginatedResult<any>>;
-    obtenerPorId(id: string): Promise<({
+    listar(params: PaginationParams & {
+        activo?: boolean | string;
+    }): Promise<PaginatedResult<any>>;
+    obtenerPorId(id: string): Promise<{
         pedidos: {
             id: string;
             createdAt: Date;
@@ -40,7 +42,28 @@ export declare class ClientesService {
         direccion: string | null;
         telefono: string | null;
         transportadora: string | null;
-    }) | null>;
+    }>;
+    obtenerPorDocumento(documento: string): Promise<{
+        pedidos: {
+            id: string;
+            createdAt: Date;
+            _count: {
+                productos: number;
+            };
+            estado: import(".prisma/client").$Enums.EstadoPedido;
+            codigo: string;
+        }[];
+    } & {
+        id: string;
+        nombre: string;
+        activo: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        documento: string;
+        direccion: string | null;
+        telefono: string | null;
+        transportadora: string | null;
+    }>;
     actualizar(id: string, dto: ActualizarClienteDto): Promise<{
         id: string;
         nombre: string;
@@ -53,6 +76,34 @@ export declare class ClientesService {
         transportadora: string | null;
     }>;
     eliminar(id: string): Promise<{
+        id: string;
+        nombre: string;
+        activo: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        documento: string;
+        direccion: string | null;
+        telefono: string | null;
+        transportadora: string | null;
+    }>;
+    actualizarPorDocumento(documento: string, dto: {
+        nombre?: string;
+        direccion?: string;
+        telefono?: string;
+        transportadora?: string;
+        documento?: string;
+    }): Promise<{
+        id: string;
+        nombre: string;
+        activo: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        documento: string;
+        direccion: string | null;
+        telefono: string | null;
+        transportadora: string | null;
+    }>;
+    eliminarPorDocumento(documento: string): Promise<{
         id: string;
         nombre: string;
         activo: boolean;

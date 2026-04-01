@@ -8,15 +8,22 @@ exports.gruposService = {
         const page = params.page ?? 1;
         const limit = params.limit ?? 50;
         const skip = (page - 1) * limit;
+        const where = {};
+        if (params.activo === true || params.activo === 'true') {
+            where.activo = true;
+        }
+        else if (params.activo === false || params.activo === 'false') {
+            where.activo = false;
+        }
         const [data, total] = await Promise.all([
             database_1.prisma.grupo.findMany({
-                where: { activo: true },
+                where,
                 include: { _count: { select: { decoradoras: true } } },
                 orderBy: [{ tipo: 'asc' }, { nombre: 'asc' }],
                 skip,
                 take: limit,
             }),
-            database_1.prisma.grupo.count({ where: { activo: true } }),
+            database_1.prisma.grupo.count({ where }),
         ]);
         return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
     },
@@ -33,11 +40,37 @@ exports.gruposService = {
         return grupo;
     },
     crear: async (data) => {
-        return database_1.prisma.grupo.create({ data });
+        return database_1.prisma.$transaction(async (tx) => {
+            const grupo = await tx.grupo.create({ data });
+            if (data.responsable) {
+                await tx.decoradora.updateMany({
+                    where: { documento: data.responsable },
+                    data: { grupoId: grupo.id },
+                });
+            }
+            return grupo;
+        });
     },
     actualizar: async (id, data) => {
-        await exports.gruposService.obtener(id);
-        return database_1.prisma.grupo.update({ where: { id }, data });
+        const grupoActual = await exports.gruposService.obtener(id);
+        return database_1.prisma.$transaction(async (tx) => {
+            const grupo = await tx.grupo.update({ where: { id }, data });
+            if (data.responsable !== undefined) {
+                if (grupoActual.responsable) {
+                    await tx.decoradora.updateMany({
+                        where: { documento: grupoActual.responsable },
+                        data: { grupoId: null },
+                    });
+                }
+                if (data.responsable) {
+                    await tx.decoradora.updateMany({
+                        where: { documento: data.responsable },
+                        data: { grupoId: id },
+                    });
+                }
+            }
+            return grupo;
+        });
     },
     eliminar: async (id) => {
         const grupo = await exports.gruposService.obtener(id);
@@ -45,6 +78,20 @@ exports.gruposService = {
         if (count > 0)
             throw new types_1.AppError(`No se puede eliminar: tiene ${count} decoradora(s) activa(s)`, 400);
         return database_1.prisma.grupo.update({ where: { id }, data: { activo: false } });
+    },
+    inactivar: async (id) => {
+        const grupo = await exports.gruposService.obtener(id);
+        const decoradorasActivas = await database_1.prisma.decoradora.count({
+            where: { grupoId: id, activa: true },
+        });
+        if (decoradorasActivas > 0) {
+            throw new types_1.AppError('No se puede inactivar: el grupo tiene decoradoras activas', 409);
+        }
+        return database_1.prisma.grupo.update({ where: { id }, data: { activo: false } });
+    },
+    activar: async (id) => {
+        await exports.gruposService.obtener(id);
+        return database_1.prisma.grupo.update({ where: { id }, data: { activo: true } });
     },
     reportePagos: async (id, fechaDesde, fechaHasta) => {
         const grupo = await database_1.prisma.grupo.findUnique({
