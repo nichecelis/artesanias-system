@@ -23,20 +23,22 @@ export const authService = {
 
 // ─── Productos ─────────────────────────────────────────────
 export const productosService = {
-  listar:   (params?: any) => api.get<PaginatedResponse<any>>('/productos', { params }),
+  listar:   (params: { page: number; limit: number; estado?: string }) => api.get<PaginatedResponse<any>>('/productos', { params }),
   obtener:  (id: string)   => api.get<ApiResponse<any>>(`/productos/${id}`),
   crear:    (data: any)    => api.post<ApiResponse<any>>('/productos', data),
   actualizar: (id: string, data: any) => api.patch<ApiResponse<any>>(`/productos/${id}`, data),
-  eliminar: (id: string)   => api.delete(`/productos/${id}`),
+  inactivar: (id: string)  => api.patch(`/productos/${id}/inactivar`),
+  activar: (id: string)    => api.patch(`/productos/${id}/activar`),
 };
 
 // ─── Clientes ──────────────────────────────────────────────
 export const clientesService = {
-  listar:   (params?: any) => api.get<PaginatedResponse<any>>('/clientes', { params }),
+  listar:   (params: { page: number; limit: number; search?: string; activo?: boolean }) => api.get<PaginatedResponse<any>>('/clientes', { params }),
   obtener:  (id: string)   => api.get<ApiResponse<any>>(`/clientes/${id}`),
   crear:    (data: any)    => api.post<ApiResponse<any>>('/clientes', data),
   actualizar: (id: string, data: any) => api.patch<ApiResponse<any>>(`/clientes/${id}`, data),
-  eliminar: (id: string)   => api.delete(`/clientes/${id}`),
+  eliminar: (documento: string) => api.delete(`/clientes/documento/${documento}`),
+  activar: (documento: string, data: any) => api.patch(`/clientes/documento/${documento}`, { ...data, activo: true }),
 };
 
 // ─── Pedidos ───────────────────────────────────────────────
@@ -55,10 +57,12 @@ export const pedidosService = {
 
 // ─── Decoradoras ───────────────────────────────────────────
 export const decoradorasService = {
-  listar:   (params?: any) => api.get<PaginatedResponse<any>>('/decoradoras', { params }),
+  listar:   (params: { page: number; limit: number; search?: string; activa?: boolean }) => api.get<PaginatedResponse<any>>('/decoradoras', { params }),
   obtener:  (id: string)   => api.get<ApiResponse<any>>(`/decoradoras/${id}`),
   crear:    (data: any)    => api.post<ApiResponse<any>>('/decoradoras', data),
   actualizar: (id: string, data: any) => api.patch<ApiResponse<any>>(`/decoradoras/${id}`, data),
+  inactivar: (id: string)  => api.patch(`/decoradoras/${id}/inactivar`),
+  activar: (id: string)    => api.patch(`/decoradoras/${id}/activar`),
   resumenPagos: (id: string) => api.get<ApiResponse<any>>(`/decoradoras/${id}/pagos`),
 };
 

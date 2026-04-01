@@ -27,6 +27,8 @@ export function useSessionTimeout() {
   const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const { setShowWarning, setTimeLeft } = useSessionWarningStore();
 
+  const resetTimersRef = useRef<() => void>(() => {});
+
   const resetTimers = useCallback(() => {
     lastActivity.current = Date.now();
     setShowWarning(false);
@@ -56,11 +58,13 @@ export function useSessionTimeout() {
     }, TIMEOUT_MS);
   }, [token, logout, setShowWarning, setTimeLeft]);
 
+  resetTimersRef.current = resetTimers;
+
   const extendSession = useCallback(() => {
     if (token) {
-      resetTimers();
+      resetTimersRef.current();
     }
-  }, [token, resetTimers]);
+  }, [token]);
 
   useEffect(() => {
     if (!token) {
@@ -72,9 +76,7 @@ export function useSessionTimeout() {
 
     const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
     const handleActivity = () => {
-      if (!useSessionWarningStore.getState().showWarning) {
-        lastActivity.current = Date.now();
-      }
+      resetTimersRef.current();
     };
 
     events.forEach(event => window.addEventListener(event, handleActivity, { passive: true }));

@@ -7,7 +7,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3000/api/v1"
+      "value": "http://localhost:3001/api/v1"
     },
     {
       "key": "token",
@@ -193,7 +193,7 @@
           }
         },
         {
-          "name": "Get Usuario by ID",
+          "name": "Get Usuario by Email",
           "event": [
             {
               "listen": "test",
@@ -210,14 +210,14 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/usuarios/1",
+              "raw": "{{baseUrl}}/usuarios/correo/admin@artesanias.com",
               "host": ["{{baseUrl}}"],
-              "path": ["usuarios", "1"]
+              "path": ["usuarios", "correo", "admin@artesanias.com"]
             }
           }
         },
         {
-          "name": "Update Usuario",
+          "name": "Update Usuario by Email",
           "event": [
             {
               "listen": "test",
@@ -225,6 +225,10 @@
                 "exec": [
                   "pm.test('Status code is 200', function() {",
                   "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has usuario', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('nombre');",
                   "});"
                 ]
               }
@@ -235,7 +239,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"nombre\": \"Test User Updated\"\n}",
+              "raw": "{\n    \"nombre\": \"Usuario Actualizado\",\n    \"rol\": \"ADMIN\",\n    \"password\": \"NuevaPass123\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -243,9 +247,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/usuarios/1",
+              "raw": "{{baseUrl}}/usuarios/correo/admin@artesanias.com",
               "host": ["{{baseUrl}}"],
-              "path": ["usuarios", "1"]
+              "path": ["usuarios", "correo", "admin@artesanias.com"]
             }
           }
         }
@@ -306,7 +310,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"nombre\": \"Cliente Test\",\n    \"documento\": \"12345678\",\n    \"telefono\": \"3001234567\",\n    \"correo\": \"cliente{{$timestamp}}@test.com\"\n}",
+              "raw": "{\n    \"nombre\": \"Cliente Test\",\n    \"documento\": \"12345678\",\n    \"telefono\": \"3001234567\",\n    \"correo\": \"cliente{{$timestamp}}@test.com\",\n    \"direccion\": \"Calle 123 #45-67\",\n    \"transportadora\": \"Servientrega\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -321,7 +325,7 @@
           }
         },
         {
-          "name": "Get Cliente by ID",
+          "name": "Get Cliente by Documento",
           "event": [
             {
               "listen": "test",
@@ -338,14 +342,14 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/clientes/1",
+              "raw": "{{baseUrl}}/clientes/documento/12345678",
               "host": ["{{baseUrl}}"],
-              "path": ["clientes", "1"]
+              "path": ["clientes", "documento", "12345678"]
             }
           }
         },
         {
-          "name": "Update Cliente",
+          "name": "Update Cliente by Documento",
           "event": [
             {
               "listen": "test",
@@ -363,7 +367,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"telefono\": \"3009876543\"\n}",
+              "raw": "{\n    \"nombre\": \"Cliente Actualizado\",\n    \"telefono\": \"3009876543\",\n    \"direccion\": \"Calle 456 #78-90\",\n    \"transportadora\": \"Interrapidisimo\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -371,9 +375,66 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/clientes/1",
+              "raw": "{{baseUrl}}/clientes/documento/12345678",
               "host": ["{{baseUrl}}"],
-              "path": ["clientes", "1"]
+              "path": ["clientes", "documento", "12345678"]
+            }
+          }
+        },
+        {
+          "name": "Delete Cliente by Documento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clientes/documento/12345678",
+              "host": ["{{baseUrl}}"],
+              "path": ["clientes", "documento", "12345678"]
+            }
+          }
+        },
+        {
+          "name": "Activate Cliente by Documento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"activo\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clientes/documento/12345678",
+              "host": ["{{baseUrl}}"],
+              "path": ["clientes", "documento", "12345678"]
             }
           }
         }
@@ -434,7 +495,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"nombre\": \"Producto Test {{$timestamp}}\",\n    \"descripcion\": \"Descripción de prueba\",\n    \"precio\": 50000,\n    \"categoria\": \"PRENDAS\"\n}",
+              "raw": "{\n    \"nombre\": \"Producto Test {{$timestamp}}\",\n    \"descripcion\": \"Descripción de prueba\",\n    \"precioVenta\": 50000,\n    \"precioDecoracion\": 10000\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -491,7 +552,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"precio\": 55000\n}",
+              "raw": "{\n    \"nombre\": \"Producto Test {{$timestamp}}\",\n    \"descripcion\": \"Descripción de prueba\",\n    \"precioVenta\": 55000,\n    \"precioDecoracion\": 11000\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -506,26 +567,50 @@
           }
         },
         {
-          "name": "Delete Producto",
+          "name": "Inactivate Producto",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status code is 200 or 204', function() {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
                   "});"
                 ]
               }
             }
           ],
           "request": {
-            "method": "DELETE",
+            "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/productos/999",
+              "raw": "{{baseUrl}}/productos/1/inactivar",
               "host": ["{{baseUrl}}"],
-              "path": ["productos", "999"]
+              "path": ["productos", "1", "inactivar"]
+            }
+          }
+        },
+        {
+          "name": "Activate Producto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/productos/1/activar",
+              "host": ["{{baseUrl}}"],
+              "path": ["productos", "1", "activar"]
             }
           }
         }
@@ -585,7 +670,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"clienteId\": 1,\n    \"items\": [\n        {\n            \"productoId\": 1,\n            \"cantidad\": 5,\n            \"precioUnitario\": 50000\n        }\n    ]\n}",
+              "raw": "{\n    \"clienteId\": \"b178807b-90a7-4f9f-9039-6548c33f1b92\",\n    \"laser\": \"TALLER\",\n    \"productos\": [\n        {\n            \"productoId\": \"896102ba-a6aa-4a02-8319-d9d5fddc34b2\",\n            \"cantidadPedido\": 50\n        }\n    ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -704,7 +789,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"nombre\": \"Decoradora Test {{$timestamp}}\",\n    \"documento\": \"{{$timestamp}}\",\n    \"telefono\": \"3001234567\",\n    \"grupoId\": 1\n}",
+              "raw": "{\n    \"nombre\": \"Decoradora Test {{$timestamp}}\",\n    \"documento\": \"{{$timestamp}}\",\n    \"telefono\": \"3001234567\",\n    \"grupoId\": \"seed-grupo-elite\",\n    \"banco\": \"Bancolombia\",\n    \"numCuenta\": \"7894561230\",\n    \"tipoCuenta\": \"AHORROS\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -761,7 +846,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"telefono\": \"3009876543\"\n}",
+              "raw": "{\n    \"nombre\": \"Decoradora Prueba\",\n    \"telefono\": \"3009876543\",\n    \"grupoId\": \"8605ecfb-851e-4ffe-9bfe-f9ceca801e06\",\n    \"banco\": \"Colpatria\",\n    \"numCuenta\": \"7894561230\",\n    \"tipoCuenta\": \"AHORROS\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -772,6 +857,54 @@
               "raw": "{{baseUrl}}/decoradoras/1",
               "host": ["{{baseUrl}}"],
               "path": ["decoradoras", "1"]
+            }
+          }
+        },
+        {
+          "name": "Inactivate Decoradora",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/decoradoras/1/inactivar",
+              "host": ["{{baseUrl}}"],
+              "path": ["decoradoras", "1", "inactivar"]
+            }
+          }
+        },
+        {
+          "name": "Activate Decoradora",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/decoradoras/1/activar",
+              "host": ["{{baseUrl}}"],
+              "path": ["decoradoras", "1", "activar"]
             }
           }
         }
@@ -827,7 +960,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"pedidoProductoId\": 1,\n    \"decoradoraId\": 1,\n    \"valorPagar\": 50000\n}",
+              "raw": "{\n    \"pedidoId\": \"cf11b381-2705-47c2-adc8-d2f2ae7b3ffa\",\n    \"decoradoraId\": \"b6bf39c2-2169-48a0-b5f9-0697dfa478c8\",\n    \"productos\": [\n        {\n            \"productoId\": \"896102ba-a6aa-4a02-8319-d9d5fddc34b2\",\n            \"fechaEgreso\": \"2026-03-31\",\n            \"cantidadEgreso\": 50\n        },\n        {\n            \"productoId\": \"ff49814d-fe4f-4100-89f6-7d9e560eba2c\",\n            \"fechaEgreso\": \"2026-03-31\",\n            \"cantidadEgreso\": 100\n        }\n    ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -838,6 +971,72 @@
               "raw": "{{baseUrl}}/decoraciones",
               "host": ["{{baseUrl}}"],
               "path": ["decoraciones"]
+            }
+          }
+        },
+        {
+          "name": "Update Decoracion",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"fechaIngreso\": \"2026-03-31\",\n    \"cantidadIngreso\": 45,\n    \"arreglos\": 2,\n    \"perdidas\": 3,\n    \"compras\": 5000,\n    \"prestamoId\": null,\n    \"abonosPrestamo\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/decoraciones/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["decoraciones", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Decoraciones Batch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"decoraciones\": [\n        {\n            \"id\": \"uuid-decoracion-1\",\n            \"fechaIngreso\": \"2026-03-31\",\n            \"cantidadIngreso\": 45,\n            \"arreglos\": 2,\n            \"perdidas\": 3,\n            \"compras\": 5000,\n            \"prestamoId\": null,\n            \"abonosPrestamo\": 0\n        },\n        {\n            \"id\": \"uuid-decoracion-2\",\n            \"fechaIngreso\": \"2026-03-31\",\n            \"cantidadIngreso\": 98,\n            \"arreglos\": 1,\n            \"perdidas\": 1,\n            \"compras\": 2000,\n            \"prestamoId\": null,\n            \"abonosPrestamo\": 0\n        }\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/decoraciones/batch",
+              "host": ["{{baseUrl}}"],
+              "path": ["decoraciones", "batch"]
             }
           }
         },
@@ -922,7 +1121,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"nombre\": \"Grupo Test {{$timestamp}}\",\n    \"porcentajeComision\": 10\n}",
+              "raw": "{\n    \"nombre\": \"Grupo Test {{$timestamp}}\",\n    \"tipo\": \"ELITE\",\n    \"direccion\": \"Calle 123 # 45-67\",\n    \"telefono\": \"3009876543\",\n    \"responsable\": \"31785074\",\n    \"porcentajeResponsable\": 10\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -979,7 +1178,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"porcentajeComision\": 15\n}",
+              "raw": "{\n    \"nombre\": \"Grupo Test {{$timestamp}}\",\n    \"tipo\": \"ELITE\",\n    \"direccion\": \"Falsa 1584\",\n    \"telefono\": \"3009876543\",\n    \"responsable\": \"31785074\",\n    \"porcentajeResponsable\": 10\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -987,9 +1186,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/grupos/1",
+              "raw": "{{baseUrl}}/grupos/{{grupoId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["grupos", "1"]
+              "path": ["grupos", "{{grupoId}}"]
             }
           }
         }

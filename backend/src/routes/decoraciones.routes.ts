@@ -9,12 +9,16 @@ decoracionesRouter.use(authenticate);
 
 const uuidOpcional = z.union([z.string().uuid(), z.literal(''), z.null()]).transform(v => v === '' ? null : v).optional();
 
+const productoDecoracionSchema = z.object({
+  productoId:      z.string().uuid(),
+  fechaEgreso:     z.string(),
+  cantidadEgreso:  z.coerce.number().int().positive(),
+});
+
 const crearSchema = z.object({
-  pedidoId:      z.string().uuid(),
-  decoradoraId:  z.string().uuid(),
-  productoId:    z.string().uuid(),
-  fechaEgreso:   z.string(),
-  cantidadEgreso: z.coerce.number().int().positive(),
+  pedidoId:     z.string().uuid(),
+  decoradoraId: z.string().uuid(),
+  productos:    z.array(productoDecoracionSchema).min(1, 'Al menos un producto'),
 });
 
 const actualizarSchema = z.object({
@@ -28,6 +32,20 @@ const actualizarSchema = z.object({
   abonosPrestamo:  z.coerce.number().optional(),
   prestamoId:      uuidOpcional,
   pagado:          z.boolean().optional(),
+});
+
+const actualizarManySchema = z.object({
+  decoraciones: z.array(z.object({
+    id:             z.string().uuid(),
+    fechaIngreso:    z.string().optional(),
+    cantidadIngreso: z.coerce.number().int().optional(),
+    arreglos:        z.coerce.number().int().optional(),
+    perdidas:        z.coerce.number().int().optional(),
+    compras:         z.coerce.number().optional(),
+    abonosPrestamo:  z.coerce.number().optional(),
+    prestamoId:      uuidOpcional,
+    pagado:          z.boolean().optional(),
+  })).min(1, 'Al menos una decoración'),
 });
 
 decoracionesRouter.get('/reporte-por-grupo', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
@@ -77,6 +95,14 @@ decoracionesRouter.post('/', authorize('ADMINISTRADOR', 'PRODUCCION'), async (re
   try {
     const data = await decoracionesService.crear(crearSchema.parse(req.body));
     res.status(201).json({ success: true, data });
+  } catch (e) { next(e); }
+});
+
+decoracionesRouter.patch('/batch', authorize('ADMINISTRADOR', 'CONTABILIDAD', 'PRODUCCION'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { decoraciones } = actualizarManySchema.parse(req.body);
+    const results = await decoracionesService.actualizarVarias(decoraciones);
+    sendSuccess(res, results, `${results.length} decoración(es) actualizada(s)`);
   } catch (e) { next(e); }
 });
 
