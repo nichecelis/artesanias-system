@@ -46,6 +46,22 @@ export class EmpleadosService {
     await this.obtenerPorId(id);
     return prisma.empleado.update({ where: { id }, data: dto });
   }
+
+  async inactivar(id: string) {
+    const empleado = await prisma.empleado.findUnique({ where: { id } });
+    if (!empleado) throw new AppError('Empleado no encontrado', 404);
+    if (!empleado.activo) throw new AppError('El empleado ya está inactivo', 400);
+    const nominasActivas = await prisma.nomina.count({ where: { empleadoId: id } });
+    if (nominasActivas > 0) throw new AppError('No se puede inactivar: el empleado tiene nóminas registradas', 409);
+    return prisma.empleado.update({ where: { id }, data: { activo: false } });
+  }
+
+  async activar(id: string) {
+    const empleado = await prisma.empleado.findUnique({ where: { id } });
+    if (!empleado) throw new AppError('Empleado no encontrado', 404);
+    if (empleado.activo) throw new AppError('El empleado ya está activo', 400);
+    return prisma.empleado.update({ where: { id }, data: { activo: true } });
+  }
 }
 
 // ─── Nómina ───────────────────────────────────────────────────

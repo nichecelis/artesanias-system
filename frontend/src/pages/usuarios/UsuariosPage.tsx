@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Search, Pencil, KeyRound, UserX, UserCheck } from 'lucide-react';
+import { Plus, Search, Pencil, KeyRound, UserX, UserCheck, Eye, EyeOff, X, Check } from 'lucide-react';
 import { api } from '../../services/api';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
 import { useToastStore } from '../../store/toast.store';
@@ -38,10 +38,17 @@ export default function UsuariosPage() {
   const [search, setSearch]     = useState('');
   const [modal, setModal]       = useState<'crear'|'editar'|'password'|null>(null);
   const [selected, setSelected] = useState<any>(null);
+  const [mostrarInactivos, setMostrarInactivos] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['usuarios', page, search],
-    queryFn: () => api.get('/usuarios', { params: { page, limit: 10, search: search || undefined } }).then(r => r.data),
+    queryKey: ['usuarios', page, search, mostrarInactivos],
+    queryFn: () => {
+      const params: any = { page, limit: 10, search: search || undefined };
+      if (!mostrarInactivos) {
+        params.activo = true;
+      }
+      return api.get('/usuarios', { params }).then(r => r.data);
+    },
   });
 
   const crearForm = useForm<CrearForm>({ resolver: zodResolver(crearSchema), defaultValues: { rol: 'PRODUCCION' } });
@@ -81,31 +88,46 @@ export default function UsuariosPage() {
     onSuccess: () => { closeModal(); toast.addToast('Contraseña actualizada', 'success'); },
   });
 
-  const toggleActivo = useMutation({
-    mutationFn: (row: any) => api.patch(`/usuarios/${row.id}`, { activo: !row.activo }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['usuarios'] }),
+  const inactivar = useMutation({
+    mutationFn: (id: string) => api.patch(`/usuarios/${id}`, { activo: false }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['usuarios'] });
+      toast.addToast('Usuario inactivado exitosamente', 'success');
+    },
+    onError: () => toast.addToast('No se puede inactivar', 'error'),
+  });
+
+  const activar = useMutation({
+    mutationFn: (id: string) => api.patch(`/usuarios/${id}`, { activo: true }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['usuarios'] });
+      toast.addToast('Usuario activado exitosamente', 'success');
+    },
+    onError: () => toast.addToast('Error al activar usuario', 'error'),
   });
 
   const columns = [
-    { key: 'nombre', header: 'Nombre' },
+    { key: 'nombre', header: 'Nombre', render: (r: any) => (
+      <div className="flex items-center gap-2">
+        <span className={!r.activo ? 'text-gray-400 line-through' : ''}>{r.nombre}</span>
+        {!r.activo && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">Inactivo</span>}
+      </div>
+    )},
     { key: 'correo', header: 'Correo' },
     { key: 'rol',    header: 'Rol', render: (r: { rol: Rol }) => (
       <span className={`badge ${ROL_COLORS[r.rol] ?? 'bg-gray-100'}`}>{r.rol}</span>
     )},
-    { key: 'activo', header: 'Estado', render: (r: any) => (
-      <span className={`badge ${r.activo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
-        {r.activo ? 'Activo' : 'Inactivo'}
-      </span>
-    )},
     { key: 'acciones', header: '', render: (r: any) => (
       <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-        <button onClick={() => openEditar(r)} className="text-gray-400 hover:text-primary-600" title="Editar"><Pencil size={14} /></button>
-        <button onClick={() => openPassword(r)} className="text-gray-400 hover:text-yellow-600" title="Cambiar contraseña"><KeyRound size={14} /></button>
-        <button onClick={() => { if (confirm(`¿${r.activo ? 'Desactivar' : 'Activar'} a ${r.nombre}?`)) toggleActivo.mutate(r); }}
-          className={`text-gray-400 ${r.activo ? 'hover:text-red-600' : 'hover:text-green-600'}`}
-          title={r.activo ? 'Desactivar' : 'Activar'}>
-          {r.activo ? <UserX size={14} /> : <UserCheck size={14} />}
-        </button>
+        <button onClick={() => openEditar(r)} className="text-gray-400 hover:text-primary-600" title="Editar"><Pencil size={15} /></button>
+        <button onClick={() => openPassword(r)} className="text-gray-400 hover:text-yellow-600" title="Cambiar contraseña"><KeyRound size={15} /></button>
+        {r.activo ? (
+          <button onClick={() => { if (confirm(`¿Inactivar a ${r.nombre}?`)) inactivar.mutate(r.id); }}
+            className="text-gray-400 hover:text-red-600" title="Inactivar"><X size={15} /></button>
+        ) : (
+          <button onClick={() => { if (confirm(`¿Activar a ${r.nombre}?`)) activar.mutate(r.id); }}
+            className="text-gray-400 hover:text-green-600" title="Activar"><Check size={15} /></button>
+        )}
       </div>
     )},
   ];
@@ -120,10 +142,20 @@ export default function UsuariosPage() {
         <button onClick={() => setModal('crear')} className="btn-primary"><Plus size={16} /> Nuevo usuario</button>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search size={16} className="absolute left-3 top-2.5 text-gray-400" />
-        <input className="input pl-9" placeholder="Buscar por nombre o correo..." value={search}
-          onChange={e => { setSearch(e.target.value); setPage(1); }} />
+      <div className="flex gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search size={16} className="absolute left-3 top-2.5 text-gray-400" />
+          <input className="input pl-9" placeholder="Buscar por nombre o correo..." value={search}
+            onChange={e => { setSearch(e.target.value); setPage(1); }} />
+        </div>
+        <button
+          onClick={() => { setMostrarInactivos(!mostrarInactivos); setPage(1); }}
+          className={`btn-secondary flex items-center gap-2 ${mostrarInactivos ? 'bg-yellow-100 border-yellow-400 text-yellow-700' : ''}`}
+          title={mostrarInactivos ? 'Ocultar inactivos' : 'Mostrar inactivos'}
+        >
+          {mostrarInactivos ? <EyeOff size={16} /> : <Eye size={16} />}
+          {mostrarInactivos ? 'Ocultando inactivos' : 'Ver inactivos'}
+        </button>
       </div>
 
       <div className="card p-0 overflow-hidden">

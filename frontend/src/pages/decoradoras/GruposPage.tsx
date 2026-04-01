@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Pencil, Trash2, Users, Search, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, Search, X, Eye, EyeOff, Check } from 'lucide-react';
 import { api } from '../../services/api';
 import { decoradorasService } from '../../services';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
@@ -89,10 +89,17 @@ export default function GruposPage() {
   const [detalle, setDetalle] = useState<any>(null);
   const [editing, setEditing] = useState<any>(null);
   const [responsable, setResponsable] = useState<any>(null);
+  const [mostrarInactivos, setMostrarInactivos] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['grupos', page],
-    queryFn: () => api.get('/grupos', { params: { page, limit: 10 } }).then(r => r.data),
+    queryKey: ['grupos', page, mostrarInactivos],
+    queryFn: () => {
+      const params: any = { page, limit: 10 };
+      if (!mostrarInactivos) {
+        params.activo = true;
+      }
+      return api.get('/grupos', { params }).then(r => r.data);
+    },
   });
 
   const { data: grupoDetalle } = useQuery({
@@ -145,7 +152,28 @@ export default function GruposPage() {
 
   const remove = useMutation({
     mutationFn: (id: string) => api.delete(`/grupos/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['grupos'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['grupos'] });
+      toast.addToast('Grupo eliminado', 'success');
+    },
+  });
+
+  const inactivate = useMutation({
+    mutationFn: (id: string) => api.patch(`/grupos/${id}/inactivar`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['grupos'] });
+      toast.addToast('Grupo inactivado exitosamente', 'success');
+    },
+    onError: () => toast.addToast('No se puede inactivar: el grupo tiene decoradoras activas', 'error'),
+  });
+
+  const activate = useMutation({
+    mutationFn: (id: string) => api.patch(`/grupos/${id}/activar`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['grupos'] });
+      toast.addToast('Grupo activado exitosamente', 'success');
+    },
+    onError: () => toast.addToast('Error al activar grupo', 'error'),
   });
 
   const columns = [
@@ -154,7 +182,12 @@ export default function GruposPage() {
         {r.tipo}
       </span>
     )},
-    { key: 'nombre',      header: 'Nombre' },
+    { key: 'nombre', header: 'Nombre', render: (r: any) => (
+      <div className="flex items-center gap-2">
+        <span className={r.activo === false ? 'text-gray-400 line-through' : ''}>{r.nombre}</span>
+        {r.activo === false && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">Inactivo</span>}
+      </div>
+    )},
     { key: 'responsable', header: 'Responsable', render: (r: any) => {
       const dec = decoradoras?.find((d: any) => d.documento === r.responsable);
       return dec ? (
@@ -171,9 +204,16 @@ export default function GruposPage() {
     )},
     { key: 'acciones', header: 'Acciones', render: (r: any) => (
       <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-        <button onClick={() => openEdit(r)} className="btn-secondary text-xs py-1 px-2" title="Editar"><Pencil size={12} /></button>
+        <button onClick={() => openEdit(r)} className="text-gray-400 hover:text-primary-600" title="Editar"><Pencil size={15} /></button>
+        {r.activo ? (
+          <button onClick={() => { if (confirm(`¿Inactivar ${r.nombre}?`)) inactivate.mutate(r.id); }}
+            className="text-gray-400 hover:text-red-600" title="Inactivar"><X size={15} /></button>
+        ) : (
+          <button onClick={() => { if (confirm(`¿Activar ${r.nombre}?`)) activate.mutate(r.id); }}
+            className="text-gray-400 hover:text-green-600" title="Activar"><Check size={15} /></button>
+        )}
         <button onClick={() => { if (confirm('¿Eliminar grupo?')) remove.mutate(r.id); }}
-          className="btn-secondary text-xs py-1 px-2 text-red-600" title="Eliminar"><Trash2 size={12} /></button>
+          className="text-gray-400 hover:text-red-600" title="Eliminar"><Trash2 size={15} /></button>
       </div>
     )},
   ];
@@ -188,7 +228,6 @@ export default function GruposPage() {
         <button onClick={openNew} className="btn-primary"><Plus size={16} /> Nuevo grupo</button>
       </div>
 
-      {/* Estadísticas rápidas */}
       {data?.data?.length > 0 && (
         <div className="grid grid-cols-2 gap-4">
           <div className="card flex items-center gap-3">
@@ -208,6 +247,17 @@ export default function GruposPage() {
         </div>
       )}
 
+      <div className="flex gap-3">
+        <button
+          onClick={() => { setMostrarInactivos(!mostrarInactivos); setPage(1); }}
+          className={`btn-secondary flex items-center gap-2 ${mostrarInactivos ? 'bg-yellow-100 border-yellow-400 text-yellow-700' : ''}`}
+          title={mostrarInactivos ? 'Ocultar inactivos' : 'Mostrar inactivos'}
+        >
+          {mostrarInactivos ? <EyeOff size={16} /> : <Eye size={16} />}
+          {mostrarInactivos ? 'Ocultando inactivos' : 'Ver inactivos'}
+        </button>
+      </div>
+
       <div className="card p-0 overflow-hidden">
         {isLoading ? <LoadingScreen /> : !data?.data?.length ? (
           <EmptyState
@@ -222,7 +272,6 @@ export default function GruposPage() {
         )}
       </div>
 
-      {/* Modal detalle del grupo */}
       <Modal title={`Miembros — ${detalle?.nombre ?? ''}`} open={Boolean(detalle)} onClose={() => setDetalle(null)}>
         {!grupoDetalle ? <div className="flex justify-center py-8"><Spinner /></div> : (
           <div className="space-y-3">
@@ -265,7 +314,6 @@ export default function GruposPage() {
         )}
       </Modal>
 
-      {/* Modal formulario */}
       <Modal title={editing ? 'Editar grupo' : 'Nuevo grupo'} open={modal} onClose={closeModal}>
         <form onSubmit={handleSubmit(d => save.mutate(d))} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -289,8 +337,14 @@ export default function GruposPage() {
               <label className="label">Responsable / Líder</label>
               <BuscadorDecoradora
                 value={responsable}
-                onSelect={(d) => setResponsable(d)}
-                onClear={() => setResponsable(null)}
+                onSelect={(d) => {
+                  setResponsable(d);
+                  setValue('telefono', d?.telefono || '');
+                }}
+                onClear={() => {
+                  setResponsable(null);
+                  setValue('telefono', '');
+                }}
               />
             </div>
             <div className="col-span-2">

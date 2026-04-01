@@ -128,6 +128,18 @@ empleadosRouter.patch('/:id', async (req: Request, res: Response, next: NextFunc
     sendSuccess(res, data, 'Actualizado');
   } catch (error) { next(error); }
 });
+empleadosRouter.patch('/:id/inactivar', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await empleadosService.inactivar(req.params.id);
+    sendSuccess(res, data, 'Empleado inactivado');
+  } catch (error) { next(error); }
+});
+empleadosRouter.patch('/:id/activar', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await empleadosService.activar(req.params.id);
+    sendSuccess(res, data, 'Empleado activado');
+  } catch (error) { next(error); }
+});
 
 
 // ─── Nómina ───────────────────────────────────────────────────

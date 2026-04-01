@@ -91,6 +91,8 @@ export const empleadosService = {
   obtener:  (id: string)   => api.get<ApiResponse<any>>(`/empleados/${id}`),
   crear:    (data: any)    => api.post<ApiResponse<any>>('/empleados', data),
   actualizar: (id: string, data: any) => api.patch<ApiResponse<any>>(`/empleados/${id}`, data),
+  inactivar: (id: string)  => api.patch(`/empleados/${id}/inactivar`),
+  activar: (id: string)    => api.patch(`/empleados/${id}/activar`),
 };
 
 // ─── Nómina ────────────────────────────────────────────────

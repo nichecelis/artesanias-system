@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Pencil } from 'lucide-react';
+import { Plus, Pencil, Eye, EyeOff, Check, X } from 'lucide-react';
 import { empleadosService } from '../../services';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
 import { useToastStore } from '../../store/toast.store';
@@ -20,13 +20,20 @@ const fmt = (n: any) => `$${Number(n ?? 0).toLocaleString('es-CO')}`;
 export default function EmpleadosPage() {
   const qc = useQueryClient();
   const toast = useToastStore();
-  const [page, setPage]       = useState(1);
-  const [modal, setModal]     = useState(false);
-  const [editing, setEditing] = useState<any>(null);
+  const [page, setPage]           = useState(1);
+  const [modal, setModal]         = useState(false);
+  const [editing, setEditing]     = useState<any>(null);
+  const [mostrarInactivos, setMostrarInactivos] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['empleados', page],
-    queryFn: () => empleadosService.listar({ page, limit: 10 }).then((r) => r.data),
+    queryKey: ['empleados', page, mostrarInactivos],
+    queryFn: () => {
+      const params: any = { page, limit: 10 };
+      if (!mostrarInactivos) {
+        params.activo = true;
+      }
+      return empleadosService.listar(params).then((r) => r.data);
+    },
   });
 
   const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<Form>({
@@ -52,19 +59,46 @@ export default function EmpleadosPage() {
     },
   });
 
+  const remove = useMutation({
+    mutationFn: (id: string) => empleadosService.inactivar(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['empleados'] });
+      toast.addToast('Empleado inactivado exitosamente', 'success');
+    },
+    onError: () => toast.addToast('No se puede inactivar: el empleado tiene registros asociados', 'error'),
+  });
+
+  const activate = useMutation({
+    mutationFn: (id: string) => empleadosService.activar(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['empleados'] });
+      toast.addToast('Empleado activado exitosamente', 'success');
+    },
+    onError: () => toast.addToast('Error al activar empleado', 'error'),
+  });
+
   const columns = [
-    { key: 'nombre',    header: 'Nombre' },
+    { key: 'nombre',    header: 'Nombre', render: (r: any) => (
+      <div className="flex items-center gap-2">
+        <span className={!r.activo ? 'text-gray-400 line-through' : ''}>{r.nombre}</span>
+        {!r.activo && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">Inactivo</span>}
+      </div>
+    )},
     { key: 'documento', header: 'Documento',   render: (r: any) => r.documento ?? '—' },
     { key: 'salario',   header: 'Salario',      render: (r: any) => fmt(r.salario) },
-    { key: 'activo',    header: 'Estado',        render: (r: any) => (
-      <span className={`badge ${r.activo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-        {r.activo ? 'Activo' : 'Inactivo'}
-      </span>
-    )},
     { key: 'acciones',  header: '', render: (r: any) => (
-      <button onClick={(e) => { e.stopPropagation(); openEdit(r); }} className="text-gray-400 hover:text-primary-600">
-        <Pencil size={15} />
-      </button>
+      <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+        <button onClick={() => openEdit(r)} className="text-gray-400 hover:text-primary-600">
+          <Pencil size={15} />
+        </button>
+        {r.activo ? (
+          <button onClick={() => { if (confirm(`¿Inactivar a ${r.nombre}?`)) remove.mutate(r.id); }}
+            className="text-gray-400 hover:text-red-600" title="Inactivar"><X size={15} /></button>
+        ) : (
+          <button onClick={() => { if (confirm(`¿Activar a ${r.nombre}?`)) activate.mutate(r.id); }}
+            className="text-gray-400 hover:text-green-600" title="Activar"><Check size={15} /></button>
+        )}
+      </div>
     )},
   ];
 
@@ -76,6 +110,17 @@ export default function EmpleadosPage() {
           <p className="text-gray-500 text-sm">{data?.meta?.total ?? 0} empleados</p>
         </div>
         <button onClick={openNew} className="btn-primary"><Plus size={16} /> Nuevo empleado</button>
+      </div>
+
+      <div className="flex gap-3">
+        <button
+          onClick={() => { setMostrarInactivos(!mostrarInactivos); setPage(1); }}
+          className={`btn-secondary flex items-center gap-2 ${mostrarInactivos ? 'bg-yellow-100 border-yellow-400 text-yellow-700' : ''}`}
+          title={mostrarInactivos ? 'Ocultar inactivos' : 'Mostrar inactivos'}
+        >
+          {mostrarInactivos ? <EyeOff size={16} /> : <Eye size={16} />}
+          {mostrarInactivos ? 'Ocultando inactivos' : 'Ver inactivos'}
+        </button>
       </div>
 
       <div className="card p-0 overflow-hidden">
@@ -104,8 +149,8 @@ export default function EmpleadosPage() {
             <input {...register('salario')} type="number" min={0} className="input" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={isSubmitting} className="btn-primary">
-              {isSubmitting ? <Spinner size="sm" /> : (editing ? 'Guardar' : 'Crear')}
+            <button type="submit" disabled={isSubmitting || save.isPending} className="btn-primary">
+              {(isSubmitting || save.isPending) ? <Spinner size="sm" /> : (editing ? 'Guardar' : 'Crear')}
             </button>
             <button type="button" onClick={closeModal} className="btn-secondary">Cancelar</button>
           </div>

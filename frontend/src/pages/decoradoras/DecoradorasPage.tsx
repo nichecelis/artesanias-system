@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Search, Pencil, Eye } from 'lucide-react';
+import { Plus, Search, Pencil, Eye, X, EyeOff, Check } from 'lucide-react';
 import { decoradorasService } from '../../services';
 import { api } from '../../services/api';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
@@ -42,10 +42,17 @@ export default function DecoradorasPage() {
   const [pagosModal,setPagosModal]   = useState(false);
   const [editing,setEditing]         = useState<any>(null);
   const [selected,setSelected]       = useState<any>(null);
+  const [mostrarInactivos, setMostrarInactivos] = useState(false);
 
   const {data,isLoading} = useQuery({
-    queryKey:['decoradoras',page,search],
-    queryFn:()=>decoradorasService.listar({page,limit:10,search:search||undefined}).then(r=>r.data),
+    queryKey:['decoradoras',page,search,mostrarInactivos],
+    queryFn:()=>{
+      const params: any = {page,limit:10,search:search||undefined};
+      if (!mostrarInactivos) {
+        params.activa = true;
+      }
+      return decoradorasService.listar(params).then(r=>r.data);
+    },
   });
 
   const {data:grupos} = useQuery({
@@ -86,8 +93,31 @@ export default function DecoradorasPage() {
     },
   });
 
+  const remove = useMutation({
+    mutationFn:(id:string)=>decoradorasService.inactivar(id),
+    onSuccess:()=>{
+      qc.invalidateQueries({queryKey:['decoradoras']});
+      toast.addToast('Decoradora inactivada exitosamente', 'success');
+    },
+    onError:()=>toast.addToast('No se puede inactivar: la decoradora tiene decoraciones activas', 'error'),
+  });
+
+  const activate = useMutation({
+    mutationFn:(id:string)=>decoradorasService.activar(id),
+    onSuccess:()=>{
+      qc.invalidateQueries({queryKey:['decoradoras']});
+      toast.addToast('Decoradora activada exitosamente', 'success');
+    },
+    onError:()=>toast.addToast('Error al activar decoradora', 'error'),
+  });
+
   const columns=[
-    {key:'nombre',   header:'Nombre'},
+    {key:'nombre',   header:'Nombre', render:(r:any)=>(
+      <div className="flex items-center gap-2">
+        <span className={r.activa === false ? 'text-gray-400 line-through' : ''}>{r.nombre}</span>
+        {r.activa === false && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">Inactiva</span>}
+      </div>
+    )},
     {key:'documento',header:'Documento',render:(r:any)=>r.documento??'—'},
     {key:'grupo',    header:'Grupo',render:(r:any)=>r.grupo?(
       <span className={`badge ${r.grupo.tipo==='ELITE'?'bg-purple-100 text-purple-800':'bg-blue-100 text-blue-800'}`}>
@@ -96,12 +126,21 @@ export default function DecoradorasPage() {
     ):<span className="text-gray-400 text-xs">Sin grupo</span>},
     {key:'telefono', header:'Teléfono',render:(r:any)=>r.telefono??'—'},
     {key:'banco',    header:'Banco',   render:(r:any)=>r.banco??'—'},
-	{key:'numCuenta', header:'No. Cuenta', render:(r:any)=>r.numCuenta??'—'},
-	{key:'tipoCuenta',header:'Tipo',       render:(r:any)=>r.tipoCuenta??'—'},
+  	{key:'numCuenta', header:'No. Cuenta', render:(r:any)=>r.numCuenta??'—'},
+  	{key:'tipoCuenta',header:'Tipo',       render:(r:any)=>r.tipoCuenta??'—'},
     {key:'acciones', header:'',render:(r:any)=>(
       <div className="flex gap-2" onClick={e=>e.stopPropagation()}>
-        <button onClick={()=>openPagos(r)} className="text-gray-400 hover:text-green-600" title="Ver pagos"><Eye size={15}/></button>
+        {r.activa && (
+          <button onClick={()=>openPagos(r)} className="text-gray-400 hover:text-green-600" title="Ver pagos"><Eye size={15}/></button>
+        )}
         <button onClick={()=>openEdit(r)}  className="text-gray-400 hover:text-primary-600"><Pencil size={15}/></button>
+        {r.activa ? (
+          <button onClick={()=>{if(confirm(`¿Inactivar ${r.nombre}?`))remove.mutate(r.id);}}
+            className="text-gray-400 hover:text-red-600" title="Inactivar"><X size={15}/></button>
+        ) : (
+          <button onClick={()=>{if(confirm(`¿Activar ${r.nombre}?`))activate.mutate(r.id);}}
+            className="text-gray-400 hover:text-green-600" title="Activar"><Check size={15}/></button>
+        )}
       </div>
     )},
   ];
@@ -116,10 +155,20 @@ export default function DecoradorasPage() {
         <button onClick={openNew} className="btn-primary"><Plus size={16}/> Nueva decoradora</button>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search size={16} className="absolute left-3 top-2.5 text-gray-400"/>
-        <input className="input pl-9" placeholder="Buscar decoradora..." value={search}
-          onChange={e=>{setSearch(e.target.value);setPage(1);}}/>
+      <div className="flex gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search size={16} className="absolute left-3 top-2.5 text-gray-400"/>
+          <input className="input pl-9" placeholder="Buscar decoradora..." value={search}
+            onChange={e=>{setSearch(e.target.value);setPage(1);}}/>
+        </div>
+        <button
+          onClick={()=>{setMostrarInactivos(!mostrarInactivos);setPage(1);}}
+          className={`btn-secondary flex items-center gap-2 ${mostrarInactivos?'bg-yellow-100 border-yellow-400 text-yellow-700':''}`}
+          title={mostrarInactivos?'Ocultar inactivas':'Mostrar inactivas'}
+        >
+          {mostrarInactivos?<EyeOff size={16}/>:<Eye size={16}/>}
+          {mostrarInactivos?'Ocultando inactivas':'Ver inactivas'}
+        </button>
       </div>
 
       <div className="card p-0 overflow-hidden">
@@ -133,7 +182,6 @@ export default function DecoradorasPage() {
         )}
       </div>
 
-      {/* Modal formulario */}
       <Modal title={editing?'Editar decoradora':'Nueva decoradora'} open={modal} onClose={closeModal}>
         <form onSubmit={handleSubmit(d=>save.mutate(d))} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -192,7 +240,6 @@ export default function DecoradorasPage() {
         </form>
       </Modal>
 
-      {/* Modal pagos */}
       <Modal title={`Pagos — ${selected?.nombre}`} open={pagosModal} onClose={()=>{setPagosModal(false);setSelected(null);}}>
         {!pagos?<div className="flex justify-center py-8"><Spinner/></div>:(
           <div className="space-y-4">

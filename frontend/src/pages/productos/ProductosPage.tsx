@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Search, Pencil, Trash2, DollarSign, X } from 'lucide-react';
+import { Plus, Search, Pencil, DollarSign, X, Eye, EyeOff, Check } from 'lucide-react';
 import { productosService, clientesService } from '../../services';
 import { api } from '../../services/api';
 import { Table, Pagination, Modal, LoadingScreen, EmptyState, Spinner } from '../../components/common';
@@ -19,7 +19,6 @@ type Form = z.infer<typeof schema>;
 
 const fmt = (n: any) => `$${Number(n ?? 0).toLocaleString('es-CO')}`;
 
-// ── Buscador de cliente inline ───────────────────────────────
 function ClienteSearch({ onSelect }: { onSelect: (c: any) => void }) {
   const [q, setQ]     = useState('');
   const [open, setOpen] = useState(false);
@@ -70,10 +69,17 @@ export default function ProductosPage() {
   const [selected, setSelected] = useState<any>(null);
   const [nuevoPrecio, setNuevoPrecio] = useState('');
   const [clienteSelec, setClienteSelec] = useState<any>(null);
+  const [mostrarInactivos, setMostrarInactivos] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['productos', page, search],
-    queryFn: () => productosService.listar({ page, limit: 10, search: search || undefined }).then(r => r.data),
+    queryKey: ['productos', page, search, mostrarInactivos],
+    queryFn: () => {
+      const params: any = { page, limit: 10, search: search || undefined };
+      if (!mostrarInactivos) {
+        params.estado = 'ACTIVO';
+      }
+      return productosService.listar(params).then(r => r.data);
+    },
   });
 
   const { data: precios, refetch: refetchPrecios } = useQuery({
@@ -107,16 +113,26 @@ export default function ProductosPage() {
   });
 
   const remove = useMutation({
-    mutationFn: (id: string) => productosService.eliminar(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['productos'] }),
-    onError: () => toast.addToast('No se puede eliminar: el producto tiene registros asociados', 'error'),
+    mutationFn: (id: string) => productosService.inactivar(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['productos'] });
+      toast.addToast('Producto inactivado exitosamente', 'success');
+    },
+    onError: () => toast.addToast('No se puede inactivar: el producto tiene pedidos activos', 'error'),
+  });
+
+  const activate = useMutation({
+    mutationFn: (id: string) => productosService.activar(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['productos'] });
+      toast.addToast('Producto activado exitosamente', 'success');
+    },
+    onError: () => toast.addToast('Error al activar producto', 'error'),
   });
 
   const upsertPrecio = useMutation({
     mutationFn: () => 
-      api.put(`/precios/${clienteSelec.id}/${selected.id}`, { // 👈 orden correcto
-        precio: Number(nuevoPrecio) // 👈 nombre correcto
-      }),
+      api.put(`/precios/${clienteSelec.id}/${selected.id}`, { precio: Number(nuevoPrecio) }),
     onSuccess: () => { 
       refetchPrecios(); 
       setClienteSelec(null); 
@@ -131,14 +147,27 @@ export default function ProductosPage() {
   });
 
   const columns = [
-    { key: 'nombre',           header: 'Nombre' },
+    { key: 'nombre', header: 'Nombre', render: (r: any) => (
+      <div className="flex items-center gap-2">
+        <span className={r.estado === 'INACTIVO' ? 'text-gray-400 line-through' : ''}>{r.nombre}</span>
+        {r.estado === 'INACTIVO' && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">Inactivo</span>}
+      </div>
+    )},
     { key: 'precioVenta',      header: 'Precio base',       render: (r: any) => fmt(r.precioVenta) },
     { key: 'precioDecoracion', header: 'Precio decoración', render: (r: any) => fmt(r.precioDecoracion) },
     { key: 'acciones', header: '', render: (r: any) => (
       <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-        <button onClick={() => openPrecios(r)} className="text-gray-400 hover:text-green-600" title="Precios por cliente"><DollarSign size={15} /></button>
+        {r.estado === 'ACTIVO' && (
+          <button onClick={() => openPrecios(r)} className="text-gray-400 hover:text-green-600" title="Precios por cliente"><DollarSign size={15} /></button>
+        )}
         <button onClick={() => openEdit(r)} className="text-gray-400 hover:text-primary-600"><Pencil size={15} /></button>
-        <button onClick={() => { if (confirm('¿Eliminar producto?')) remove.mutate(r.id); }} className="text-gray-400 hover:text-red-600"><Trash2 size={15} /></button>
+        {r.estado === 'ACTIVO' ? (
+          <button onClick={() => { if (confirm(`¿Inactivar ${r.nombre}?`)) remove.mutate(r.id); }}
+            className="text-gray-400 hover:text-red-600" title="Inactivar"><X size={15} /></button>
+        ) : (
+          <button onClick={() => { if (confirm(`¿Activar ${r.nombre}?`)) activate.mutate(r.id); }}
+            className="text-gray-400 hover:text-green-600" title="Activar"><Check size={15} /></button>
+        )}
       </div>
     )},
   ];
@@ -153,10 +182,20 @@ export default function ProductosPage() {
         <button onClick={openNew} className="btn-primary"><Plus size={16} /> Nuevo producto</button>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search size={16} className="absolute left-3 top-2.5 text-gray-400" />
-        <input className="input pl-9" placeholder="Buscar producto..." value={search}
-          onChange={e => { setSearch(e.target.value); setPage(1); }} />
+      <div className="flex gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search size={16} className="absolute left-3 top-2.5 text-gray-400" />
+          <input className="input pl-9" placeholder="Buscar producto..." value={search}
+            onChange={e => { setSearch(e.target.value); setPage(1); }} />
+        </div>
+        <button
+          onClick={() => { setMostrarInactivos(!mostrarInactivos); setPage(1); }}
+          className={`btn-secondary flex items-center gap-2 ${mostrarInactivos ? 'bg-yellow-100 border-yellow-400 text-yellow-700' : ''}`}
+          title={mostrarInactivos ? 'Ocultar inactivos' : 'Mostrar inactivos'}
+        >
+          {mostrarInactivos ? <EyeOff size={16} /> : <Eye size={16} />}
+          {mostrarInactivos ? 'Ocultando inactivos' : 'Ver inactivos'}
+        </button>
       </div>
 
       <div className="card p-0 overflow-hidden">
@@ -170,7 +209,6 @@ export default function ProductosPage() {
         )}
       </div>
 
-      {/* Modal producto */}
       <Modal title={editing ? 'Editar producto' : 'Nuevo producto'} open={modal} onClose={closeModal}>
         <form onSubmit={handleSubmit(d => save.mutate(d))} className="space-y-4">
           <div>
@@ -202,14 +240,12 @@ export default function ProductosPage() {
         </form>
       </Modal>
 
-      {/* Modal precios por cliente */}
       <Modal title={`Precios por cliente — ${selected?.nombre}`} open={preciosModal} onClose={closePrecios}>
         <div className="space-y-4">
           <div className="bg-blue-50 rounded-lg p-3 text-sm text-blue-700">
             Precio base: <strong>{fmt(selected?.precioVenta)}</strong>. Los precios por cliente sobreescriben este valor.
           </div>
 
-          {/* Agregar precio */}
           <div className="space-y-2">
             <p className="text-sm font-medium text-gray-700">Agregar / actualizar precio</p>
             <ClienteSearch onSelect={c => { setClienteSelec(c); setNuevoPrecio(''); }} />
@@ -231,7 +267,6 @@ export default function ProductosPage() {
             )}
           </div>
 
-          {/* Lista de precios */}
           <div>
             <p className="text-sm font-medium text-gray-700 mb-2">Precios configurados ({precios?.length ?? 0})</p>
             {!precios?.length ? (
