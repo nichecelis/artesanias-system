@@ -132,7 +132,7 @@ export class FacturasService {
     const saldo = total + saldoAnterior - montoPagado;
     const totalPagar = saldo;
 
-    const fechaISO = new Date(dto.fecha + 'T12:00:00.000Z');
+    const fecha = new Date(dto.fecha + 'T12:00:00.000Z');
 
     const factura = await prisma.factura.create({
       data: {
