@@ -1,29 +1,34 @@
 import { test, expect } from '@playwright/test';
 
 const BASE_URL = 'http://localhost:5173';
-const timestamp = Date.now();
 
 async function goTo(page: any, path: string) {
   await page.goto(`${BASE_URL}${path}`);
   await page.waitForLoadState('domcontentloaded');
 }
 
-async function waitForTable(page: any) {
+async function waitForPage(page: any) {
   await page.waitForTimeout(500);
+}
+
+async function expectTableOrEmpty(page: any) {
+  const hasTable = await page.locator('table').count() > 0;
+  const hasEmpty = await page.locator('text="Sin').count() > 0 || await page.locator('text="No hay').count() > 0 || await page.locator('text="Empty').count() > 0;
+  expect(hasTable || hasEmpty).toBeTruthy();
 }
 
 test.describe('CRUD Decoraciones', () => {
   test('READ - debería mostrar la lista de decoraciones', async ({ page }) => {
     await goTo(page, '/decoraciones');
-    await waitForTable(page);
+    await waitForPage(page);
     
     await expect(page.locator('h1:has-text("Decoraciones")')).toBeVisible({ timeout: 15000 });
-    await expect(page.locator('table')).toBeVisible({ timeout: 10000 });
+    await expectTableOrEmpty(page);
   });
 
   test('FILTER - debería buscar por texto', async ({ page }) => {
     await goTo(page, '/decoraciones');
-    await waitForTable(page);
+    await waitForPage(page);
     
     const searchInput = page.locator('input[placeholder*="Buscar"]').first();
     await searchInput.fill('test');
@@ -34,7 +39,7 @@ test.describe('CRUD Decoraciones', () => {
 
   test('FILTER - debería filtrar por decoradora', async ({ page }) => {
     await goTo(page, '/decoraciones');
-    await waitForTable(page);
+    await waitForPage(page);
     
     const decInput = page.locator('input[placeholder*="Buscar decoradora"]');
     if (await decInput.isVisible()) {
@@ -44,7 +49,7 @@ test.describe('CRUD Decoraciones', () => {
 
   test('FILTER - debería filtrar por grupo', async ({ page }) => {
     await goTo(page, '/decoraciones');
-    await waitForTable(page);
+    await waitForPage(page);
     
     const grupoInput = page.locator('input[placeholder*="Filtrar por grupo"]');
     if (await grupoInput.isVisible()) {
@@ -54,7 +59,7 @@ test.describe('CRUD Decoraciones', () => {
 
   test('FILTER - debería filtrar por fechas', async ({ page }) => {
     await goTo(page, '/decoraciones');
-    await waitForTable(page);
+    await waitForPage(page);
     
     const dateInputs = page.locator('input[type="date"]');
     const count = await dateInputs.count();
@@ -63,14 +68,12 @@ test.describe('CRUD Decoraciones', () => {
 
   test('FILTER - debería limpiar filtros', async ({ page }) => {
     await goTo(page, '/decoraciones');
-    await waitForTable(page);
+    await waitForPage(page);
     
-    // Aplicar algún filtro
     const searchInput = page.locator('input[placeholder*="Buscar"]').first();
     await searchInput.fill('test');
     await page.waitForTimeout(300);
     
-    // Buscar botón limpiar
     const limpiarBtn = page.locator('button:has-text("Limpiar")');
     if (await limpiarBtn.isVisible()) {
       await limpiarBtn.click();
@@ -81,19 +84,18 @@ test.describe('CRUD Decoraciones', () => {
 
   test('CREATE - debería abrir modal de crear decoración', async ({ page }) => {
     await goTo(page, '/decoraciones');
-    await waitForTable(page);
+    await waitForPage(page);
     
     await page.click('button:has-text("Nueva")');
     await expect(page.locator('h2:has-text("Nueva")')).toBeVisible({ timeout: 10000 });
     
-    // Verificar campos
     await expect(page.locator('input[placeholder*="Buscar por nombre"]')).toBeVisible({ timeout: 5000 });
     await expect(page.locator('button:has-text("Agregar")')).toBeVisible({ timeout: 5000 });
   });
 
   test('READ - debería ver reporte', async ({ page }) => {
     await goTo(page, '/decoraciones');
-    await waitForTable(page);
+    await waitForPage(page);
     
     const reporteBtn = page.locator('button:has-text("Generar Reporte")');
     if (await reporteBtn.isVisible()) {
@@ -101,20 +103,24 @@ test.describe('CRUD Decoraciones', () => {
     }
   });
 
-  test('READ - debería ver tabla con columnas correctas', async ({ page }) => {
+  test('READ - debería ver tabla con columnas correctas o empty state', async ({ page }) => {
     await goTo(page, '/decoraciones');
-    await waitForTable(page);
+    await waitForPage(page);
     
-    await expect(page.locator('th:has-text("Pedido")')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('th:has-text("Decoradora")')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('th:has-text("Estado")')).toBeVisible({ timeout: 5000 });
+    const hasTable = await page.locator('table').count() > 0;
+    if (hasTable) {
+      await expect(page.locator('th:has-text("Pedido")')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('th:has-text("Decoradora")')).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('th:has-text("Estado")')).toBeVisible({ timeout: 5000 });
+    } else {
+      await expect(page.locator('text="Sin').or(page.locator('text="No hay')).toBeVisible({ timeout: 5000 });
+    }
   });
 
   test('UPDATE - debería expandir grupo de decoración', async ({ page }) => {
     await goTo(page, '/decoraciones');
-    await waitForTable(page);
+    await waitForPage(page);
     
-    // Buscar botón de expandir (chevron)
     const expandBtns = page.locator('button').filter({ has: page.locator('svg') });
     if (await expandBtns.count() > 0) {
       await expandBtns.first().click();

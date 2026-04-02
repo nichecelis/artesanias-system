@@ -8,6 +8,12 @@ async function goTo(page: any, path: string) {
   await page.waitForTimeout(300);
 }
 
+async function expectTableOrEmpty(page: any) {
+  const hasTable = await page.locator('table').count() > 0;
+  const hasEmpty = await page.locator('text="Sin').count() > 0 || await page.locator('text="No hay').count() > 0;
+  expect(hasTable || hasEmpty).toBeTruthy();
+}
+
 test.describe('Módulo: Despachos', () => {
   test('debería mostrar la lista de despachos', async ({ page }) => {
     await goTo(page, '/despachos');
@@ -21,6 +27,6 @@ test.describe('Módulo: Despachos', () => {
 
   test('debería tener tabla o empty state de despachos', async ({ page }) => {
     await goTo(page, '/despachos');
-    await expect(page.locator('table, [class*="EmptyState"]')).toBeVisible({ timeout: 10000 });
+    await expectTableOrEmpty(page);
   });
 });

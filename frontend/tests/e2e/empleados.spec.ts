@@ -16,6 +16,12 @@ async function closeModalIfOpen(page: any) {
   }
 }
 
+async function expectTableOrEmpty(page: any) {
+  const hasTable = await page.locator('table').count() > 0;
+  const hasEmpty = await page.locator('text="Sin').count() > 0 || await page.locator('text="No hay').count() > 0;
+  expect(hasTable || hasEmpty).toBeTruthy();
+}
+
 test.describe('CRUD Empleados', () => {
   test.beforeEach(async ({ page }) => {
     await goTo(page, '/empleados');
@@ -23,14 +29,13 @@ test.describe('CRUD Empleados', () => {
   });
 
   test('CREATE - debería tener botón para crear empleado', async ({ page }) => {
-    // Verificar que hay botón para crear (ya sea en la página o en empty state)
-    const createBtn = page.locator('button:has-text("Agregar empleado"), button:has-text("Nuevo Empleado")');
+    const createBtn = page.locator('button:has-text("Agregar empleado"), button:has-text("Nuevo Empleado")').first();
     await expect(createBtn).toBeVisible({ timeout: 10000 });
   });
 
-  test('READ - debería mostrar la lista de empleados', async ({ page }) => {
+  test('READ - debería mostrar la lista de empleados o empty state', async ({ page }) => {
     await expect(page.locator('h1:has-text("Empleados")')).toBeVisible({ timeout: 15000 });
-    await expect(page.locator('table, [class*="EmptyState"]')).toBeVisible({ timeout: 10000 });
+    await expectTableOrEmpty(page);
   });
 
   test('UPDATE - debería poder editar un empleado existente', async ({ page }) => {

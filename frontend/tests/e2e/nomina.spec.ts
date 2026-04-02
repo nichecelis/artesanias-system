@@ -8,28 +8,28 @@ async function goTo(page: any, path: string) {
   await page.waitForLoadState('domcontentloaded');
 }
 
-async function waitForTable(page: any) {
+async function waitForPage(page: any) {
   await page.waitForTimeout(500);
 }
 
 test.describe('CRUD Nómina', () => {
   test('READ - debería mostrar la lista de nómina', async ({ page }) => {
     await goTo(page, '/nomina');
-    await waitForTable(page);
+    await waitForPage(page);
     
     await expect(page.locator('h1:has-text("Nómina")')).toBeVisible({ timeout: 15000 });
   });
 
   test('READ - debería tener selector de mes', async ({ page }) => {
     await goTo(page, '/nomina');
-    await waitForTable(page);
+    await waitForPage(page);
     
     await expect(page.locator('input[type="month"]')).toBeVisible({ timeout: 10000 });
   });
 
   test('UPDATE - debería cambiar el mes', async ({ page }) => {
     await goTo(page, '/nomina');
-    await waitForTable(page);
+    await waitForPage(page);
     
     const monthInput = page.locator('input[type="month"]');
     await monthInput.fill('2026-03');
@@ -38,22 +38,20 @@ test.describe('CRUD Nómina', () => {
     await expect(monthInput).toHaveValue('2026-03');
   });
 
-  test('READ - debería mostrar tabla de empleados', async ({ page }) => {
+  test('READ - debería mostrar tabla de empleados o empty state', async ({ page }) => {
     await goTo(page, '/nomina');
-    await waitForTable(page);
+    await waitForPage(page);
     
-    // Verificar que hay una tabla o lista de empleados
-    const hasTable = await page.locator('table').isVisible().catch(() => false);
-    if (hasTable) {
-      await expect(page.locator('table')).toBeVisible({ timeout: 5000 });
-    }
+    const hasTable = await page.locator('table').count() > 0;
+    const hasEmpty = await page.locator('text="Sin').count() > 0 || await page.locator('text="No hay').count() > 0;
+    expect(hasTable || hasEmpty).toBeTruthy();
   });
 
   test('CREATE - debería abrir modal para registrar nómina', async ({ page }) => {
     await goTo(page, '/nomina');
-    await waitForTable(page);
+    await waitForPage(page);
     
-    const registrarBtn = page.locator('button:has-text("Registrar")');
+    const registrarBtn = page.locator('button:has-text("Registrar")').first();
     if (await registrarBtn.isVisible()) {
       await registrarBtn.click();
       await expect(page.locator('h2:has-text("Registrar")')).toBeVisible({ timeout: 10000 });
@@ -62,7 +60,7 @@ test.describe('CRUD Nómina', () => {
 
   test('READ - debería ver reporte de nómina', async ({ page }) => {
     await goTo(page, '/nomina');
-    await waitForTable(page);
+    await waitForPage(page);
     
     const reporteBtn = page.locator('button:has-text("Reporte")');
     if (await reporteBtn.isVisible()) {
@@ -72,9 +70,8 @@ test.describe('CRUD Nómina', () => {
 
   test('READ - debería ver totales o empty state', async ({ page }) => {
     await goTo(page, '/nomina');
-    await waitForTable(page);
+    await waitForPage(page);
     
-    // Verificar que hay tarjetas de totales o empty state
     const totalCards = page.locator('[class*="card"], [class*="EmptyState"]');
     const count = await totalCards.count();
     expect(count).toBeGreaterThanOrEqual(0);
