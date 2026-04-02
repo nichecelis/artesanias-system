@@ -1563,10 +1563,15 @@
           ],
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"clienteId\": 1,\n    \"items\": [\n        {\n            \"pedidoProductoId\": 1,\n            \"cantidad\": 5,\n            \"precioUnitario\": 50000\n        }\n    ],\n    \"montoPagado\": 250000\n}",
+              "raw": "{\n    \"clienteId\": \"uuid-cliente\",\n    \"fecha\": \"2026-04-01\",\n    \"descuento\": 0,\n    \"items\": [\n        {\n            \"pedidoProductoId\": \"uuid-pedido-producto\",\n            \"cantidad\": 10,\n            \"precioUnitario\": 25000,\n            \"descuento\": 0\n        },\n        {\n            \"pedidoProductoId\": \"uuid-pedido-producto-2\",\n            \"cantidad\": 5,\n            \"precioUnitario\": 30000,\n            \"descuento\": 5000\n        }\n    ],\n    \"montoPagado\": 100000,\n    \"observaciones\": \"Primera compra del mes\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

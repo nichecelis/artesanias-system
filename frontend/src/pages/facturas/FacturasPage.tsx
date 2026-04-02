@@ -43,6 +43,7 @@ export default function FacturasPage() {
   const [clientesModal, setClientesModal] = useState(false);
   const [selected, setSelected] = useState<any>(null);
   const [clienteSearch, setClienteSearch] = useState('');
+  const [clienteSeleccionado, setClienteSeleccionado] = useState<any>(null);
   const [clientesDropdown, setClientesDropdown] = useState<any[]>([]);
   const [pedidosDisponibles, setPedidosDisponibles] = useState<any[]>([]);
   const [pedidosAgrupados, setPedidosAgrupados] = useState<any>({});
@@ -128,6 +129,8 @@ export default function FacturasPage() {
             pedidoCodigo: pedido.codigo,
             productoNombre: prod.nombre,
             cantidad: prod.cantidad,
+            cantidadDespacho: prod.cantidadDespacho,
+            cantidadFacturada: prod.cantidadFacturada,
             precioUnitario: prod.precioUnitario,
             precioOriginal: prod.precioOriginal,
             esPrecioEspecial: prod.esPrecioEspecial,
@@ -217,9 +220,10 @@ export default function FacturasPage() {
   });
 
   const openModal = () => {
-    reset({ clienteId: '', fecha: new Date().toISOString().split('T')[0], descuento: 0, montoPagado: 0, observaciones: '' });
+    reset({ clienteId: '', fecha: new Date().toLocaleDateString('en-CA'), descuento: 0, montoPagado: 0, observaciones: '' });
     setClientesDropdown([]);
     setClienteSearch('');
+    setClienteSeleccionado(null);
     setPedidosDisponibles([]);
     setPedidosAgrupados({});
     setPedidosExpandidos(new Set());
@@ -230,6 +234,7 @@ export default function FacturasPage() {
   const closeModal = () => {
     setModal(false);
     setSelected(null);
+    setClienteSeleccionado(null);
     setPedidosDisponibles([]);
     setPedidosAgrupados({});
     setPedidosExpandidos(new Set());
@@ -376,8 +381,8 @@ export default function FacturasPage() {
               </label>
               {watch('clienteId') ? (
                 <div className="input flex items-center justify-between bg-primary-50 border-primary-300">
-                  <span>{clientesDropdown.find(c => c.id === watch('clienteId'))?.nombre || '—'}</span>
-                  <button type="button" onClick={() => { reset({ clienteId: '', fecha: new Date().toISOString().split('T')[0], descuento: 0, montoPagado: 0, observaciones: '' }); setSaldoAnterior(0); }}>
+                  <span>{clienteSeleccionado?.nombre || clienteSearch || '—'}</span>
+                  <button type="button" onClick={() => { reset({ clienteId: '', fecha: new Date().toLocaleDateString('en-CA'), descuento: 0, montoPagado: 0, observaciones: '' }); setClienteSeleccionado(null); setSaldoAnterior(0); }}>
                     <X size={14}/>
                   </button>
                 </div>
@@ -392,7 +397,7 @@ export default function FacturasPage() {
                 <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                   {clientesDropdown.map((c: any) => (
                     <button key={c.id} type="button" className="w-full text-left px-3 py-2 hover:bg-primary-50 text-sm border-b last:border-0"
-                      onClick={() => { setValue('clienteId', c.id); setClienteSearch(''); setClientesDropdown([]); }}>
+                      onClick={() => { setValue('clienteId', c.id); setClienteSeleccionado(c); setClienteSearch(c.nombre); setClientesDropdown([]); }}>
                       {c.nombre} <span className="text-gray-400">{c.documento}</span>
                     </button>
                   ))}
@@ -461,7 +466,12 @@ export default function FacturasPage() {
                             <td className="px-2 py-1 text-center">{item.corte1 ?? '—'}</td>
                             <td className="px-2 py-1 text-center">{item.corte2 ?? '—'}</td>
                             <td className="px-2 py-1 text-center">{item.corte3 ?? '—'}</td>
-                            <td className="px-2 py-1 text-center">{item.cantidad}</td>
+                            <td className="px-2 py-1 text-center">
+                              {item.cantidad}
+                              {item.cantidadFacturada > 0 && (
+                                <span className="text-xs text-gray-400 ml-1">({item.cantidadFacturada}/{item.cantidadDespacho})</span>
+                              )}
+                            </td>
                             <td className="px-2 py-1 text-right text-xs">{fmt(item.precioUnitario)}</td>
                             <td className="px-2 py-1">
                               <input type="number" min="0" value={item.descuento} onChange={e => {
@@ -612,6 +622,7 @@ export default function FacturasPage() {
                       <td className="px-3 py-2 text-center">
                         <button onClick={() => {
                           setValue('clienteId', c.id);
+                          setClienteSeleccionado(c);
                           setClienteSearch(c.nombre);
                           setClientesDropdown([c]);
                           setClientesModal(false);

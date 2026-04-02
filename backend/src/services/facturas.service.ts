@@ -132,8 +132,7 @@ export class FacturasService {
     const saldo = total + saldoAnterior - montoPagado;
     const totalPagar = saldo;
 
-    const [y, m] = dto.fecha.split('-');
-    const fecha = new Date(Number(y), Number(m) - 1, Number(dto.fecha.split('-')[2]), 12, 0, 0);
+    const fechaISO = new Date(dto.fecha + 'T12:00:00.000Z');
 
     const factura = await prisma.factura.create({
       data: {
@@ -184,8 +183,7 @@ export class FacturasService {
 
     const updateData: any = { ...dto };
     if (dto.fecha) {
-      const [y, m, d] = dto.fecha.split('-');
-      updateData.fecha = new Date(Number(y), Number(m) - 1, Number(d), 12, 0, 0);
+      updateData.fecha = new Date(dto.fecha + 'T12:00:00.000Z');
     }
 
     return prisma.factura.update({
@@ -229,38 +227,73 @@ export class FacturasService {
       orderBy: { createdAt: 'desc' }
     });
 
-    const productoIds = [...new Set(pedidos.flatMap(p => p.productos.map(pr => pr.productoId)))];
-    const preciosEspeciales = await prisma.productoCliente.findMany({
-      where: {
-        clienteId,
-        productoId: { in: productoIds },
-      },
+    const pedidoProductoIds = pedidos.flatMap(p => p.productos.map(pr => pr.id));
+
+    const facturados = await prisma.facturaItem.groupBy({
+      by: ['pedidoProductoId'],
+      where: { pedidoProductoId: { in: pedidoProductoIds } },
+      _sum: { cantidad: true },
     });
 
-    const preciosMap = new Map(preciosEspeciales.map(pe => [pe.productoId, Number(pe.precioVenta)]));
+    const facturadoMap = new Map(facturados.map(f => [f.pedidoProductoId, Number(f._sum.cantidad || 0)]));
 
-    return pedidos.map(pedido => ({
-      id: pedido.id,
-      codigo: pedido.codigo,
-      fecha: pedido.createdAt,
-      productos: pedido.productos.map(p => {
-        const precioEspecial = preciosMap.get(p.productoId);
-        const precioUnitario = precioEspecial !== undefined ? precioEspecial : Number(p.producto.precioVenta);
-        return {
-          id: p.id,
-          nombre: p.producto.nombre,
-          cantidad: p.cantidadPedido,
-          precioUnitario,
-          precioOriginal: Number(p.producto.precioVenta),
-          esPrecioEspecial: precioEspecial !== undefined,
-          total: precioUnitario * p.cantidadPedido,
-          cantidadDespacho: p.cantidadDespacho,
-          corte1: p.corte1,
-          corte2: p.corte2,
-          corte3: p.corte3,
-        };
-      })
-    }));
+    const preciosMap = new Map<string, number>();
+    if (pedidoProductoIds.length > 0) {
+      const productoIds = [...new Set(pedidos.flatMap(p => p.productos.map(pr => pr.productoId)))];
+      const preciosEspeciales = await prisma.productoCliente.findMany({
+        where: { clienteId, productoId: { in: productoIds } },
+      });
+      preciosEspeciales.forEach(pe => preciosMap.set(pe.productoId, Number(pe.precioVenta)));
+    }
+
+    const pedidosDisponibles = pedidos.map(pedido => {
+      let totalDespachado = 0;
+      let totalFacturado = 0;
+
+      const productosConInfo = pedido.productos.map(p => {
+        const cantidadDespacho = p.cantidadDespacho ?? p.cantidadPedido;
+        const cantidadFacturada = facturadoMap.get(p.id) || 0;
+        const cantidadParaFacturar = Math.max(cantidadDespacho, p.cantidadPedido);
+        const cantidadPendiente = cantidadParaFacturar - cantidadFacturada;
+        totalDespachado += cantidadDespacho;
+        totalFacturado += cantidadFacturada;
+        return { ...p, cantidadDespacho, cantidadFacturada, cantidadPendiente, cantidadParaFacturar };
+      });
+
+      const productosConInfoFinal = productosConInfo
+        .filter(p => p.cantidadPendiente > 0)
+        .map(p => {
+          const precioEspecial = preciosMap.get(p.productoId);
+          const precioUnitario = precioEspecial !== undefined ? precioEspecial : Number(p.producto.precioVenta);
+          return {
+            id: p.id,
+            nombre: p.producto.nombre,
+            cantidad: p.cantidadParaFacturar,
+            precioUnitario,
+            precioOriginal: Number(p.producto.precioVenta),
+            esPrecioEspecial: precioEspecial !== undefined,
+            total: precioUnitario * p.cantidadParaFacturar,
+            cantidadDespacho: p.cantidadDespacho,
+            cantidadFacturada: p.cantidadFacturada,
+            cantidadPendiente: p.cantidadPendiente,
+            cantidadPedido: p.cantidadPedido,
+            corte1: p.corte1,
+            corte2: p.corte2,
+            corte3: p.corte3,
+          };
+        });
+
+      if (productosConInfoFinal.length === 0) return null;
+
+      return {
+        id: pedido.id,
+        codigo: pedido.codigo,
+        fecha: pedido.createdAt,
+        productos: productosConInfoFinal,
+      };
+    });
+
+    return pedidosDisponibles.filter((p): p is NonNullable<typeof p> => p !== null);
   }
 
   async obtenerSaldoAnterior(clienteId: string, facturaId?: string) {
