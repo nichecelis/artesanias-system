@@ -2,9 +2,8 @@ version: '3.9'
 
 services:
 
-  # ─── PostgreSQL ────────────────────────────────────────────
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16
     container_name: artesanias_db
     restart: unless-stopped
     environment:
@@ -15,51 +14,37 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U artesanias_user -d artesanias_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
-  # ─── Redis ─────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: artesanias_redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ""
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
-  # ─── Backend Node.js ───────────────────────────────────────
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: development
+    image: artesanias-backend:latest
     container_name: artesanias_backend
     restart: unless-stopped
-    env_file: ./backend/.env
+    env_file: .env
     environment:
       DATABASE_URL: postgresql://artesanias_user:artesanias_pass@postgres:5432/artesanias_db
       REDIS_URL:    redis://redis:6379
+      NODE_ENV:     production
     ports:
-      - "3000:3000"
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
+      - "3001:3001"
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    command: npm run dev
+      - postgres
+      - redis
+
+  frontend:
+    image: artesanias-frontend:latest
+    container_name: artesanias_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
 
 volumes:
   postgres_data:
