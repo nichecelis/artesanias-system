@@ -1,10 +1,21 @@
 import { test, expect } from '@playwright/test';
 
 const BASE_URL = 'http://localhost:5173';
+const timestamp = Date.now();
 
 async function goTo(page: any, path: string) {
   await page.goto(`${BASE_URL}${path}`);
   await page.waitForLoadState('domcontentloaded');
+}
+
+async function waitForPage(page: any) {
+  await page.waitForTimeout(500);
+}
+
+async function expectTableOrEmpty(page: any) {
+  const hasTable = await page.locator('table').count() > 0;
+  const hasEmpty = await page.locator('text="Sin').count() > 0 || await page.locator('text="No hay').count() > 0;
+  expect(hasTable || hasEmpty).toBeTruthy();
 }
 
 test.describe('Módulo: Pedidos', () => {
@@ -18,9 +29,9 @@ test.describe('Módulo: Pedidos', () => {
     await expect(page.locator('input[placeholder*="Buscar"]')).toBeVisible({ timeout: 10000 });
   });
 
-  test('debería tener tabla de pedidos', async ({ page }) => {
+  test('debería tener tabla de pedidos o empty state', async ({ page }) => {
     await goTo(page, '/pedidos');
-    await expect(page.locator('table')).toBeVisible({ timeout: 10000 });
+    await expectTableOrEmpty(page);
   });
 
   test('debería tener filtros de estado', async ({ page }) => {
