@@ -1,23 +1,11 @@
 # ─────────────────────────────────────────────────────────────
-# Stage: build (compilar Vite)
+# Artesanias Frontend - Production Dockerfile
+# (Build se hace localmente, aqui solo se sirve con nginx)
 # ─────────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
 
-WORKDIR /app
+FROM nginx:alpine
 
-COPY package*.json ./
-RUN npm ci
-
-COPY . .
-RUN npm run build
-
-
-# ─────────────────────────────────────────────────────────────
-# Stage: production (nginx serving static files)
-# ─────────────────────────────────────────────────────────────
-FROM nginx:alpine AS production
-
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY dist /usr/share/nginx/html
 
 RUN echo 'server { \
     listen 80 default_server; \
