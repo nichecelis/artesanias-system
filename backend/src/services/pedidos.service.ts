@@ -7,7 +7,7 @@ import { calcularEstado } from '../utils/calcularEstado';
  * 🔥 Calcula estado global del pedido
  */
  
- function calcularEstadoPedido(productos: any[]): EstadoPedido {
+ function calcularEstadoPedido(productos: any[]): EstadoPedidoEnum {
 
   if (productos.every(p => calcularEstado(p) === EstadoPedidoEnum.DESPACHADO)) {
     return EstadoPedidoEnum.DESPACHADO;

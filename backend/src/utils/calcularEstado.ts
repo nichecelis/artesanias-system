@@ -1,6 +1,6 @@
-import { EstadoPedido, EstadoPedidoEnum } from '../types';
+import { EstadoPedidoEnum } from '../types';
 
-export function calcularEstado(p: any): EstadoPedido {
+export function calcularEstado(p: any): EstadoPedidoEnum {
   if (p.cantidadDespacho && p.cantidadPedido && p.cantidadDespacho >= p.cantidadPedido) {
     return EstadoPedidoEnum.DESPACHADO;
   }

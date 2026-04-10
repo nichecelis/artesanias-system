@@ -1,10 +1,10 @@
 import { Prisma } from '@prisma/client';
-import { EstadoPedido } from '../types';
+import { EstadoPedido, EstadoPedidoEnum } from '../types';
 export declare class PedidosService {
     obtenerPorId(id: string): Promise<{
-        estadoCalculado: EstadoPedido;
+        estadoCalculado: EstadoPedidoEnum;
         productos: {
-            estadoCalculado: EstadoPedido;
+            estadoCalculado: EstadoPedidoEnum;
             producto: {
                 id: string;
                 nombre: string;
@@ -57,9 +57,9 @@ export declare class PedidosService {
     listar(filtros: any): Promise<{
         success: boolean;
         data: {
-            estadoCalculado: EstadoPedido;
+            estadoCalculado: EstadoPedidoEnum;
             productos: {
-                estadoCalculado: EstadoPedido;
+                estadoCalculado: EstadoPedidoEnum;
                 producto: {
                     id: string;
                     nombre: string;
