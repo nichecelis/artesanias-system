@@ -38,6 +38,8 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 
+RUN npx prisma generate
+
 RUN mkdir -p /app/logs
 
 RUN groupadd --gid 1001 nodejs && \
