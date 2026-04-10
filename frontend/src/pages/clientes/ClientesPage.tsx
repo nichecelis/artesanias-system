@@ -104,7 +104,7 @@ export default function ClientesPage() {
       <div className="flex gap-2" onClick={e => e.stopPropagation()}>
         <button onClick={() => openEdit(r)} className="text-gray-400 hover:text-primary-600"><Pencil size={15} /></button>
         {r.activo ? (
-          <button onClick={() => { if (confirm(`¿Inactivar a ${r.nombre}?`)) remove.mutate(r.id); }}
+          <button onClick={() => { if (confirm(`¿Inactivar a ${r.nombre}?`)) remove.mutate(r.documento); }}
             className="text-gray-400 hover:text-red-600" title="Inactivar"><X size={15} /></button>
         ) : (
           <button onClick={() => { if (confirm(`¿Activar a ${r.nombre}?`)) activate.mutate(r.documento); }}
