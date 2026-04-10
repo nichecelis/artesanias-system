@@ -17,43 +17,62 @@ if errorlevel 1 (
 set OUTPUT=artesanias-deploy
 if not exist "%OUTPUT%" mkdir "%OUTPUT%"
 
-echo [1/5] Limpiando imagenes anteriores...
+echo [1/6] Limpiando imagenes anteriores y cache de Docker...
 docker rmi artesanias-backend:latest artesanias-frontend:latest 2>nul
+docker builder prune -f 2>nul
 echo DONE
 pause
 
-echo [2/5] Preparando dependencias del backend (npm ci) y Construyendo imagen Docker del backend (con Prisma en Linux)...
+echo [2/6] Compilando backend (TypeScript + Prisma)...
 cd backend
 call npm ci
-cd ..
-docker build -t artesanias-backend:latest ./backend
+call npx prisma generate
+call npm run build
 if errorlevel 1 (
-    echo ERROR: Fallo al construir backend
+    echo ERROR: Fallo al compilar backend
+    cd ..
+    pause
+    exit /b 1
+)
+cd ..
+echo DONE
+pause
+
+echo [3/6] Compilando frontend...
+cd frontend
+call npm ci
+call npm run build
+if errorlevel 1 (
+    echo ERROR: Fallo al compilar frontend
+    cd ..
+    pause
+    exit /b 1
+)
+cd ..
+echo DONE
+pause
+
+echo [4/6] Construyendo imagen Docker del backend (sin cache)...
+docker build --no-cache -t artesanias-backend:latest ./backend
+if errorlevel 1 (
+    echo ERROR: Fallo al construir imagen backend
     pause
     exit /b 1
 )
 echo DONE
 pause
 
-echo [3/5] Compilando y exportando frontend (con dist actualizado)...
-cd frontend
-echo [npm] Clean install (ci) y build del frontend...
-call npm ci 2>nul
-call npm run build
-set FRONTEND_DIST_EXISTS=0
-if exist dist (
-  set FRONTEND_DIST_EXISTS=1
+echo [5/6] Construyendo imagen Docker del frontend (sin cache)...
+docker build --no-cache -t artesanias-frontend:latest ./frontend
+if errorlevel 1 (
+    echo ERROR: Fallo al construir imagen frontend
+    pause
+    exit /b 1
 )
-if %FRONTEND_DIST_EXISTS%==0 (
-  echo ERROR: dist no fue generado en frontend, abortando.
-  pause
-  exit /b 1
-)
-cd ..
 echo DONE
 pause
 
-echo [4/5] Exportando imagenes a archivos...
+echo [6/6] Exportando imagenes a archivos...
 docker save -o "%OUTPUT%\artesanias-backend.tar" artesanias-backend:latest
 docker save -o "%OUTPUT%\artesanias-frontend.tar" artesanias-frontend:latest
 docker pull postgres:16
@@ -63,7 +82,7 @@ docker save -o "%OUTPUT%\artesanias-redis.tar" redis:7-alpine
 echo DONE
 pause
 
-echo [5/5] Creando archivos de configuracion...
+echo [7/7] Creando archivos de configuracion...
 copy docker-compose.yml "%OUTPUT%\"
 copy backend\.env "%OUTPUT%\backend.env"
 echo DONE
@@ -117,11 +136,7 @@ echo netsh advfirewall firewall add rule name="Artesanias Frontend" dir=in actio
 echo netsh advfirewall firewall add rule name="Artesanias Backend" dir=in action=allow protocol=TCP localport=3001 2^>nul
 echo.
 echo echo [6/7] Configurando base de datos...
-echo echo    docker exec -u root artesanias_backend npm install prisma@5.22.0
-echo docker exec -u root artesanias_backend npm install prisma@5.22.0
-echo echo    docker exec -u root artesanias_backend npx prisma db push
 echo docker exec -u root artesanias_backend npx prisma db push
-echo echo    docker exec -u root artesanias_backend npx prisma db seed
 echo docker exec -u root artesanias_backend npx prisma db seed
 echo.
 echo echo [7/7] Obteniendo IP del servidor...
@@ -175,13 +190,10 @@ echo =============================
 echo.
 echo DESPUES de instalar, ejecuta estos comandos en PowerShell ^(como administrador^):
 echo.
-echo 1. Instalar Prisma en el contenedor:
-echo    docker exec -u root artesanias_backend npm install prisma@5.22.0
-echo.
-echo 2. Crear tablas en la base de datos:
+echo 1. Crear tablas en la base de datos:
 echo    docker exec -u root artesanias_backend npx prisma db push
 echo.
-echo 3. Crear usuario administrador inicial:
+echo 2. Crear usuario administrador inicial:
 echo    docker exec -u root artesanias_backend npx prisma db seed
 echo.
 echo VERIFICAR TABLAS:
@@ -198,13 +210,6 @@ echo   Parar:      docker-compose down
 echo.
 echo LOGIN:
 echo   admin / admin123
-echo.
-echo RESOLUCION DE PROBLEMAS:
-echo.
-echo Si el login no funciona:
-echo 1. Verifica que las tablas existen: docker exec -it artesanias_db psql -U artesanias_user -d artesanias_db -c "\dt"
-echo 2. Verifica que hay usuarios: docker exec -it artesanias_db psql -U artesanias_user -d artesanias_db -c "SELECT * FROM usuarios;"
-echo 3. Si no hay tablas ni usuarios, ejecuta los pasos de CONFIGURAR BASE DE DATOS
 echo.
 ) > "%OUTPUT%\README.txt"
 
