@@ -7,12 +7,21 @@ declare const ROLES: {
 export type Rol = (typeof ROLES)[keyof typeof ROLES];
 declare const ESTADOS_PEDIDO: {
     readonly PENDIENTE: "PENDIENTE";
-    readonly EN_PROCESO: "EN_PROCESO";
-    readonly TERMINADO: "TERMINADO";
+    readonly EN_CORTE: "EN_CORTE";
+    readonly EN_DECORACION: "EN_DECORACION";
+    readonly LISTO: "LISTO";
     readonly DESPACHADO: "DESPACHADO";
     readonly CANCELADO: "CANCELADO";
 };
 export type EstadoPedido = (typeof ESTADOS_PEDIDO)[keyof typeof ESTADOS_PEDIDO];
+export declare enum EstadoPedidoEnum {
+    PENDIENTE = "PENDIENTE",
+    EN_CORTE = "EN_CORTE",
+    EN_DECORACION = "EN_DECORACION",
+    LISTO = "LISTO",
+    DESPACHADO = "DESPACHADO",
+    CANCELADO = "CANCELADO"
+}
 declare const ESTADOS_PRODUCTO: {
     readonly PENDIENTE: "PENDIENTE";
     readonly CORTE: "CORTE";

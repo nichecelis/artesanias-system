@@ -12,13 +12,23 @@ export type Rol = (typeof ROLES)[keyof typeof ROLES];
 // ─── Estados de pedido (Const Types Pattern) ─────────────────
 const ESTADOS_PEDIDO = {
   PENDIENTE: 'PENDIENTE',
-  EN_PROCESO: 'EN_PROCESO',
-  TERMINADO: 'TERMINADO',
+  EN_CORTE: 'EN_CORTE',
+  EN_DECORACION: 'EN_DECORACION',
+  LISTO: 'LISTO',
   DESPACHADO: 'DESPACHADO',
   CANCELADO: 'CANCELADO',
 } as const;
 
 export type EstadoPedido = (typeof ESTADOS_PEDIDO)[keyof typeof ESTADOS_PEDIDO];
+
+export enum EstadoPedidoEnum {
+  PENDIENTE = 'PENDIENTE',
+  EN_CORTE = 'EN_CORTE',
+  EN_DECORACION = 'EN_DECORACION',
+  LISTO = 'LISTO',
+  DESPACHADO = 'DESPACHADO',
+  CANCELADO = 'CANCELADO',
+}
 
 // ─── Estados de producto (Const Types Pattern) ────────────────
 const ESTADOS_PRODUCTO = {

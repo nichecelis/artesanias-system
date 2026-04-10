@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AppError = void 0;
+exports.AppError = exports.EstadoPedidoEnum = void 0;
 // ─── Roles del sistema (Const Types Pattern) ─────────────────
 const ROLES = {
     ADMINISTRADOR: 'ADMINISTRADOR',
@@ -10,11 +10,21 @@ const ROLES = {
 // ─── Estados de pedido (Const Types Pattern) ─────────────────
 const ESTADOS_PEDIDO = {
     PENDIENTE: 'PENDIENTE',
-    EN_PROCESO: 'EN_PROCESO',
-    TERMINADO: 'TERMINADO',
+    EN_CORTE: 'EN_CORTE',
+    EN_DECORACION: 'EN_DECORACION',
+    LISTO: 'LISTO',
     DESPACHADO: 'DESPACHADO',
     CANCELADO: 'CANCELADO',
 };
+var EstadoPedidoEnum;
+(function (EstadoPedidoEnum) {
+    EstadoPedidoEnum["PENDIENTE"] = "PENDIENTE";
+    EstadoPedidoEnum["EN_CORTE"] = "EN_CORTE";
+    EstadoPedidoEnum["EN_DECORACION"] = "EN_DECORACION";
+    EstadoPedidoEnum["LISTO"] = "LISTO";
+    EstadoPedidoEnum["DESPACHADO"] = "DESPACHADO";
+    EstadoPedidoEnum["CANCELADO"] = "CANCELADO";
+})(EstadoPedidoEnum || (exports.EstadoPedidoEnum = EstadoPedidoEnum = {}));
 // ─── Estados de producto (Const Types Pattern) ────────────────
 const ESTADOS_PRODUCTO = {
     PENDIENTE: 'PENDIENTE',

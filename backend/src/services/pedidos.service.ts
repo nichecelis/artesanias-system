@@ -1,30 +1,31 @@
-import { Prisma, EstadoPedido } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
-import { AppError } from '../types';
+import { AppError, EstadoPedido, EstadoPedidoEnum } from '../types';
 import { calcularEstado } from '../utils/calcularEstado';
 
-/**
+ /**
  * 🔥 Calcula estado global del pedido
  */
-function calcularEstadoPedido(productos: any[]): EstadoPedido {
+ 
+ function calcularEstadoPedido(productos: any[]): EstadoPedido {
 
-  if (productos.every(p => calcularEstado(p) === 'DESPACHADO')) {
-    return EstadoPedido.DESPACHADO;
+  if (productos.every(p => calcularEstado(p) === EstadoPedidoEnum.DESPACHADO)) {
+    return EstadoPedidoEnum.DESPACHADO;
   }
 
-  if (productos.every(p => ['LISTO', 'DESPACHADO'].includes(calcularEstado(p)))) {
-    return EstadoPedido.LISTO;
+  if (productos.every(p => [EstadoPedidoEnum.LISTO, EstadoPedidoEnum.DESPACHADO].includes(calcularEstado(p)))) {
+    return EstadoPedidoEnum.LISTO;
   }
 
-  if (productos.some(p => calcularEstado(p) === 'EN_DECORACION')) {
-    return EstadoPedido.EN_DECORACION;
+  if (productos.some(p => calcularEstado(p) === EstadoPedidoEnum.EN_DECORACION)) {
+    return EstadoPedidoEnum.EN_DECORACION;
   }
 
-  if (productos.some(p => calcularEstado(p) === 'EN_CORTE')) {
-    return EstadoPedido.EN_CORTE;
+  if (productos.some(p => calcularEstado(p) === EstadoPedidoEnum.EN_CORTE)) {
+    return EstadoPedidoEnum.EN_CORTE;
   }
 
-  return EstadoPedido.PENDIENTE;
+  return EstadoPedidoEnum.PENDIENTE;
 }
 
 /**
@@ -185,7 +186,7 @@ export class PedidosService {
         codigo,
         clienteId: data.clienteId,
         laser: data.laser || null,
-        estado: EstadoPedido.PENDIENTE,
+        estado: EstadoPedidoEnum.PENDIENTE,
         observaciones: data.observaciones,
 
         productos: {
@@ -202,7 +203,7 @@ export class PedidosService {
 
     await prisma.pedido.update({
       where: { id: pedido.id },
-      data: { estado }
+      data: { estado: estado as any }
     });
 
     return pedido;
@@ -238,7 +239,7 @@ export class PedidosService {
 
     await prisma.pedido.update({
       where: { id },
-      data: { estado }
+      data: { estado: estado as any }
     });
 
     return pedido;
@@ -281,20 +282,20 @@ export class PedidosService {
 
     await prisma.pedido.update({
       where: { id: producto.pedidoId },
-      data: { estado }
+      data: { estado: estado as any }
     });
 
     return producto;
   }
 
   async cambiarEstado(id: string, estado: string) {
-    if (!Object.values(EstadoPedido).includes(estado as EstadoPedido)) {
+    if (!Object.values(EstadoPedidoEnum).includes(estado as EstadoPedidoEnum)) {
       throw new AppError('Estado inválido', 400);
     }
 
     return prisma.pedido.update({
       where: { id },
-      data: { estado: estado as EstadoPedido }
+      data: { estado: estado as any }
     });
   }
 

@@ -1,20 +1,21 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.calcularEstado = calcularEstado;
+const types_1 = require("../types");
 function calcularEstado(p) {
     if (p.cantidadDespacho && p.cantidadPedido && p.cantidadDespacho >= p.cantidadPedido) {
-        return 'DESPACHADO';
+        return types_1.EstadoPedidoEnum.DESPACHADO;
     }
     if (p.fechaDespacho)
-        return 'LISTO';
+        return types_1.EstadoPedidoEnum.LISTO;
     if (p.fechaAsignacion) {
         if (p.cantidadRecibida && p.cantidadRecibida > 0 && !p.fechaDespacho)
-            return 'EN_DECORACION';
+            return types_1.EstadoPedidoEnum.EN_DECORACION;
         if (p.fechaAsignacion && !p.fechaDespacho)
-            return 'EN_DECORACION';
+            return types_1.EstadoPedidoEnum.EN_DECORACION;
     }
     if (p.fechaInicioCorte)
-        return 'EN_CORTE';
-    return 'PENDIENTE';
+        return types_1.EstadoPedidoEnum.EN_CORTE;
+    return types_1.EstadoPedidoEnum.PENDIENTE;
 }
 //# sourceMappingURL=calcularEstado.js.map

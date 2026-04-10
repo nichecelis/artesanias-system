@@ -2,49 +2,44 @@
 # Artesanias Backend - Production Dockerfile
 # ─────────────────────────────────────────────────────────────
 
-FROM node:20-alpine AS builder
+FROM node:20-slim
 
 WORKDIR /app
 
-# Copiar package files
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY package*.json ./
 
-# Instalar todas las dependencias
-RUN npm install --include=dev
+RUN npm install
 
-# Copiar codigo fuente
 COPY . .
 
-# Verificar que prisma existe
-RUN ls -la node_modules/.bin/ | grep prisma
+RUN npm install -g prisma@5.22.0 typescript
 
-# Generar Prisma Client para Linux
-RUN node node_modules/prisma/build/index.js generate
+RUN prisma generate
 
-# Compilar TypeScript
-RUN node node_modules/.bin/tsc
+RUN npm run build
 
-# Production stage
-FROM node:20-alpine
+# Production stage - COPIAR TODO node_modules del builder
+FROM node:20-slim
 
 WORKDIR /app
 
-# Copiar archivos compilados
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copiar Prisma client
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-
-# Copiar package files e instalar solo produccion
-COPY --from=builder /app/package*.json ./
-RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+# Copiar todo del builder
+COPY --from=0 /app/dist ./dist
+COPY --from=0 /app/prisma ./prisma
+COPY --from=0 /app/node_modules ./node_modules
 
 RUN mkdir -p /app/logs
 
-RUN addgroup -g 1001 -S nodejs && \
-    adduser  -S nodejs -u 1001 && \
+RUN groupadd --gid 1001 nodejs && \
+    useradd --uid 1001 --gid nodejs --shell /bin/false --create-home nodejs && \
     chown -R nodejs:nodejs /app
 
 USER nodejs
@@ -52,6 +47,6 @@ USER nodejs
 EXPOSE 3001
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:3001/health || exit 1
+  CMD curl -f http://localhost:3001/health || exit 1
 
 CMD ["node", "dist/server.js"]

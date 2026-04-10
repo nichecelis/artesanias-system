@@ -1,27 +1,26 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.pedidosService = exports.PedidosService = void 0;
-const client_1 = require("@prisma/client");
 const database_1 = require("../config/database");
 const types_1 = require("../types");
 const calcularEstado_1 = require("../utils/calcularEstado");
 /**
- * 🔥 Calcula estado global del pedido
- */
+* 🔥 Calcula estado global del pedido
+*/
 function calcularEstadoPedido(productos) {
-    if (productos.every(p => (0, calcularEstado_1.calcularEstado)(p) === 'DESPACHADO')) {
-        return client_1.EstadoPedido.DESPACHADO;
+    if (productos.every(p => (0, calcularEstado_1.calcularEstado)(p) === types_1.EstadoPedidoEnum.DESPACHADO)) {
+        return types_1.EstadoPedidoEnum.DESPACHADO;
     }
-    if (productos.every(p => ['LISTO', 'DESPACHADO'].includes((0, calcularEstado_1.calcularEstado)(p)))) {
-        return client_1.EstadoPedido.LISTO;
+    if (productos.every(p => [types_1.EstadoPedidoEnum.LISTO, types_1.EstadoPedidoEnum.DESPACHADO].includes((0, calcularEstado_1.calcularEstado)(p)))) {
+        return types_1.EstadoPedidoEnum.LISTO;
     }
-    if (productos.some(p => (0, calcularEstado_1.calcularEstado)(p) === 'EN_DECORACION')) {
-        return client_1.EstadoPedido.EN_DECORACION;
+    if (productos.some(p => (0, calcularEstado_1.calcularEstado)(p) === types_1.EstadoPedidoEnum.EN_DECORACION)) {
+        return types_1.EstadoPedidoEnum.EN_DECORACION;
     }
-    if (productos.some(p => (0, calcularEstado_1.calcularEstado)(p) === 'EN_CORTE')) {
-        return client_1.EstadoPedido.EN_CORTE;
+    if (productos.some(p => (0, calcularEstado_1.calcularEstado)(p) === types_1.EstadoPedidoEnum.EN_CORTE)) {
+        return types_1.EstadoPedidoEnum.EN_CORTE;
     }
-    return client_1.EstadoPedido.PENDIENTE;
+    return types_1.EstadoPedidoEnum.PENDIENTE;
 }
 /**
  * 🔥 MAPEO CORRECTO - Calcula estado automáticamente
@@ -157,7 +156,7 @@ class PedidosService {
                 codigo,
                 clienteId: data.clienteId,
                 laser: data.laser || null,
-                estado: client_1.EstadoPedido.PENDIENTE,
+                estado: types_1.EstadoPedidoEnum.PENDIENTE,
                 observaciones: data.observaciones,
                 productos: {
                     create: data.productos.map(mapProducto)
@@ -169,7 +168,7 @@ class PedidosService {
         const estado = calcularEstadoPedido(pedido.productos.map(p => ({ ...p, estadoCalculado: (0, calcularEstado_1.calcularEstado)(p) })));
         await database_1.prisma.pedido.update({
             where: { id: pedido.id },
-            data: { estado }
+            data: { estado: estado }
         });
         return pedido;
     }
@@ -194,7 +193,7 @@ class PedidosService {
         const estado = calcularEstadoPedido(pedido.productos.map(p => ({ ...p, estadoCalculado: (0, calcularEstado_1.calcularEstado)(p) })));
         await database_1.prisma.pedido.update({
             where: { id },
-            data: { estado }
+            data: { estado: estado }
         });
         return pedido;
     }
@@ -224,12 +223,12 @@ class PedidosService {
         const estado = calcularEstadoPedido(productos.map(p => ({ ...p, estadoCalculado: (0, calcularEstado_1.calcularEstado)(p) })));
         await database_1.prisma.pedido.update({
             where: { id: producto.pedidoId },
-            data: { estado }
+            data: { estado: estado }
         });
         return producto;
     }
     async cambiarEstado(id, estado) {
-        if (!Object.values(client_1.EstadoPedido).includes(estado)) {
+        if (!Object.values(types_1.EstadoPedidoEnum).includes(estado)) {
             throw new types_1.AppError('Estado inválido', 400);
         }
         return database_1.prisma.pedido.update({

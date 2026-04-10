@@ -1,9 +1,10 @@
 import { Prisma } from '@prisma/client';
+import { EstadoPedido } from '../types';
 export declare class PedidosService {
     obtenerPorId(id: string): Promise<{
-        estadoCalculado: import(".prisma/client").$Enums.EstadoPedido;
+        estadoCalculado: EstadoPedido;
         productos: {
-            estadoCalculado: import(".prisma/client").$Enums.EstadoPedido;
+            estadoCalculado: EstadoPedido;
             producto: {
                 id: string;
                 nombre: string;
@@ -56,9 +57,9 @@ export declare class PedidosService {
     listar(filtros: any): Promise<{
         success: boolean;
         data: {
-            estadoCalculado: import(".prisma/client").$Enums.EstadoPedido;
+            estadoCalculado: EstadoPedido;
             productos: {
-                estadoCalculado: import(".prisma/client").$Enums.EstadoPedido;
+                estadoCalculado: EstadoPedido;
                 producto: {
                     id: string;
                     nombre: string;
@@ -217,7 +218,7 @@ export declare class PedidosService {
             totalMes: number;
         };
         porEstado: {
-            estado: import(".prisma/client").$Enums.EstadoPedido;
+            estado: EstadoPedido;
             cantidad: number;
         }[];
     }>;

@@ -1,0 +1,512 @@
+%PDF-1.3
+%ºß¬à
+3 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 4 0 R
+>>
+endobj
+4 0 obj
+<<
+/Length 2474
+>>
+stream
+0.5670000000000001 w
+0 G
+BT
+/F2 22 Tf
+25.2999999999999972 TL
+0 g
+212.0577952755905926 756.8506299212598378 Td
+(Artesanías SaaS) Tj
+ET
+BT
+/F1 14 Tf
+16.0999999999999979 TL
+0 g
+211.7477952755905619 728.5041732283464171 Td
+(Sistema de Gestión Integral) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+245.787795275590554 700.15771653543311 Td
+(Versión 1.0 - Abril 2026) Tj
+ET
+0.78 G
+56.6929133858267775 685.9844881889763428 m
+538.5826771653544256 685.9844881889763428 l
+S
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+56.6929133858267775 657.6380314960629221 Td
+(1. Resumen del Sistema) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 634.9608661417322537 Td
+(Artesanías SaaS es una plataforma de gestión empresarial diseñada específicamente para) Tj
+T* (empresas del sector artesanal. El sistema integra módulos de producción, ventas,) Tj
+T* (facturación, gestión de personal y reportes financieros en una única solución accesible) Tj
+T* (desde cualquier navegador web.) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+56.6929133858267775 535.748267716535338 Td
+(2. Módulos Principales) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+56.6929133858267775 504.5671653543306547 Td
+(Autenticación y Usuarios) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 481.8899999999999295 Td
+(Gestión de sesiones, inicio de sesión seguro con JWT, recuperación de contraseña y) Tj
+T* (administración de usuarios con roles y permisos.) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+56.6929133858267775 416.69314960629913 Td
+(Gestión de Productos) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 394.0159842519684616 Td
+(Catálogo de productos artesanales con categorías, precios, materiales y fotografías.) Tj
+T* (Control de inventario y precios de venta actualizados.) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+56.6929133858267775 328.8191338582676053 Td
+(Pedidos y Ventas) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 306.1419685039369369 Td
+(Registro de pedidos con estados \(pendiente, en proceso, terminado, entregado\), cálculo) Tj
+T* (automático de totales e histórico completo de ventas.) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+56.6929133858267775 240.9451181102361943 Td
+(Gestión de Clientes) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 218.2679527559054122 Td
+(Directorio de clientes con información de contacto completa, historial de compras y) Tj
+T* (preferencias para personalizar el servicio.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 6 0 R
+>>
+endobj
+6 0 obj
+<<
+/Length 3107
+>>
+stream
+0.5670000000000001 w
+0.78 G
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+56.6929133858267775 785.1970866141732586 Td
+(Decoradoras y Decoraciones) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 762.5199212598424765 Td
+(Control de decoradoras externas, registro de decoraciones por pedido, cálculo de pagos y) Tj
+T* (seguimiento detallado de trabajos pendientes.) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+56.6929133858267775 697.3230708661417339 Td
+(Gestión de Préstamos) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 674.6459055118109518 Td
+(Registro de préstamos a empleados con seguimiento de abonos y saldo pendiente.) Tj
+T* (Historial completo de transacciones.) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+56.6929133858267775 609.4490551181102092 Td
+(Nómina de Empleados) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 586.7718897637794271 Td
+(Liquidación de nómina mensual con cálculo automático de deducciones, bonificaciones y) Tj
+T* (neto a pagar por empleado.) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+56.6929133858267775 521.5750393700786844 Td
+(Reportes y Estadísticas) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 498.8978740157479592 Td
+(Reportes de ventas, pedidos activos, pagos a decoradoras, resumen de nómina y gráficos) Tj
+T* (interactivos para análisis de datos.) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+56.6929133858267775 422.3624409448818255 Td
+(3. Tecnologías Utilizadas) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+70.8661417322834666 391.1813385826770855 Td
+(• Backend: Node.js + Express + TypeScript) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+70.8661417322834666 368.5041732283464171 Td
+(• Base de datos: PostgreSQL + Prisma ORM) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+70.8661417322834666 345.8270078740156919 Td
+(• Cache: Redis para sesiones y datos frecuentes) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+70.8661417322834666 323.1498425196849666 Td
+(• Frontend: React + Vite + TailwindCSS) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+70.8661417322834666 300.4726771653542983 Td
+(• Autenticación: JWT con refresh tokens seguros) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+70.8661417322834666 277.7955118110235162 Td
+(• Contenedores: Docker + Docker Compose) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+70.8661417322834666 255.1183464566928478 Td
+(• API: RESTful con documentación Swagger) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+56.6929133858267775 209.7640157480313974 Td
+(4. Requisitos del Sistema) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+70.8661417322834666 178.5829133858267141 Td
+(• Navegador web moderno \(Chrome, Firefox, Edge, Safari\)) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+70.8661417322834666 155.9057480314959321 Td
+(• Conexión a internet o red local) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+70.8661417322834666 133.2285826771652637 Td
+(• Servidor con Docker instalado para despliegue) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+70.8661417322834666 110.5514173228345953 Td
+(• Mínimo 2GB de RAM y 10GB de almacenamiento) Tj
+ET
+endstream
+endobj
+1 0 obj
+<</Type /Pages
+/Kids [3 0 R 5 0 R ]
+/Count 2
+>>
+endobj
+7 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+8 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+9 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-Oblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+10 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-BoldOblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+11 0 obj
+<<
+/Type /Font
+/BaseFont /Courier
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+12 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+13 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-Oblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+14 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-BoldOblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+15 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Roman
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+16 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+17 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Italic
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+18 0 obj
+<<
+/Type /Font
+/BaseFont /Times-BoldItalic
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+19 0 obj
+<<
+/Type /Font
+/BaseFont /ZapfDingbats
+/Subtype /Type1
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+20 0 obj
+<<
+/Type /Font
+/BaseFont /Symbol
+/Subtype /Type1
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+2 0 obj
+<<
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+/Font <<
+/F1 7 0 R
+/F2 8 0 R
+/F3 9 0 R
+/F4 10 0 R
+/F5 11 0 R
+/F6 12 0 R
+/F7 13 0 R
+/F8 14 0 R
+/F9 15 0 R
+/F10 16 0 R
+/F11 17 0 R
+/F12 18 0 R
+/F13 19 0 R
+/F14 20 0 R
+>>
+/XObject <<
+>>
+>>
+endobj
+21 0 obj
+<<
+/Producer (jsPDF 2.5.2)
+/CreationDate (D:20260408223133-05'00')
+>>
+endobj
+22 0 obj
+<<
+/Type /Catalog
+/Pages 1 0 R
+/OpenAction [3 0 R /FitH null]
+/PageLayout /OneColumn
+>>
+endobj
+xref
+0 23
+0000000000 65535 f 
+0000005974 00000 n 
+0000007799 00000 n 
+0000000015 00000 n 
+0000000152 00000 n 
+0000002678 00000 n 
+0000002815 00000 n 
+0000006037 00000 n 
+0000006162 00000 n 
+0000006292 00000 n 
+0000006425 00000 n 
+0000006563 00000 n 
+0000006687 00000 n 
+0000006816 00000 n 
+0000006948 00000 n 
+0000007084 00000 n 
+0000007212 00000 n 
+0000007339 00000 n 
+0000007468 00000 n 
+0000007601 00000 n 
+0000007703 00000 n 
+0000008049 00000 n 
+0000008135 00000 n 
+trailer
+<<
+/Size 23
+/Root 22 0 R
+/Info 21 0 R
+/ID [ <2B379F1A4AB5F8F56757C2081FA47762> <2B379F1A4AB5F8F56757C2081FA47762> ]
+>>
+startxref
+8239
+%%EOF
